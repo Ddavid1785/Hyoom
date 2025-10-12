@@ -8,6 +8,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_gemma_response,
             commands::gemma_tool_calling,
+            commands::make_dir,
             commands::list_files,
             commands::open_app,
             commands::close_app,
@@ -17,6 +18,8 @@ pub fn run() {
             commands::write_file,
             commands::copy_path,
             commands::move_path,
+            commands::get_system_info,
+            commands::open_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -18,3 +18,13 @@ pub struct ProcessInfo {
     pub pid: i32,
     pub name: String,
 }
+
+#[derive(Serialize)]
+pub struct SystemInfo {
+    pub os_name: String,
+    pub uptime_seconds: u64,
+    pub total_memory_mb: u64,
+    pub used_memory_mb: u64,
+    pub cpu_usage_percent: f32,
+    pub number_of_cpus: usize,
+}

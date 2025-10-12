@@ -1,13 +1,13 @@
-use sysinfo::System;
-
 use crate::types::FileEntry;
 use crate::types::ProcessInfo;
+use crate::types::SystemInfo;
 use crate::types::ToolCall;
 use std::fs;
 use std::fs::read_to_string;
 use std::io;
 use std::path::PathBuf;
 use std::{path::Path, process::Command};
+use sysinfo::System;
 
 #[tauri::command]
 pub async fn get_gemma_response(prompt: String) -> Result<String, String> {
@@ -50,6 +50,12 @@ Do not add any extra explanation — just perform the copy.
 If the destination is on a different drive, the operation may fail unless the path is copied manually instead.
 Use this when the user asks to relocate, rename, or organize files or folders.
 Do not add any extra explanation — just perform the move.
+-"get_system_info": retrieves basic system information, including OS name, uptime, total and used memory, CPU usage, and number of CPU cores.
+Use this when the user asks about their computer’s performance, memory, CPU, or general system status.
+Do not add any extra explanation — just return the information in JSON.
+-"open_url": opens a given URL in the default web browser.
+Use this when the user asks to visit a website, open a link, or navigate to an online page.
+Do not add any extra explanation — just open the URL as-is.
 
 Examples:
 User: Create a folder named Test
@@ -82,6 +88,13 @@ User: Copy my Projects folder to Documents
 User: Move my Projects folder to D drive
 → {"tool":"move_path","args":["C:\Users\David\Desktop\Projects","D:\Projects"]}
 
+User: Show me my system stats
+→ {"tool":"get_system_info","args":[]}
+
+User: Open Google in my browser
+→ {"tool":"open_url","args":["https://www.google.com
+"]}
+
 Do not output anything else — no code blocks, no explanations.
 Always assume the desktop is at C:\\Users\\David\\Desktop.
 "#;
@@ -100,10 +113,11 @@ Always assume the desktop is at C:\\Users\\David\\Desktop.
     .map_err(|e| e.to_string())?
 }
 
-fn make_dir(args: &Vec<String>) {
+#[tauri::command]
+pub fn make_dir(args: Vec<String>) {
     for arg in args {
         println!("Creating: {}", arg);
-        let path = Path::new(arg);
+        let path = Path::new(&arg);
         if let Err(e) = fs::create_dir_all(path) {
             eprintln!("Failed to create {}: {}", arg, e);
         } else {
@@ -162,6 +176,11 @@ pub fn list_processes() -> Result<Vec<ProcessInfo>, String> {
         .collect();
 
     Ok(processes)
+}
+
+#[tauri::command]
+pub fn open_url(url: String) -> Result<(), String> {
+    open::that(url).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -261,6 +280,23 @@ pub fn copy_path(file_path: String, destination_path: String) -> Result<String, 
 }
 
 #[tauri::command]
+pub fn get_system_info() -> SystemInfo {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
+    let cpu_usage = sys.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32;
+
+    SystemInfo {
+        os_name: System::name().unwrap_or_else(|| "Unknown".into()),
+        uptime_seconds: System::uptime(),
+        total_memory_mb: sys.total_memory() / 1024,
+        used_memory_mb: (sys.total_memory() - sys.available_memory()) / 1024,
+        cpu_usage_percent: cpu_usage,
+        number_of_cpus: sys.cpus().len(),
+    }
+}
+
+#[tauri::command]
 pub fn move_path(file_path: String, destination_path: String) -> Result<(), String> {
     let old_path = Path::new(&file_path);
     let mut new_path = PathBuf::from(&destination_path);
@@ -274,7 +310,6 @@ pub fn move_path(file_path: String, destination_path: String) -> Result<(), Stri
             new_path.push(name);
         }
     }
-
     match fs::rename(old_path, &new_path) {
         Ok(_) => Ok(()),
         Err(e) => {
@@ -317,7 +352,7 @@ pub async fn gemma_tool_calling(prompt: String) -> Result<String, String> {
         println!("Parsed ToolCall: {:?}", tool_call);
         match tool_call.tool.as_str() {
             "make_dir" => {
-                make_dir(&tool_call.args);
+                make_dir(tool_call.args);
                 Ok("make_dir called".into())
             }
             "list_files" => {
@@ -368,6 +403,11 @@ pub async fn gemma_tool_calling(prompt: String) -> Result<String, String> {
                 }
                 Err(e) => Err(e),
             },
+            "get_system_info" => {
+                let info = get_system_info();
+                let json = serde_json::to_string(&info).unwrap_or("[]".into());
+                Ok(format!("info about system: {}", json))
+            }
             "write_file" => {
                 if tool_call.args.len() >= 2 {
                     let path = tool_call.args[0].clone();
@@ -393,6 +433,13 @@ pub async fn gemma_tool_calling(prompt: String) -> Result<String, String> {
                     move_path(old_path, new_path).map(|_| "move path succeeded".to_string())
                 } else {
                     Err("Missing argument for copy_path".into())
+                }
+            }
+            "open_url" => {
+                if let Some(url) = tool_call.args.get(0) {
+                    open_url(url.clone()).map(|_| "open url succeded".to_string())
+                } else {
+                    Err("Missing argument for open_url".into())
                 }
             }
             _ => {
