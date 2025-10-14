@@ -1,5 +1,5 @@
 import Header from "./components/Header";
-import TextInput from "./components/TextInput";
+import InputHandler from "./components/InputHandler";
 import "./Main.css";
 
 export default function App() {
@@ -7,7 +7,7 @@ export default function App() {
     <div className="w-full h-screen flex flex-col items-center justify-center bg-black">
       <div className="w-full px-8 max-w-4xl">
         <Header />
-        <TextInput />
+        <InputHandler />
       </div>
     </div>
   );

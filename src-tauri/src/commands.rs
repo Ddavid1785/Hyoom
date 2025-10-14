@@ -44,18 +44,18 @@ Available tools:
                 Use this when the user asks to create or save content to a file.
                 Do not add any extra explanation — just write the text as-is.
 -"copy_path": copies a file or folder from a source path to a destination path.
-If the source is a folder, all contents are copied recursively. Use this when the user asks to duplicate or back up files or folders.
-Do not add any extra explanation — just perform the copy.
+                If the source is a folder, all contents are copied recursively. Use this when the user asks to duplicate or back up files or folders.
+                Do not add any extra explanation — just perform the copy.
 -"move_path": moves a file or folder from a source path to a destination path.
-If the destination is on a different drive, the operation may fail unless the path is copied manually instead.
-Use this when the user asks to relocate, rename, or organize files or folders.
-Do not add any extra explanation — just perform the move.
+                If the destination is on a different drive, the operation may fail unless the path is copied manually instead.
+                Use this when the user asks to relocate, rename, or organize files or folders.
+                Do not add any extra explanation — just perform the move.
 -"get_system_info": retrieves basic system information, including OS name, uptime, total and used memory, CPU usage, and number of CPU cores.
-Use this when the user asks about their computer’s performance, memory, CPU, or general system status.
-Do not add any extra explanation — just return the information in JSON.
+                Use this when the user asks about their computer's performance, memory, CPU, or general system status.
+                Do not add any extra explanation — just return the information in JSON.
 -"open_url": opens a given URL in the default web browser.
-Use this when the user asks to visit a website, open a link, or navigate to an online page.
-Do not add any extra explanation — just open the URL as-is.
+                Use this when the user asks to visit a website, open a link, or navigate to an online page.
+                Do not add any extra explanation — just open the URL as-is.
 
 Examples:
 User: Create a folder named Test
@@ -437,7 +437,7 @@ pub async fn gemma_tool_calling(prompt: String) -> Result<String, String> {
             }
             "open_url" => {
                 if let Some(url) = tool_call.args.get(0) {
-                    open_url(url.clone()).map(|_| "open url succeded".to_string())
+                    open_url(url.clone()).map(|_| "open url succeeded".to_string())
                 } else {
                     Err("Missing argument for open_url".into())
                 }

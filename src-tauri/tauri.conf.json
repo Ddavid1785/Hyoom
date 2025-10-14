@@ -14,7 +14,8 @@
       {
         "title": "aitooltest",
         "width": 2000,
-        "height": 1000
+        "height": 1000,
+        "dragDropEnabled": false
       }
     ],
     "security": {
