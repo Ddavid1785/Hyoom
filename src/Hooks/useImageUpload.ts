@@ -90,6 +90,15 @@ export function useImageUpload() {
     fileInputRef.current?.click();
   }
 
+  function getBase64() {
+    if (!imagePreview) return null;
+    return imagePreview.split(",")[1];
+  }
+
+  function getDataUrl() {
+    return imagePreview;
+  }
+
   return {
     imageFile,
     imagePreview,
@@ -100,5 +109,7 @@ export function useImageUpload() {
     removeImage,
     clearImage,
     openFilePicker,
+    getBase64,
+    getDataUrl
   };
 }

@@ -1,7 +1,9 @@
 use crate::types::FileEntry;
 use crate::types::ProcessInfo;
+use crate::types::Prompt;
 use crate::types::SystemInfo;
 use crate::types::ToolCall;
+use reqwest;
 use std::fs;
 use std::fs::read_to_string;
 use std::io;
@@ -9,10 +11,7 @@ use std::path::PathBuf;
 use std::{path::Path, process::Command};
 use sysinfo::System;
 
-#[tauri::command]
-pub async fn get_gemma_response(prompt: String) -> Result<String, String> {
-    tokio::task::spawn_blocking(move || {
-        let system_instructions = r#"
+    const SYSTEM_INSTRUCTIONS: &'static str= r#"
 You are a local AI assistant that can call tools on the user's computer.
 
 Always respond ONLY with valid JSON:
@@ -56,6 +55,9 @@ Available tools:
 -"open_url": opens a given URL in the default web browser.
                 Use this when the user asks to visit a website, open a link, or navigate to an online page.
                 Do not add any extra explanation — just open the URL as-is.
+-"respond_to_user": sends a text message back to the user through the console (or UI in future versions).  
+                Use this when you want to communicate information, ask for clarification, or report results directly to the user instead of performing a system action.  
+                Do not use this for file creation, system actions, or launching programs — it is purely for sending messages back to the user.
 
 Examples:
 User: Create a folder named Test
@@ -92,25 +94,92 @@ User: Show me my system stats
 → {"tool":"get_system_info","args":[]}
 
 User: Open Google in my browser
-→ {"tool":"open_url","args":["https://www.google.com
-"]}
+→ {"tool":"open_url","args":["https://www.google.com"]}
+
+User: Tell me that the backup finished successfully
+→ {"tool":"respond_to_user","args":["All files have been successfully backed up."]}
 
 Do not output anything else — no code blocks, no explanations.
 Always assume the desktop is at C:\\Users\\David\\Desktop.
 "#;
 
-        let full_prompt = format!("{}\nUser: {}", system_instructions, prompt);
+#[tauri::command]
+pub async fn get_gemma_response(prompt: Prompt) -> Result<String, String> {
 
-        let output = Command::new("ollama")
-            .args(["run", "gemma3-4b-qat:latest", &full_prompt])
-            .output()
-            .map_err(|e| e.to_string())?;
+    let full_prompt = format!("{}\nUser: {}", SYSTEM_INSTRUCTIONS, prompt.text);
+    let client = reqwest::Client::new();
 
-        let response = String::from_utf8_lossy(&output.stdout).to_string();
-        Ok(response.trim().to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    if let Some(img_b64) = &prompt.base_image {
+        let cleaned_b64 = img_b64
+            .trim()
+            .replace("data:image/png;base64,", "")
+            .replace("data:image/jpeg;base64,", "")
+            .replace("data:image/jpg;base64,", "")
+            .replace("data:image/webp;base64,", "");
+
+        let response = client
+            .post("http://localhost:11434/api/chat")
+            .json(&serde_json::json!({
+                "model": "gemma3-4b-mmproj-f16:latest",
+                "messages": [{
+                    "role": "user",
+                    "content": full_prompt,
+                    "images": [cleaned_b64]
+                }],
+                "stream": false
+            }))
+            .send()
+            .await
+            .map_err(|e| format!("API request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let error = response.text().await.unwrap_or_default();
+            return Err(format!("API error: {}", error));
+        }
+
+        let result: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        let content = result["message"]["content"]
+            .as_str()
+            .ok_or("Invalid response format")?
+            .to_string();
+
+        Ok(content)
+    } else {
+        let response = client
+            .post("http://localhost:11434/api/chat")
+            .json(&serde_json::json!({
+                "model": "gemma3-4b-qat:latest",
+                "messages": [{
+                    "role": "user",
+                    "content": full_prompt
+                }],
+                "stream": false
+            }))
+            .send()
+            .await
+            .map_err(|e| format!("API request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let error = response.text().await.unwrap_or_default();
+            return Err(format!("API error: {}", error));
+        }
+
+        let result: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        let content = result["message"]["content"]
+            .as_str()
+            .ok_or("Invalid response format")?
+            .to_string();
+
+        Ok(content)
+    }
 }
 
 #[tauri::command]
@@ -123,6 +192,15 @@ pub fn make_dir(args: Vec<String>) {
         } else {
             println!("Successfully created {}", arg);
         }
+    }
+}
+
+#[tauri::command]
+pub fn respond_to_user(text: String) -> Result<String, String> {
+    if text != "" {
+        Ok(text)
+    } else {
+        Err("Model didn't respond".to_string())
     }
 }
 
@@ -336,9 +414,9 @@ pub fn read_file(file_path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn gemma_tool_calling(prompt: String) -> Result<String, String> {
+pub async fn gemma_tool_calling(prompt: Prompt) -> Result<String, String> {
     let response = get_gemma_response(prompt.clone()).await?;
-    println!("Raw Gemma response:\n{}", response);
+    //println!("Raw Gemma response:\n{}", response);
 
     let clean_response = response
         .replace("```json", "")
@@ -354,6 +432,13 @@ pub async fn gemma_tool_calling(prompt: String) -> Result<String, String> {
             "make_dir" => {
                 make_dir(tool_call.args);
                 Ok("make_dir called".into())
+            }
+            "respond_to_user" => {
+                if let Some(text) = tool_call.args.get(0) {
+                    respond_to_user(text.clone())
+                } else {
+                    Err("Missing argument for respond_to_user".into())
+                }
             }
             "list_files" => {
                 if let Some(path) = tool_call.args.get(0) {

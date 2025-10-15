@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(serde::Deserialize, Debug)]
 pub struct ToolCall {
@@ -27,4 +27,11 @@ pub struct SystemInfo {
     pub used_memory_mb: u64,
     pub cpu_usage_percent: f32,
     pub number_of_cpus: usize,
+}
+
+#[derive(Serialize, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Prompt {
+    pub text: String,
+    pub base_image: Option<String>,
 }

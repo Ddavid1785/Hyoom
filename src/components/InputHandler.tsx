@@ -2,10 +2,12 @@ import { useState } from "react";
 import { ArrowUpCircle, Image } from "lucide-react";
 import ImagePreview from "./ImagePreview";
 import { useImageUpload } from "../Hooks/useImageUpload";
+import Prompt from "../types";
+import { invoke } from "@tauri-apps/api/core";
 
 export default function InputHandler() {
   const [text, setText] = useState("");
-  
+
   const {
     imageFile,
     imagePreview,
@@ -16,6 +18,8 @@ export default function InputHandler() {
     removeImage,
     clearImage,
     openFilePicker,
+    getBase64,
+    getDataUrl,
   } = useImageUpload();
 
   function handleEnter(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -25,9 +29,11 @@ export default function InputHandler() {
   }
 
   async function handleSubmit() {
-    console.log("Submitting:", text, imageFile);
+    const prompt: Prompt = { text: text, baseImage: getBase64() };
     setText("");
     clearImage();
+    let res = await invoke<string>("gemma_tool_calling", { prompt: prompt });
+    console.log(res);
   }
 
   return (
