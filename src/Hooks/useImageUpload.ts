@@ -95,10 +95,6 @@ export function useImageUpload() {
     return imagePreview.split(",")[1];
   }
 
-  function getDataUrl() {
-    return imagePreview;
-  }
-
   return {
     imageFile,
     imagePreview,
@@ -110,6 +106,5 @@ export function useImageUpload() {
     clearImage,
     openFilePicker,
     getBase64,
-    getDataUrl
   };
 }

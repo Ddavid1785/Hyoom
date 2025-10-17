@@ -3,7 +3,6 @@ use crate::types::ProcessInfo;
 use crate::types::Prompt;
 use crate::types::SystemInfo;
 use crate::types::ToolCall;
-use reqwest;
 use std::fs;
 use std::fs::read_to_string;
 use std::io;
@@ -11,7 +10,7 @@ use std::path::PathBuf;
 use std::{path::Path, process::Command};
 use sysinfo::System;
 
-    const SYSTEM_INSTRUCTIONS: &'static str= r#"
+const SYSTEM_INSTRUCTIONS: &str = r#"
 You are a local AI assistant that can call tools on the user's computer.
 
 Always respond ONLY with valid JSON:
@@ -105,7 +104,6 @@ Always assume the desktop is at C:\\Users\\David\\Desktop.
 
 #[tauri::command]
 pub async fn get_gemma_response(prompt: Prompt) -> Result<String, String> {
-
     let full_prompt = format!("{}\nUser: {}", SYSTEM_INSTRUCTIONS, prompt.text);
     let client = reqwest::Client::new();
 
@@ -197,7 +195,7 @@ pub fn make_dir(args: Vec<String>) {
 
 #[tauri::command]
 pub fn respond_to_user(text: String) -> Result<String, String> {
-    if text != "" {
+    if text.is_empty() {
         Ok(text)
     } else {
         Err("Model didn't respond".to_string())
@@ -298,7 +296,7 @@ pub fn open_app(file_path: String) -> Result<String, String> {
     }
 
     match Command::new("cmd")
-        .args(&["/C", "start", "", &file_path])
+        .args(["/C", "start", "", &file_path])
         .spawn()
     {
         Ok(_) => Ok(format!("Launched: {}", file_path)),
@@ -309,7 +307,7 @@ pub fn open_app(file_path: String) -> Result<String, String> {
 #[tauri::command]
 pub fn close_app(process_name: String) -> Result<String, String> {
     match Command::new("cmd")
-        .args(&["/C", "taskkill", "/IM", &process_name, "/F"])
+        .args(["/C", "taskkill", "/IM", &process_name, "/F"])
         .spawn()
     {
         Ok(_) => Ok(format!("Closed: {}", process_name)),
@@ -434,14 +432,14 @@ pub async fn gemma_tool_calling(prompt: Prompt) -> Result<String, String> {
                 Ok("make_dir called".into())
             }
             "respond_to_user" => {
-                if let Some(text) = tool_call.args.get(0) {
+                if let Some(text) = tool_call.args.first() {
                     respond_to_user(text.clone())
                 } else {
                     Err("Missing argument for respond_to_user".into())
                 }
             }
             "list_files" => {
-                if let Some(path) = tool_call.args.get(0) {
+                if let Some(path) = tool_call.args.first() {
                     match list_files(path.clone()) {
                         Ok(files) => {
                             let json = serde_json::to_string(&files).unwrap_or("[]".into());
@@ -454,28 +452,28 @@ pub async fn gemma_tool_calling(prompt: Prompt) -> Result<String, String> {
                 }
             }
             "open_app" => {
-                if let Some(path) = tool_call.args.get(0) {
+                if let Some(path) = tool_call.args.first() {
                     open_app(path.clone())
                 } else {
                     Err("Missing argument for open_app".into())
                 }
             }
             "close_app" => {
-                if let Some(path) = tool_call.args.get(0) {
+                if let Some(path) = tool_call.args.first() {
                     close_app(path.clone())
                 } else {
                     Err("Missing argument for close_app".into())
                 }
             }
             "delete_path" => {
-                if let Some(path) = tool_call.args.get(0) {
+                if let Some(path) = tool_call.args.first() {
                     delete_path(path.clone())
                 } else {
                     Err("Missing argument for delete_path".into())
                 }
             }
             "read_file" => {
-                if let Some(path) = tool_call.args.get(0) {
+                if let Some(path) = tool_call.args.first() {
                     read_file(path.clone())
                 } else {
                     Err("Missing argument for read_file".into())
@@ -521,7 +519,7 @@ pub async fn gemma_tool_calling(prompt: Prompt) -> Result<String, String> {
                 }
             }
             "open_url" => {
-                if let Some(url) = tool_call.args.get(0) {
+                if let Some(url) = tool_call.args.first() {
                     open_url(url.clone()).map(|_| "open url succeeded".to_string())
                 } else {
                     Err("Missing argument for open_url".into())
@@ -534,6 +532,6 @@ pub async fn gemma_tool_calling(prompt: Prompt) -> Result<String, String> {
         }
     } else {
         println!("Failed to parse response as ToolCall JSON");
-        return Ok(format!("Failed to parse: {}", clean_response));
+        Ok(format!("Failed to parse: {}", clean_response))
     }
 }

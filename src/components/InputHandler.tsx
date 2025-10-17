@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { ArrowUpCircle, Image } from "lucide-react";
+import { ArrowUpCircle, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
 import { useImageUpload } from "../Hooks/useImageUpload";
+import { useWebSpeech } from "../Hooks/useWebSpeech";
 import Prompt from "../types";
 import { invoke } from "@tauri-apps/api/core";
 
 export default function InputHandler() {
-  const [text, setText] = useState("");
+  const [text, setText] = useState<string>("");
 
   const {
     imageFile,
@@ -19,8 +20,9 @@ export default function InputHandler() {
     clearImage,
     openFilePicker,
     getBase64,
-    getDataUrl,
   } = useImageUpload();
+
+  const { isRecording, startRecording } = useWebSpeech();
 
   function handleEnter(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && text) {
@@ -29,11 +31,28 @@ export default function InputHandler() {
   }
 
   async function handleSubmit() {
-    const prompt: Prompt = { text: text, baseImage: getBase64() };
+    if (!text) {
+      return;
+    }
+
+    const prompt: Prompt = {
+      text: text,
+      baseImage: getBase64(),
+    };
+
     setText("");
     clearImage();
+
     let res = await invoke<string>("gemma_tool_calling", { prompt: prompt });
     console.log(res);
+  }
+
+  function handleVoiceInput() {
+    startRecording((transcript) => {
+      setText((prev) => {
+        return prev ? `${prev} ${transcript}` : transcript;
+      });
+    });
   }
 
   return (
@@ -48,7 +67,7 @@ export default function InputHandler() {
           placeholder="Ask me to do anything on your PC..."
           onKeyDown={handleEnter}
           onPaste={handlePasteImage}
-          className={`w-full px-6 py-4 pl-14 pr-14 bg-zinc-900 border-2 rounded-xl text-white text-lg placeholder-zinc-500 focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-700 transition-all ${
+          className={`w-full px-6 py-4 pl-14 pr-28 bg-zinc-900 border-2 rounded-xl text-white text-lg placeholder-zinc-500 focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-700 transition-all ${
             imagePreview ? "pt-20" : ""
           } ${
             isDragging
@@ -72,6 +91,17 @@ export default function InputHandler() {
           style={{ bottom: "16px" }}
         >
           <Image size={28} />
+        </button>
+        <button
+          onClick={handleVoiceInput}
+          className={`absolute right-14 transition-all ${
+            isRecording
+              ? "text-red-500 animate-pulse"
+              : "text-zinc-500 hover:text-zinc-300 hover:cursor-pointer hover:scale-110"
+          }`}
+          style={{ bottom: "16px" }}
+        >
+          <Mic size={28} />
         </button>
         <button
           disabled={!text}
