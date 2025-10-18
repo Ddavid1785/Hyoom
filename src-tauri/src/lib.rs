@@ -1,3 +1,4 @@
+mod ai_module;
 mod commands;
 mod types;
 
@@ -6,8 +7,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            commands::get_gemma_response,
-            commands::gemma_tool_calling,
+            ai_module::get_gemma_response,
+            ai_module::gemma_tool_calling,
             commands::make_dir,
             commands::list_files,
             commands::open_app,
