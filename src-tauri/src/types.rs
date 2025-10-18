@@ -35,3 +35,5 @@ pub struct Prompt {
     pub text: String,
     pub base_image: Option<String>,
 }
+
+pub type ToolFn = Box<dyn Fn(Vec<String>) -> Result<String, String>>;

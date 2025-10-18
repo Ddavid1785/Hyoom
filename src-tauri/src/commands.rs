@@ -9,16 +9,11 @@ use std::{path::Path, process::Command};
 use sysinfo::System;
 
 #[tauri::command]
-pub fn make_dir(args: Vec<String>) {
-    for arg in args {
-        println!("Creating: {}", arg);
-        let path = Path::new(&arg);
-        if let Err(e) = fs::create_dir_all(path) {
-            eprintln!("Failed to create {}: {}", arg, e);
-        } else {
-            println!("Successfully created {}", arg);
-        }
-    }
+pub fn make_dir(path: String) -> Result<String, String> {
+    let path = Path::new(&path);
+    fs::create_dir_all(path)
+        .map(|_| format!("Successfully created {}", path.display()))
+        .map_err(|e| format!("Failed to create {}: {}", path.display(), e))
 }
 
 #[tauri::command]

@@ -43,7 +43,7 @@ export default function InputHandler() {
     setText("");
     clearImage();
 
-    let res = await invoke<string>("gemma_tool_calling", { prompt: prompt });
+    let res = await invoke<string>("ai_tool_calling", { prompt: prompt });
     console.log(res);
   }
 

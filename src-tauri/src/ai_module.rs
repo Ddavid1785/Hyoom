@@ -1,5 +1,10 @@
+use std::collections::HashMap;
+
+use reqwest::Client;
+use serde_json::json;
+
 use crate::commands;
-use crate::types::{Prompt, ToolCall};
+use crate::types::{Prompt, ToolCall, ToolFn};
 
 const SYSTEM_INSTRUCTIONS: &str = r#"
 You are a local AI assistant that can call tools on the user's computer.
@@ -93,87 +98,218 @@ Do not output anything else — no code blocks, no explanations.
 Always assume the desktop is at C:\\Users\\David\\Desktop.
 "#;
 
-#[tauri::command]
-pub async fn get_gemma_response(prompt: Prompt) -> Result<String, String> {
-    let full_prompt = format!("{}\nUser: {}", SYSTEM_INSTRUCTIONS, prompt.text);
-    let client = reqwest::Client::new();
+async fn send_ai_request(
+    client: &Client,
+    model: &str,
+    content: &str,
+    images: Option<Vec<String>>,
+) -> Result<String, String> {
+    let mut message = json!({
+        "role": "user",
+        "content": content,
+    });
 
+    if let Some(imgs) = images {
+        message["images"] = json!(imgs);
+    }
+
+    let response = client
+        .post("http://localhost:11434/api/chat")
+        .json(&json!({
+            "model": model,
+            "messages": [message],
+            "stream": false
+        }))
+        .send()
+        .await
+        .map_err(|e| format!("API request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let error = response.text().await.unwrap_or_default();
+        return Err(format!("API error: {}", error));
+    }
+
+    let result: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    result["message"]["content"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| "Invalid response format".to_string())
+}
+
+pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
     if let Some(img_b64) = &prompt.base_image {
-        let cleaned_b64 = img_b64
+        let cleaned = img_b64
             .trim()
             .replace("data:image/png;base64,", "")
             .replace("data:image/jpeg;base64,", "")
             .replace("data:image/jpg;base64,", "")
             .replace("data:image/webp;base64,", "");
 
-        let response = client
-            .post("http://localhost:11434/api/chat")
-            .json(&serde_json::json!({
-                "model": "gemma3-4b-mmproj-f16:latest",
-                "messages": [{
-                    "role": "user",
-                    "content": full_prompt,
-                    "images": [cleaned_b64]
-                }],
-                "stream": false
-            }))
-            .send()
-            .await
-            .map_err(|e| format!("API request failed: {}", e))?;
-
-        if !response.status().is_success() {
-            let error = response.text().await.unwrap_or_default();
-            return Err(format!("API error: {}", error));
-        }
-
-        let result: serde_json::Value = response
-            .json()
-            .await
-            .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-        let content = result["message"]["content"]
-            .as_str()
-            .ok_or("Invalid response format")?
-            .to_string();
-
-        Ok(content)
+        send_ai_request(
+            &client,
+            "gemma3-4b-mmproj-f16:latest",
+            &prompt.text,
+            Some(vec![cleaned]),
+        )
+        .await
     } else {
-        let response = client
-            .post("http://localhost:11434/api/chat")
-            .json(&serde_json::json!({
-                "model": "gemma3-4b-qat:latest",
-                "messages": [{
-                    "role": "user",
-                    "content": full_prompt
-                }],
-                "stream": false
-            }))
-            .send()
-            .await
-            .map_err(|e| format!("API request failed: {}", e))?;
-
-        if !response.status().is_success() {
-            let error = response.text().await.unwrap_or_default();
-            return Err(format!("API error: {}", error));
-        }
-
-        let result: serde_json::Value = response
-            .json()
-            .await
-            .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-        let content = result["message"]["content"]
-            .as_str()
-            .ok_or("Invalid response format")?
-            .to_string();
-
-        Ok(content)
+        send_ai_request(&client, "gemma3-4b-qat:latest", &prompt.text, None).await
     }
 }
 
 #[tauri::command]
-pub async fn gemma_tool_calling(prompt: Prompt) -> Result<String, String> {
-    let response = get_gemma_response(prompt.clone()).await?;
+pub async fn get_ai_response(prompt: Prompt) -> Result<String, String> {
+    let full_prompt = format!("{}\nUser: {}", SYSTEM_INSTRUCTIONS, prompt.text);
+    let client = Client::new();
+    let parsed_prompt = Prompt {
+        text: full_prompt,
+        base_image: prompt.base_image,
+    };
+
+    call_ai(parsed_prompt, client).await
+}
+
+fn get_arg(args: &[String], index: usize, tool_name: &str) -> Result<String, String> {
+    args.get(index)
+        .cloned()
+        .ok_or_else(|| format!("Missing argument {} for {}", index, tool_name))
+}
+
+pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
+    let mut tools: HashMap<&str, ToolFn> = HashMap::new();
+
+    tools.insert(
+        "make_dir",
+        Box::new(|args| {
+            let path = get_arg(&args, 0, "make_dir")?;
+            commands::make_dir(path)
+        }),
+    );
+
+    tools.insert(
+        "respond_to_user",
+        Box::new(|args| {
+            let text = get_arg(&args, 0, "respond_to_user")?;
+            commands::respond_to_user(text)
+        }),
+    );
+
+    tools.insert(
+        "list_files",
+        Box::new(|args| {
+            let path = get_arg(&args, 0, "list_files")?;
+            match commands::list_files(path) {
+                Ok(files) => Ok(serde_json::to_string(&files).unwrap_or("[]".into())),
+                Err(e) => Err(e),
+            }
+        }),
+    );
+
+    tools.insert(
+        "open_app",
+        Box::new(|args| {
+            let path = get_arg(&args, 0, "open_app")?;
+            commands::open_app(path)
+        }),
+    );
+
+    tools.insert(
+        "close_app",
+        Box::new(|args| {
+            let path = get_arg(&args, 0, "close_app")?;
+            commands::close_app(path)
+        }),
+    );
+
+    tools.insert(
+        "delete_path",
+        Box::new(|args| {
+            let path = get_arg(&args, 0, "delete_path")?;
+            commands::delete_path(path)
+        }),
+    );
+
+    tools.insert(
+        "read_file",
+        Box::new(|args| {
+            let path = get_arg(&args, 0, "read_file")?;
+            commands::read_file(path)
+        }),
+    );
+
+    tools.insert(
+        "list_processes",
+        Box::new(|_| match commands::list_processes() {
+            Ok(processes) => Ok(serde_json::to_string(&processes).unwrap_or("[]".into())),
+            Err(e) => Err(e),
+        }),
+    );
+
+    tools.insert(
+        "get_system_info",
+        Box::new(|_| {
+            let info = commands::get_system_info();
+            Ok(serde_json::to_string(&info).unwrap_or("[]".into()))
+        }),
+    );
+
+    tools.insert(
+        "write_file",
+        Box::new(|args| {
+            let path = get_arg(&args, 0, "write_file")?;
+            let content = get_arg(&args, 1, "write_file")?;
+            commands::write_file(path, content).map(|_| "write_file succeeded".into())
+        }),
+    );
+
+    tools.insert(
+        "copy_path",
+        Box::new(|args| {
+            let old_path = get_arg(&args, 0, "copy_path")?;
+            let new_path = get_arg(&args, 1, "copy_path")?;
+            commands::copy_path(old_path, new_path)
+        }),
+    );
+
+    tools.insert(
+        "move_path",
+        Box::new(|args| {
+            let old_path = get_arg(&args, 0, "move_path")?;
+            let new_path = get_arg(&args, 1, "move_path")?;
+            commands::move_path(old_path, new_path).map(|_| "move path succeeded".into())
+        }),
+    );
+
+    tools.insert(
+        "open_url",
+        Box::new(|args| {
+            let url = get_arg(&args, 0, "open_url")?;
+            commands::open_url(url).map(|_| "open url succeeded".into())
+        }),
+    );
+
+    tools
+}
+
+pub fn call_tools(tool_call: ToolCall) -> Result<String, String> {
+    println!("Parsed ToolCall: {:?}", tool_call);
+    let tools = build_tool_map();
+
+    if let Some(tool_fn) = tools.get(tool_call.tool.as_str()) {
+        tool_fn(tool_call.args.clone())
+    } else {
+        println!("Unknown tool: {}", tool_call.tool);
+        Ok("Unknown tool".into())
+    }
+}
+
+#[tauri::command]
+pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
+    let response = get_ai_response(prompt.clone()).await?;
     //println!("Raw Gemma response:\n{}", response);
 
     let clean_response = response
@@ -185,111 +321,7 @@ pub async fn gemma_tool_calling(prompt: Prompt) -> Result<String, String> {
     let maybe_tool: Result<ToolCall, _> = serde_json::from_str(&clean_response);
 
     if let Ok(tool_call) = maybe_tool {
-        println!("Parsed ToolCall: {:?}", tool_call);
-        match tool_call.tool.as_str() {
-            "make_dir" => {
-                commands::make_dir(tool_call.args);
-                Ok("make_dir called".into())
-            }
-            "respond_to_user" => {
-                if let Some(text) = tool_call.args.first() {
-                    commands::respond_to_user(text.clone())
-                } else {
-                    Err("Missing argument for respond_to_user".into())
-                }
-            }
-            "list_files" => {
-                if let Some(path) = tool_call.args.first() {
-                    match commands::list_files(path.clone()) {
-                        Ok(files) => {
-                            let json = serde_json::to_string(&files).unwrap_or("[]".into());
-                            Ok(format!("list_files result: {}", json))
-                        }
-                        Err(e) => Err(e),
-                    }
-                } else {
-                    Err("Missing argument for list_files".into())
-                }
-            }
-            "open_app" => {
-                if let Some(path) = tool_call.args.first() {
-                    commands::open_app(path.clone())
-                } else {
-                    Err("Missing argument for open_app".into())
-                }
-            }
-            "close_app" => {
-                if let Some(path) = tool_call.args.first() {
-                    commands::close_app(path.clone())
-                } else {
-                    Err("Missing argument for close_app".into())
-                }
-            }
-            "delete_path" => {
-                if let Some(path) = tool_call.args.first() {
-                    commands::delete_path(path.clone())
-                } else {
-                    Err("Missing argument for delete_path".into())
-                }
-            }
-            "read_file" => {
-                if let Some(path) = tool_call.args.first() {
-                    commands::read_file(path.clone())
-                } else {
-                    Err("Missing argument for read_file".into())
-                }
-            }
-            "list_processes" => match commands::list_processes() {
-                Ok(processes) => {
-                    let json = serde_json::to_string(&processes).unwrap_or("[]".into());
-                    Ok(format!("list_processes result: {}", json))
-                }
-                Err(e) => Err(e),
-            },
-            "get_system_info" => {
-                let info = commands::get_system_info();
-                let json = serde_json::to_string(&info).unwrap_or("[]".into());
-                Ok(format!("info about system: {}", json))
-            }
-            "write_file" => {
-                if tool_call.args.len() >= 2 {
-                    let path = tool_call.args[0].clone();
-                    let content = tool_call.args[1].clone();
-                    commands::write_file(path, content).map(|_| "write_file succeeded".to_string())
-                } else {
-                    Err("Missing arguments for write_file (expected path and content)".into())
-                }
-            }
-            "copy_path" => {
-                if tool_call.args.len() >= 2 {
-                    let old_path = tool_call.args[0].clone();
-                    let new_path = tool_call.args[1].clone();
-                    commands::copy_path(old_path, new_path)
-                } else {
-                    Err("Missing argument for copy_path".into())
-                }
-            }
-            "move_path" => {
-                if tool_call.args.len() >= 2 {
-                    let old_path = tool_call.args[0].clone();
-                    let new_path = tool_call.args[1].clone();
-                    commands::move_path(old_path, new_path).map(|_| "move path succeeded".to_string())
-                } else {
-                    Err("Missing argument for copy_path".into())
-                }
-            }
-            "open_url" => {
-                if let Some(url) = tool_call.args.first() {
-                    commands::open_url(url.clone()).map(|_| "open url succeeded".to_string())
-                } else {
-                    Err("Missing argument for open_url".into())
-                }
-            }
-            _ => {
-                println!("Unknown tool");
-                Ok("Unknown tool".into())
-            }
-        }
+        call_tools(tool_call)
     } else {
         println!("Failed to parse response as ToolCall JSON");
         Ok(format!("Failed to parse: {}", clean_response))
