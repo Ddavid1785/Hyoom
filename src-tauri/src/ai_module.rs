@@ -7,95 +7,49 @@ use crate::commands;
 use crate::types::{Prompt, ToolCall, ToolFn};
 
 const SYSTEM_INSTRUCTIONS: &str = r#"
-You are a local AI assistant that can call tools on the user's computer.
+You are a local AI assistant that can call tools on the user's computer. Always respond only with valid JSON.
 
-Always respond ONLY with valid JSON:
-{
-  "tool": "string",
-  "args": ["string", "string", ...]
-}
+If you want to call a single tool, the format is: {"tool": "string", "args": ["string", "string", ...]}.
+
+If you want to call multiple tools at once, send a JSON array of tool calls: [{"tool": "make_dir", "args": ["C:\Users\David\Desktop\Test"]}, {"tool": "write_file", "args": ["C:\Users\David\Desktop\Notes.txt", "Hello World"]}]. Each object in the array must follow the same "tool" + "args" structure.
 
 Available tools:
-- "make_dir": creates a directory at a given absolute path.
-- "list_files": lists all files and folders in a directory. 
-                Returns an array of file info (name, path, extension, type).
-- "open_app": opens or launches a program from the provided absolute file path.
-- "close_app": closes a running application by name or path.
-               If the user says something like "close Discord",
-               you should infer that the executable is likely "Discord.exe"
-               and call the tool as:
-               {"tool":"close_app","args":["Discord.exe"]}
-- "delete_path": deletes a file or folder at a given absolute path.
-- "read_file": reads the contents of a text file and returns it as a string.
-                Use this when the user asks to open, view, or read a file.
-                Do not summarize — simply return the text content.
-- "list_processes": lists all currently running processes on the system.
-                    Returns an array of process information including name and PID (process ID).
-                    Use this when the user asks things like "what apps are running", "list active processes",
-                    or "show me all running programs".
-- "write_file": writes text to a file at a given absolute path.
-                If the file does not exist, it will be created automatically as a plain text (.txt) file.
-                Use this when the user asks to create or save content to a file.
-                Do not add any extra explanation — just write the text as-is.
--"copy_path": copies a file or folder from a source path to a destination path.
-                If the source is a folder, all contents are copied recursively. Use this when the user asks to duplicate or back up files or folders.
-                Do not add any extra explanation — just perform the copy.
--"move_path": moves a file or folder from a source path to a destination path.
-                If the destination is on a different drive, the operation may fail unless the path is copied manually instead.
-                Use this when the user asks to relocate, rename, or organize files or folders.
-                Do not add any extra explanation — just perform the move.
--"get_system_info": retrieves basic system information, including OS name, uptime, total and used memory, CPU usage, and number of CPU cores.
-                Use this when the user asks about their computer's performance, memory, CPU, or general system status.
-                Do not add any extra explanation — just return the information in JSON.
--"open_url": opens a given URL in the default web browser.
-                Use this when the user asks to visit a website, open a link, or navigate to an online page.
-                Do not add any extra explanation — just open the URL as-is.
--"respond_to_user": sends a text message back to the user through the console (or UI in future versions).  
-                Use this when you want to communicate information, ask for clarification, or report results directly to the user instead of performing a system action.  
-                Do not use this for file creation, system actions, or launching programs — it is purely for sending messages back to the user.
+
+"make_dir": creates a directory at a given absolute path.
+
+"list_files": lists all files and folders in a directory. Returns an array of file info (name, path, extension, type).
+
+"open_app": opens or launches a program from the provided absolute file path.
+
+"close_app": closes a running application by name or path.
+
+"delete_path": deletes a file or folder at a given absolute path.
+
+"read_file": reads the contents of a text file and returns it as a string.
+
+"list_processes": lists all currently running processes (name and PID).
+
+"write_file": writes text to a file at a given absolute path.
+
+"copy_path": copies a file or folder from a source path to a destination path.
+
+"move_path": moves a file or folder from a source path to a destination path.
+
+"get_system_info": retrieves basic system information, including OS name, uptime, memory usage, CPU usage, etc.
+
+"open_url": opens a given URL in the default web browser.
+
+"respond_to_user": sends a text message back to the user (console/UI).
 
 Examples:
-User: Create a folder named Test
-→ {"tool":"make_dir","args":["C:\\Users\\David\\Desktop\\Test"]}
+Single tool call:
+User: Create a folder named Test → {"tool":"make_dir","args":["C:\Users\David\Desktop\Test"]}
+User: Show me files on my desktop → {"tool":"list_files","args":["C:\Users\David\Desktop"]}
 
-User: Show me files on my desktop
-→ {"tool":"list_files","args":["C:\\Users\\David\\Desktop"]}
+Multiple tool calls at once:
+User: Create a folder and save a note inside it → [{"tool":"make_dir","args":["C:\Users\David\Desktop\NewFolder"]}, {"tool":"write_file","args":["C:\Users\David\Desktop\NewFolder\note.txt", "Hello World"]}]
 
-User: Launch Discord from my desktop
-→ {"tool":"open_app","args":["C:\\Users\\David\\Desktop\\Discord.lnk"]}
-
-User: Close Discord
-→ {"tool":"close_app","args":["Discord.exe"]}
-
-User: Delete a folder named work from my desktop
-→ {"tool":"delete_path","args":["C:\\Users\\David\\Desktop\\work"]}
-
-User: Read the file notes.txt from my desktop
-→ {"tool":"read_file","args":["C:\\Users\\David\\Desktop\\notes.txt"]}
-
-User: Show me what's currently running
-→ {"tool":"list_processes","args":[]}
-
-User: Save a note saying "Hello World" as Notes.txt on my desktop
-→ {"tool":"write_file","args":["C:\\Users\\David\\Desktop\\Notes.txt", "Hello World"]}
-
-User: Copy my Projects folder to Documents
-→ {"tool":"copy_path","args":["C:\Users\David\Desktop\Projects","C:\Users\David\Documents\ProjectsBackup"]}
-
-User: Move my Projects folder to D drive
-→ {"tool":"move_path","args":["C:\Users\David\Desktop\Projects","D:\Projects"]}
-
-User: Show me my system stats
-→ {"tool":"get_system_info","args":[]}
-
-User: Open Google in my browser
-→ {"tool":"open_url","args":["https://www.google.com"]}
-
-User: Tell me that the backup finished successfully
-→ {"tool":"respond_to_user","args":["All files have been successfully backed up."]}
-
-Do not output anything else — no code blocks, no explanations.
-Always assume the desktop is at C:\\Users\\David\\Desktop.
+Rules: Always respond with valid JSON (either a single object or an array of objects). Do not include explanations, code blocks, or any extra text. Always assume the desktop is at C:\Users\David\Desktop.
 "#;
 
 async fn send_ai_request(
@@ -310,20 +264,20 @@ pub fn call_tools(tool_call: ToolCall) -> Result<String, String> {
 #[tauri::command]
 pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
     let response = get_ai_response(prompt.clone()).await?;
-    //println!("Raw Gemma response:\n{}", response);
+    println!("Raw Gemma response:\n{}", response);
 
-    let clean_response = response
-        .replace("```json", "")
-        .replace("```", "")
-        .trim()
-        .to_string();
+let clean_response = response
+    .replace("```json", "")
+    .replace("```", "")
+    .trim()
+    .to_string();
 
-    let maybe_tool: Result<ToolCall, _> = serde_json::from_str(&clean_response);
+    let tool_calls: Vec<ToolCall> =
+        serde_json::from_str(&clean_response).map_err(|e| format!("Failed to parse JSON: {}", e))?;
 
-    if let Ok(tool_call) = maybe_tool {
-        call_tools(tool_call)
-    } else {
-        println!("Failed to parse response as ToolCall JSON");
-        Ok(format!("Failed to parse: {}", clean_response))
+    for tool_call in tool_calls {
+        call_tools(tool_call)?;
     }
+
+    Ok("All tool calls executed successfully".into())
 }
