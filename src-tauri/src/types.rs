@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Serialize, Clone)]
 pub struct ToolCall {
     pub tool: String,
     pub args: Vec<String>,
@@ -34,6 +34,24 @@ pub struct SystemInfo {
 pub struct Prompt {
     pub text: String,
     pub base_image: Option<String>,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ExecutionMode {
+    Independent,      // tools run in parallel
+    SequentialChain,  // ordered, no data passing
+    DependentChain,   // ordered, with data passing
+    SelfReprompt,     // AI loop
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TaskGroup {
+    pub tools: Vec<ToolCall>,
+    pub mode: ExecutionMode,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TaskRequest {
+   pub groups: Vec<TaskGroup>,  // each group runs on separate threads
 }
 
 pub type ToolFn = Box<dyn Fn(Vec<String>) -> Result<String, String>>;

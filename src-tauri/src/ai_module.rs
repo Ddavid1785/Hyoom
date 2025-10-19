@@ -1,55 +1,150 @@
 use std::collections::HashMap;
 
+use crate::commands;
+use crate::types::{ExecutionMode, Prompt, TaskRequest, ToolCall, ToolFn};
 use reqwest::Client;
 use serde_json::json;
-
-use crate::commands;
-use crate::types::{Prompt, ToolCall, ToolFn};
 
 const SYSTEM_INSTRUCTIONS: &str = r#"
 You are a local AI assistant that can call tools on the user's computer. Always respond only with valid JSON.
 
-If you want to call a single tool, the format is: {"tool": "string", "args": ["string", "string", ...]}.
+RESPONSE FORMAT:
 
-If you want to call multiple tools at once, send a JSON array of tool calls: [{"tool": "make_dir", "args": ["C:\Users\David\Desktop\Test"]}, {"tool": "write_file", "args": ["C:\Users\David\Desktop\Notes.txt", "Hello World"]}]. Each object in the array must follow the same "tool" + "args" structure.
+{
+  "groups": [
+    {
+      "mode": "Independent" or "SequentialChain",
+      "tools": [
+        {"tool": "tool_name", "args": ["arg1", "arg2"]}
+      ]
+    }
+  ]
+}
 
-Available tools:
+EXECUTION MODES:
 
-"make_dir": creates a directory at a given absolute path.
+"Independent": Tools run in parallel (at the same time). Use when:
+  - Tasks are completely unrelated
+  - No task needs another task to finish first
+  - Example: Opening YouTube and turning on lights
 
-"list_files": lists all files and folders in a directory. Returns an array of file info (name, path, extension, type).
+"SequentialChain": Tools run one by one in order. Use when:
+  - One task must complete before the next can start
+  - A later task depends on an earlier task finishing
+  - Example: Creating a folder THEN writing a file inside it (the folder must exist first!)
 
-"open_app": opens or launches a program from the provided absolute file path.
+CRITICAL RULES:
+- If a file/folder is being created and then used, you MUST use SequentialChain
+- Each group should be SELF-CONTAINED - if you're creating folder X and files in folder X, they should ALL be in the SAME group
+- Multiple groups run in parallel, so never split dependent tasks across groups
 
-"close_app": closes a running application by name or path.
+AVAILABLE TOOLS:
 
-"delete_path": deletes a file or folder at a given absolute path.
+"make_dir": creates a directory at absolute path
+"write_file": writes text to file at absolute path (folder must exist first!)
+"read_file": reads text file contents
+"list_files": lists files/folders in directory
+"delete_path": deletes file or folder
+"copy_path": copies file/folder (source, destination)
+"move_path": moves file/folder (source, destination)
+"open_app": opens program from absolute path
+"close_app": closes running application
+"open_url": opens URL in browser
+"list_processes": lists running processes
+"get_system_info": returns OS, memory, CPU info
+"respond_to_user": sends message to user
 
-"read_file": reads the contents of a text file and returns it as a string.
+EXAMPLES:
 
-"list_processes": lists all currently running processes (name and PID).
+User: "Create a folder and write a file inside it"
+{
+  "groups": [
+    {
+      "mode": "SequentialChain",
+      "tools": [
+        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\work"]},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\work\\notes.txt", "Hello"]}
+      ]
+    }
+  ]
+}
+Why? Folder must exist before file can be created inside it.
 
-"write_file": writes text to a file at a given absolute path.
+User: "Create 2 folders called work and chill, and put a text file in each"
+{
+  "groups": [
+    {
+      "mode": "SequentialChain",
+      "tools": [
+        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\work"]},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\work\\file1.txt", "Work stuff"]}
+      ]
+    },
+    {
+      "mode": "SequentialChain",
+      "tools": [
+        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\chill"]},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\chill\\file2.txt", "Chill stuff"]}
+      ]
+    }
+  ]
+}
+Why? Each folder+file pair is in its own group. This way both groups can run in parallel without conflicts.
 
-"copy_path": copies a file or folder from a source path to a destination path.
+User: "Open YouTube and Spotify"
+{
+  "groups": [
+    {
+      "mode": "Independent",
+      "tools": [
+        {"tool": "open_url", "args": ["https://youtube.com"]},
+        {"tool": "open_app", "args": ["C:\\Program Files\\Spotify\\Spotify.exe"]}
+      ]
+    }
+  ]
+}
+Why? These tasks don't depend on each other.
 
-"move_path": moves a file or folder from a source path to a destination path.
+User: "Create a folder with a file in it, and also open YouTube"
+{
+  "groups": [
+    {
+      "mode": "SequentialChain",
+      "tools": [
+        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\docs"]},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\docs\\todo.txt", "Buy milk"]}
+      ]
+    },
+    {
+      "mode": "Independent",
+      "tools": [
+        {"tool": "open_url", "args": ["https://youtube.com"]}
+      ]
+    }
+  ]
+}
+Why? The folder+file are dependent (same group), but YouTube is unrelated (separate group).
 
-"get_system_info": retrieves basic system information, including OS name, uptime, memory usage, CPU usage, etc.
+User: "Copy file A to B, then delete A"
+{
+  "groups": [
+    {
+      "mode": "SequentialChain",
+      "tools": [
+        {"tool": "copy_path", "args": ["C:\\Users\\David\\Desktop\\A.txt", "C:\\Users\\David\\Desktop\\B.txt"]},
+        {"tool": "delete_path", "args": ["C:\\Users\\David\\Desktop\\A.txt"]}
+      ]
+    }
+  ]
+}
+Why? Must copy before deleting, otherwise the file is gone.
 
-"open_url": opens a given URL in the default web browser.
-
-"respond_to_user": sends a text message back to the user (console/UI).
-
-Examples:
-Single tool call:
-User: Create a folder named Test → {"tool":"make_dir","args":["C:\Users\David\Desktop\Test"]}
-User: Show me files on my desktop → {"tool":"list_files","args":["C:\Users\David\Desktop"]}
-
-Multiple tool calls at once:
-User: Create a folder and save a note inside it → [{"tool":"make_dir","args":["C:\Users\David\Desktop\NewFolder"]}, {"tool":"write_file","args":["C:\Users\David\Desktop\NewFolder\note.txt", "Hello World"]}]
-
-Rules: Always respond with valid JSON (either a single object or an array of objects). Do not include explanations, code blocks, or any extra text. Always assume the desktop is at C:\Users\David\Desktop.
+RULES:
+- Always return valid JSON, no markdown or explanations
+- Desktop path is always: C:\\Users\\David\\Desktop
+- Keep related tasks (folder + its files) in the SAME group
+- Use separate groups only when tasks are truly independent
+- Think: "Does this folder and its files all belong together?" If yes → same group
 "#;
 
 async fn send_ai_request(
@@ -63,12 +158,17 @@ async fn send_ai_request(
         "content": content,
     });
 
+    // LM Studio uses OpenAI format for images (different from Ollama)
     if let Some(imgs) = images {
-        message["images"] = json!(imgs);
+        // For vision models, need to format as content array
+        message["content"] = json!([
+            {"type": "text", "text": content},
+            {"type": "image_url", "image_url": {"url": format!("data:image/jpeg;base64,{}", imgs[0])}}
+        ]);
     }
 
     let response = client
-        .post("http://localhost:11434/api/chat")
+        .post("http://localhost:1234/v1/chat/completions") // Changed URL
         .json(&json!({
             "model": model,
             "messages": [message],
@@ -88,7 +188,8 @@ async fn send_ai_request(
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-    result["message"]["content"]
+    // LM Studio response format is different
+    result["choices"][0]["message"]["content"]
         .as_str()
         .map(|s| s.to_string())
         .ok_or_else(|| "Invalid response format".to_string())
@@ -105,13 +206,13 @@ pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
 
         send_ai_request(
             &client,
-            "gemma3-4b-mmproj-f16:latest",
+            "meta-llama-3.1-8b-instruct",
             &prompt.text,
             Some(vec![cleaned]),
         )
         .await
     } else {
-        send_ai_request(&client, "gemma3-4b-qat:latest", &prompt.text, None).await
+        send_ai_request(&client, "meta-llama-3.1-8b-instruct", &prompt.text, None).await
     }
 }
 
@@ -140,7 +241,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
         "make_dir",
         Box::new(|args| {
             let path = get_arg(&args, 0, "make_dir")?;
-            commands::make_dir(path)
+            commands::make_dir(path).map(|_| String::new())
         }),
     );
 
@@ -167,7 +268,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
         "open_app",
         Box::new(|args| {
             let path = get_arg(&args, 0, "open_app")?;
-            commands::open_app(path)
+            commands::open_app(path).map(|_| String::new())
         }),
     );
 
@@ -175,7 +276,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
         "close_app",
         Box::new(|args| {
             let path = get_arg(&args, 0, "close_app")?;
-            commands::close_app(path)
+            commands::close_app(path).map(|_| String::new())
         }),
     );
 
@@ -183,7 +284,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
         "delete_path",
         Box::new(|args| {
             let path = get_arg(&args, 0, "delete_path")?;
-            commands::delete_path(path)
+            commands::delete_path(path).map(|_| String::new())
         }),
     );
 
@@ -225,7 +326,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
         Box::new(|args| {
             let old_path = get_arg(&args, 0, "copy_path")?;
             let new_path = get_arg(&args, 1, "copy_path")?;
-            commands::copy_path(old_path, new_path)
+            commands::copy_path(old_path, new_path).map(|_| String::new())
         }),
     );
 
@@ -249,7 +350,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
     tools
 }
 
-pub fn call_tools(tool_call: ToolCall) -> Result<String, String> {
+pub async fn call_tools(tool_call: ToolCall) -> Result<String, String> {
     println!("Parsed ToolCall: {:?}", tool_call);
     let tools = build_tool_map();
 
@@ -266,17 +367,56 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
     let response = get_ai_response(prompt.clone()).await?;
     println!("Raw Gemma response:\n{}", response);
 
-let clean_response = response
-    .replace("```json", "")
-    .replace("```", "")
-    .trim()
-    .to_string();
+    let clean_response = response
+        .replace("```json", "")
+        .replace("```", "")
+        .trim()
+        .to_string();
 
-    let tool_calls: Vec<ToolCall> =
-        serde_json::from_str(&clean_response).map_err(|e| format!("Failed to parse JSON: {}", e))?;
+    let task_request: TaskRequest = serde_json::from_str(&clean_response)
+        .map_err(|e| format!("Failed to parse JSON: {}", e))?;
 
-    for tool_call in tool_calls {
-        call_tools(tool_call)?;
+    let mut group_handles = vec![];
+
+    for group in task_request.groups {
+        let handle = tokio::spawn(async move {
+            match group.mode {
+                ExecutionMode::Independent => {
+                    let mut handles = vec![];
+
+                    for tool in group.tools {
+                        let handle = tokio::spawn(async move { call_tools(tool).await });
+                        handles.push(handle);
+                    }
+
+                    for handle in handles {
+                        match handle.await {
+                            Ok(Ok(result)) => println!("Tool result: {}", result),
+                            Ok(Err(e)) => eprintln!("Tool error: {}", e),
+                            Err(e) => eprintln!("Task join error: {}", e),
+                        }
+                    }
+                }
+                ExecutionMode::SequentialChain => {
+                    for tool in group.tools {
+                        if let Err(e) = call_tools(tool).await {
+                            eprintln!("Sequential tool error: {e}");
+                            break;
+                        }
+                    }
+                }
+                ExecutionMode::DependentChain => {}
+                ExecutionMode::SelfReprompt => {}
+            }
+        });
+        group_handles.push(handle);
+    }
+
+    // Wait for all groups to finish
+    for handle in group_handles {
+        if let Err(e) = handle.await {
+            eprintln!("Group execution error: {}", e);
+        }
     }
 
     Ok("All tool calls executed successfully".into())

@@ -9,10 +9,9 @@ use std::{path::Path, process::Command};
 use sysinfo::System;
 
 #[tauri::command]
-pub fn make_dir(path: String) -> Result<String, String> {
+pub fn make_dir(path: String) -> Result<(), String> {
     let path = Path::new(&path);
     fs::create_dir_all(path)
-        .map(|_| format!("Successfully created {}", path.display()))
         .map_err(|e| format!("Failed to create {}: {}", path.display(), e))
 }
 
@@ -93,7 +92,7 @@ pub fn write_file(file_path: String, file_text: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn delete_path(file_path: String) -> Result<String, String> {
+pub fn delete_path(file_path: String) -> Result<(), String> {
     let path = std::path::Path::new(&file_path);
 
     if !path.exists() {
@@ -103,15 +102,15 @@ pub fn delete_path(file_path: String) -> Result<String, String> {
     let metadata = path.metadata().map_err(|e| e.to_string())?;
     if metadata.is_dir() {
         fs::remove_dir_all(path).map_err(|e| e.to_string())?;
-        Ok(format!("Folder deleted: {}", file_path))
+        Ok(())
     } else {
         fs::remove_file(path).map_err(|e| e.to_string())?;
-        Ok(format!("File deleted: {}", file_path))
+        Ok(())
     }
 }
 
 #[tauri::command]
-pub fn open_app(file_path: String) -> Result<String, String> {
+pub fn open_app(file_path: String) -> Result<(), String> {
     let path = std::path::Path::new(&file_path);
 
     if !path.exists() {
@@ -122,18 +121,18 @@ pub fn open_app(file_path: String) -> Result<String, String> {
         .args(["/C", "start", "", &file_path])
         .spawn()
     {
-        Ok(_) => Ok(format!("Launched: {}", file_path)),
+        Ok(_) => Ok(()),
         Err(e) => Err(format!("Failed to launch: {}", e)),
     }
 }
 
 #[tauri::command]
-pub fn close_app(process_name: String) -> Result<String, String> {
+pub fn close_app(process_name: String) -> Result<(), String> {
     match Command::new("cmd")
         .args(["/C", "taskkill", "/IM", &process_name, "/F"])
         .spawn()
     {
-        Ok(_) => Ok(format!("Closed: {}", process_name)),
+        Ok(_) => Ok(()),
         Err(e) => Err(format!("Failed to close {}: {}", process_name, e)),
     }
 }
@@ -158,7 +157,7 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
 }
 
 #[tauri::command]
-pub fn copy_path(file_path: String, destination_path: String) -> Result<String, String> {
+pub fn copy_path(file_path: String, destination_path: String) -> Result<(), String> {
     let old_path = Path::new(&file_path);
     let new_path = Path::new(&destination_path);
 
@@ -173,7 +172,7 @@ pub fn copy_path(file_path: String, destination_path: String) -> Result<String, 
     };
 
     match result {
-        Ok(_) => Ok(format!("Copied {} to {}", file_path, destination_path)),
+        Ok(_) => Ok(()),
         Err(e) => Err(format!("Failed to copy: {}", e)),
     }
 }
