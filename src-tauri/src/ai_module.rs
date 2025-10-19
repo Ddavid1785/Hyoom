@@ -13,7 +13,7 @@ RESPONSE FORMAT:
 {
   "groups": [
     {
-      "mode": "Independent" or "SequentialChain",
+      "mode": "Independent" or "SequentialChain" or "DependentChain",
       "tools": [
         {"tool": "tool_name", "args": ["arg1", "arg2"]}
       ]
@@ -30,7 +30,13 @@ EXECUTION MODES:
 
 "SequentialChain": Tools run one at a time in order.
   - Use when one task needs another to finish first
+  - Tools don't use each other's results
   - Example: creating a folder, then writing a file inside it
+
+"DependentChain": Tools run one at a time, passing results to the next tool.
+  - Use when a tool needs the OUTPUT from the previous tool
+  - Use {{PREVIOUS_RESULT}} in args to get the previous tool's output
+  - Example: read a file, then write its contents somewhere else
 
 CRITICAL: Never create multiple Independent groups. If you have 5 independent tasks, they ALL go in the same Independent group.
 
@@ -38,15 +44,15 @@ AVAILABLE TOOLS:
 
 "make_dir" - creates directory
 "write_file" - writes to file (folder must exist first!)
-"read_file" - reads file contents
-"list_files" - lists directory contents
+"read_file" - reads file contents and returns them
+"list_files" - lists directory contents and returns them
 "delete_path" - deletes file/folder
 "copy_path" - copies file/folder
 "move_path" - moves file/folder
 "open_app" - opens program
 "close_app" - closes program
 "open_url" - opens URL in browser
-"list_processes" - lists running processes
+"list_processes" - lists running processes and returns them
 "get_system_info" - returns system info
 "respond_to_user" - sends message to user
 
@@ -94,7 +100,55 @@ CORRECT:
     }
   ]
 }
-Why? Folder must exist before file can be written inside it.
+Why? Folder must exist before file can be written inside it. Use SequentialChain because we don't need the folder creation result.
+
+---
+
+User: "read file A and write its contents to file B"
+CORRECT:
+{
+  "groups": [
+    {
+      "mode": "DependentChain",
+      "tools": [
+        {"tool": "read_file", "args": ["C:\\Users\\David\\Desktop\\A.txt"]},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\B.txt", "{{PREVIOUS_RESULT}}"]}
+      ]
+    }
+  ]
+}
+Why? The second tool needs the OUTPUT from the first tool. {{PREVIOUS_RESULT}} gets replaced with the file contents.
+
+INCORRECT:
+{
+  "groups": [
+    {
+      "mode": "SequentialChain",
+      "tools": [
+        {"tool": "read_file", "args": ["C:\\Users\\David\\Desktop\\A.txt"]},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\B.txt", "some text"]}
+      ]
+    }
+  ]
+}
+Why incorrect? This would just write "some text", not the contents of A.txt. Need DependentChain with {{PREVIOUS_RESULT}}.
+
+---
+
+User: "get system info and write it to a log file"
+CORRECT:
+{
+  "groups": [
+    {
+      "mode": "DependentChain",
+      "tools": [
+        {"tool": "get_system_info", "args": []},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\system_log.txt", "{{PREVIOUS_RESULT}}"]}
+      ]
+    }
+  ]
+}
+Why? get_system_info returns data, and write_file needs that data. Use {{PREVIOUS_RESULT}} to pass it.
 
 ---
 
@@ -169,14 +223,46 @@ CORRECT:
     }
   ]
 }
-Why? Must copy before deleting.
+Why? Must copy before deleting. Use SequentialChain because we don't need the copy result.
+
+---
+
+User: "list all processes and write them to a file"
+CORRECT:
+{
+  "groups": [
+    {
+      "mode": "DependentChain",
+      "tools": [
+        {"tool": "list_processes", "args": []},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\processes.txt", "{{PREVIOUS_RESULT}}"]}
+      ]
+    }
+  ]
+}
+Why? list_processes returns data, write_file needs that data. Use DependentChain with {{PREVIOUS_RESULT}}.
+
+INCORRECT:
+{
+  "groups": [
+    {
+      "mode": "SequentialChain",
+      "tools": [
+        {"tool": "list_processes", "args": []},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\processes.txt", "{{PREVIOUS_RESULT}}"]}
+      ]
+    }
+  ]
+}
+Why incorrect? Using {{PREVIOUS_RESULT}} requires DependentChain, not SequentialChain!
 
 RULES:
 1. Maximum ONE Independent group per response
 2. Put ALL independent tasks in that one group
-3. Each SequentialChain group should contain dependent tasks only
-4. If creating a folder and using it, keep them in the same SequentialChain group
-5. Return only valid JSON, no explanations or markdown
+3. Use SequentialChain when order matters but tools don't need each other's output
+4. Use DependentChain when a tool needs the previous tool's output (use {{PREVIOUS_RESULT}})
+5. If creating a folder and using it, keep them in the same SequentialChain group
+6. Return only valid JSON, no explanations or markdown
 "#;
 
 async fn send_ai_request(
@@ -437,7 +523,34 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                         }
                     }
                 }
-                ExecutionMode::DependentChain => {}
+                ExecutionMode::DependentChain => {
+                    let mut last_result = String::new();
+
+                    for mut tool in group.tools {
+                        tool.args = tool
+                            .args
+                            .iter()
+                            .map(|arg| {
+                                if arg == "{{PREVIOUS_RESULT}}" {
+                                    last_result.clone()
+                                } else {
+                                    arg.clone()
+                                }
+                            })
+                            .collect();
+
+                        match call_tools(tool).await {
+                            Ok(result) => {
+                                last_result = result;
+                                println!("Tool result: {}", last_result);
+                            }
+                            Err(e) => {
+                                eprintln!("DependentChain tool error: {}", e);
+                                break;
+                            }
+                        }
+                    }
+                }
                 ExecutionMode::SelfReprompt => {}
             }
         });
