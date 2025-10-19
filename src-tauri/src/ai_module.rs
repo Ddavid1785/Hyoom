@@ -23,40 +23,66 @@ RESPONSE FORMAT:
 
 EXECUTION MODES:
 
-"Independent": Tools run in parallel (at the same time). Use when:
-  - Tasks are completely unrelated
-  - No task needs another task to finish first
-  - Example: Opening YouTube and turning on lights
+"Independent": Tools run at the same time in parallel.
+  - Use for tasks that don't depend on each other
+  - ALL independent tasks must go in ONE group together
+  - Examples: reading a file, opening a URL, listing files
 
-"SequentialChain": Tools run one by one in order. Use when:
-  - One task must complete before the next can start
-  - A later task depends on an earlier task finishing
-  - Example: Creating a folder THEN writing a file inside it (the folder must exist first!)
+"SequentialChain": Tools run one at a time in order.
+  - Use when one task needs another to finish first
+  - Example: creating a folder, then writing a file inside it
 
-CRITICAL RULES:
-- If a file/folder is being created and then used, you MUST use SequentialChain
-- Each group should be SELF-CONTAINED - if you're creating folder X and files in folder X, they should ALL be in the SAME group
-- Multiple groups run in parallel, so never split dependent tasks across groups
+CRITICAL: Never create multiple Independent groups. If you have 5 independent tasks, they ALL go in the same Independent group.
 
 AVAILABLE TOOLS:
 
-"make_dir": creates a directory at absolute path
-"write_file": writes text to file at absolute path (folder must exist first!)
-"read_file": reads text file contents
-"list_files": lists files/folders in directory
-"delete_path": deletes file or folder
-"copy_path": copies file/folder (source, destination)
-"move_path": moves file/folder (source, destination)
-"open_app": opens program from absolute path
-"close_app": closes running application
-"open_url": opens URL in browser
-"list_processes": lists running processes
-"get_system_info": returns OS, memory, CPU info
-"respond_to_user": sends message to user
+"make_dir" - creates directory
+"write_file" - writes to file (folder must exist first!)
+"read_file" - reads file contents
+"list_files" - lists directory contents
+"delete_path" - deletes file/folder
+"copy_path" - copies file/folder
+"move_path" - moves file/folder
+"open_app" - opens program
+"close_app" - closes program
+"open_url" - opens URL in browser
+"list_processes" - lists running processes
+"get_system_info" - returns system info
+"respond_to_user" - sends message to user
+
+Desktop path: C:\\Users\\David\\Desktop
 
 EXAMPLES:
 
-User: "Create a folder and write a file inside it"
+User: "list files, open YouTube, and read a file"
+CORRECT:
+{
+  "groups": [
+    {
+      "mode": "Independent",
+      "tools": [
+        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]},
+        {"tool": "open_url", "args": ["https://youtube.com"]},
+        {"tool": "read_file", "args": ["C:\\Users\\David\\Desktop\\notes.txt"]}
+      ]
+    }
+  ]
+}
+
+INCORRECT:
+{
+  "groups": [
+    {"mode": "Independent", "tools": [{"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]}]},
+    {"mode": "Independent", "tools": [{"tool": "open_url", "args": ["https://youtube.com"]}]},
+    {"mode": "Independent", "tools": [{"tool": "read_file", "args": ["C:\\Users\\David\\Desktop\\notes.txt"]}]}
+  ]
+}
+Why incorrect? All three are independent, so they must be in ONE group, not three separate groups.
+
+---
+
+User: "create folder called work and put a file in it"
+CORRECT:
 {
   "groups": [
     {
@@ -68,64 +94,70 @@ User: "Create a folder and write a file inside it"
     }
   ]
 }
-Why? Folder must exist before file can be created inside it.
+Why? Folder must exist before file can be written inside it.
 
-User: "Create 2 folders called work and chill, and put a text file in each"
+---
+
+User: "create 2 folders (work and chill) with a file in each"
+CORRECT:
 {
   "groups": [
     {
       "mode": "SequentialChain",
       "tools": [
         {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\work"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\work\\file1.txt", "Work stuff"]}
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\work\\file.txt", "Work"]}
       ]
     },
     {
       "mode": "SequentialChain",
       "tools": [
         {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\chill"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\chill\\file2.txt", "Chill stuff"]}
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\chill\\file.txt", "Chill"]}
       ]
     }
   ]
 }
-Why? Each folder+file pair is in its own group. This way both groups can run in parallel without conflicts.
+Why? Each folder+file is self-contained, so they can run in parallel as separate groups.
 
-User: "Open YouTube and Spotify"
+---
+
+User: "list files, open YouTube, and create a folder with a file"
+CORRECT:
 {
   "groups": [
     {
       "mode": "Independent",
       "tools": [
-        {"tool": "open_url", "args": ["https://youtube.com"]},
-        {"tool": "open_app", "args": ["C:\\Program Files\\Spotify\\Spotify.exe"]}
-      ]
-    }
-  ]
-}
-Why? These tasks don't depend on each other.
-
-User: "Create a folder with a file in it, and also open YouTube"
-{
-  "groups": [
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\docs"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\docs\\todo.txt", "Buy milk"]}
+        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]},
+        {"tool": "open_url", "args": ["https://youtube.com"]}
       ]
     },
     {
-      "mode": "Independent",
+      "mode": "SequentialChain",
       "tools": [
-        {"tool": "open_url", "args": ["https://youtube.com"]}
+        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\work"]},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\work\\todo.txt", "Tasks"]}
       ]
     }
   ]
 }
-Why? The folder+file are dependent (same group), but YouTube is unrelated (separate group).
+Why? Independent tasks in one group, dependent tasks in another.
 
-User: "Copy file A to B, then delete A"
+INCORRECT:
+{
+  "groups": [
+    {"mode": "Independent", "tools": [{"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]}]},
+    {"mode": "Independent", "tools": [{"tool": "open_url", "args": ["https://youtube.com"]}]},
+    {"mode": "SequentialChain", "tools": [...]}
+  ]
+}
+Why incorrect? list_files and open_url are both independent, so they must share ONE Independent group.
+
+---
+
+User: "copy file A to B, then delete A"
+CORRECT:
 {
   "groups": [
     {
@@ -137,14 +169,14 @@ User: "Copy file A to B, then delete A"
     }
   ]
 }
-Why? Must copy before deleting, otherwise the file is gone.
+Why? Must copy before deleting.
 
 RULES:
-- Always return valid JSON, no markdown or explanations
-- Desktop path is always: C:\\Users\\David\\Desktop
-- Keep related tasks (folder + its files) in the SAME group
-- Use separate groups only when tasks are truly independent
-- Think: "Does this folder and its files all belong together?" If yes → same group
+1. Maximum ONE Independent group per response
+2. Put ALL independent tasks in that one group
+3. Each SequentialChain group should contain dependent tasks only
+4. If creating a folder and using it, keep them in the same SequentialChain group
+5. Return only valid JSON, no explanations or markdown
 "#;
 
 async fn send_ai_request(
@@ -206,13 +238,13 @@ pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
 
         send_ai_request(
             &client,
-            "meta-llama-3.1-8b-instruct",
+            "hermes-3-llama-3.1-8b",
             &prompt.text,
             Some(vec![cleaned]),
         )
         .await
     } else {
-        send_ai_request(&client, "meta-llama-3.1-8b-instruct", &prompt.text, None).await
+        send_ai_request(&client, "hermes-3-llama-3.1-8b", &prompt.text, None).await
     }
 }
 
@@ -343,7 +375,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
         "open_url",
         Box::new(|args| {
             let url = get_arg(&args, 0, "open_url")?;
-            commands::open_url(url).map(|_| "open url succeeded".into())
+            commands::open_url(url).map(|_| String::new())
         }),
     );
 
