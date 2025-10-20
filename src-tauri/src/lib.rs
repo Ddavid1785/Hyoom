@@ -22,6 +22,7 @@ pub fn run() {
             commands::get_system_info,
             commands::open_url,
             commands::respond_to_user,
+            commands::search_web
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

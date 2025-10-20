@@ -47,6 +47,7 @@ pub enum ExecutionMode {
 pub struct TaskGroup {
     pub tools: Vec<ToolCall>,
     pub mode: ExecutionMode,
+    pub end_goal: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug)]

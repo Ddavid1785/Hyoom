@@ -221,6 +221,33 @@ pub fn move_path(file_path: String, destination_path: String) -> Result<(), Stri
 }
 
 #[tauri::command]
+pub async fn search_web(query: String) -> Result<String, String> {
+    let api_key = "AIzaSyBKrTRA3CAf_WR8dVQeARqNazHIUwNykss";
+    let search_engine_id = "67bcdc58f61ef4092";
+    
+    let client = reqwest::Client::new();
+    let url = format!(
+        "https://www.googleapis.com/customsearch/v1?key={}&cx={}&q={}",
+        api_key, search_engine_id, query
+    );
+    
+    let response = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    
+    let results = json["items"].as_array()
+        .map(|items| {
+            items.iter()
+                .take(5)
+                .map(|item| format!("{}: {}", item["title"], item["link"]))
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
+        .unwrap_or_else(|| "No results".into());
+    
+    Ok(results)
+}
+
+#[tauri::command]
 pub fn read_file(file_path: String) -> Result<String, String> {
     let path = std::path::Path::new(&file_path);
 

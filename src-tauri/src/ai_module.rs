@@ -13,10 +13,11 @@ RESPONSE FORMAT:
 {
   "groups": [
     {
-      "mode": "Independent" or "SequentialChain" or "DependentChain",
+      "mode": "Independent" or "SequentialChain" or "DependentChain" or "SelfReprompt",
       "tools": [
         {"tool": "tool_name", "args": ["arg1", "arg2"]}
-      ]
+      ],
+      "end_goal": "optional - only for SelfReprompt mode"
     }
   ]
 }
@@ -38,6 +39,12 @@ EXECUTION MODES:
   - Use {{PREVIOUS_RESULT}} in args to get the previous tool's output
   - Example: read a file, then write its contents somewhere else
 
+"SelfReprompt": AI decides each next step based on the previous result.
+  - Use for complex tasks where the next step depends on what you discover
+  - Must include "end_goal" field describing what to achieve
+  - Start with ONE tool, AI will decide the rest automatically
+  - Example: organize files (need to see what files exist first, then decide how to organize)
+
 CRITICAL: Never create multiple Independent groups. If you have 5 independent tasks, they ALL go in the same Independent group.
 
 AVAILABLE TOOLS:
@@ -55,6 +62,7 @@ AVAILABLE TOOLS:
 "list_processes" - lists running processes and returns them
 "get_system_info" - returns system info
 "respond_to_user" - sends message to user
+"search_web" - searches the web and returns top 5 results (titles and links)
 
 Desktop path: C:\\Users\\David\\Desktop
 
@@ -132,6 +140,54 @@ INCORRECT:
   ]
 }
 Why incorrect? This would just write "some text", not the contents of A.txt. Need DependentChain with {{PREVIOUS_RESULT}}.
+
+---
+
+User: "organize my desktop files by type"
+CORRECT:
+{
+  "groups": [
+    {
+      "mode": "SelfReprompt",
+      "end_goal": "organize desktop files by type into appropriate folders",
+      "tools": [
+        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]}
+      ]
+    }
+  ]
+}
+Why? You need to see what files exist before deciding how to organize them. SelfReprompt will automatically decide the next steps (create folders, move files, etc.) based on what it finds. The end_goal tells the AI what to achieve.
+
+INCORRECT:
+{
+  "groups": [
+    {
+      "mode": "SequentialChain",
+      "tools": [
+        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]},
+        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\Images"]}
+      ]
+    }
+  ]
+}
+Why incorrect? You don't know what folders to create until you see what file types exist. Use SelfReprompt to decide dynamically.
+
+---
+
+User: "find and delete all .tmp files on my desktop"
+CORRECT:
+{
+  "groups": [
+    {
+      "mode": "SelfReprompt",
+      "end_goal": "find and delete all .tmp files on desktop",
+      "tools": [
+        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]}
+      ]
+    }
+  ]
+}
+Why? Need to see what files exist, then delete only the .tmp ones. SelfReprompt will list files, identify .tmp files, and delete them one by one. The end_goal guides the AI's decisions.
 
 ---
 
@@ -256,41 +312,109 @@ INCORRECT:
 }
 Why incorrect? Using {{PREVIOUS_RESULT}} requires DependentChain, not SequentialChain!
 
+User: "search for Python tutorials and save the results to a file"
+CORRECT:
+{
+  "groups": [
+    {
+      "mode": "DependentChain",
+      "tools": [
+        {"tool": "search_web", "args": ["Python tutorials"]},
+        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\search_results.txt", "{{PREVIOUS_RESULT}}"]}
+      ]
+    }
+  ]
+}
+Why? Saving ALL search results to a file - DependentChain passes all results through.
+
+User: "play the song circles on youtube"
+CORRECT:
+{
+  "groups": [
+    {
+      "mode": "SelfReprompt",
+      "end_goal": "play circles song on youtube",
+      "tools": [
+        {"tool": "search_web", "args": ["circles song youtube"]}
+      ]
+    }
+  ]
+}
+Why? Need to search, then pick the right link, then open it - multiple decision steps. Use SelfReprompt.
+
 RULES:
 1. Maximum ONE Independent group per response
 2. Put ALL independent tasks in that one group
 3. Use SequentialChain when order matters but tools don't need each other's output
 4. Use DependentChain when a tool needs the previous tool's output (use {{PREVIOUS_RESULT}})
-5. If creating a folder and using it, keep them in the same SequentialChain group
-6. Return only valid JSON, no explanations or markdown
+5. Use SelfReprompt for complex tasks where next steps depend on discovering information first
+6. For SelfReprompt, MUST include "end_goal" field and only provide the FIRST tool
+7. If creating a folder and using it, keep them in the same SequentialChain group
+8. Return only valid JSON, no explanations or markdown
+"#;
+
+const SELF_REPROMPT_INSTRUCTIONS: &str = r#"
+You are deciding the next step to achieve a goal. Reply with ONE tool call in JSON format.
+
+Available tools:
+"make_dir" - creates directory
+"write_file" - writes to file (folder must exist first!)
+"read_file" - reads file contents and returns them
+"list_files" - lists directory contents and returns them
+"delete_path" - deletes file/folder
+"copy_path" - copies file/folder
+"move_path" - moves file/folder
+"open_app" - opens program
+"close_app" - closes program
+"open_url" - opens URL in browser
+"list_processes" - lists running processes and returns them
+"get_system_info" - returns system info
+"respond_to_user" - sends message to user
+"search_web" - searches the web and returns top 5 results (titles and links)
+
+Desktop path: C:\\Users\\David\\Desktop
+
+Format: {"tool": "tool_name", "args": ["arg1", "arg2"]}
+
+When the goal is completely achieved, reply: {"done": true}
+
+Example:
+Goal: Organize desktop files
+Last: list_files at C:\\Desktop, Result: [file1.txt, photo.jpg, doc.pdf]
+Next: {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\Documents"]}
 "#;
 
 async fn send_ai_request(
     client: &Client,
-    model: &str,
     content: &str,
     images: Option<Vec<String>>,
+    api_key: &str,
 ) -> Result<String, String> {
-    let mut message = json!({
-        "role": "user",
-        "content": content,
-    });
+    let url =
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-    // LM Studio uses OpenAI format for images (different from Ollama)
+    let mut parts = vec![json!({"text": content})];
+
+    // Add image if provided
     if let Some(imgs) = images {
-        // For vision models, need to format as content array
-        message["content"] = json!([
-            {"type": "text", "text": content},
-            {"type": "image_url", "image_url": {"url": format!("data:image/jpeg;base64,{}", imgs[0])}}
-        ]);
+        for img in imgs {
+            parts.push(json!({
+                "inline_data": {
+                    "mime_type": "image/jpeg",
+                    "data": img
+                }
+            }));
+        }
     }
 
     let response = client
-        .post("http://localhost:1234/v1/chat/completions") // Changed URL
+        .post(url)
+        .header("x-goog-api-key", api_key)
+        .header("Content-Type", "application/json")
         .json(&json!({
-            "model": model,
-            "messages": [message],
-            "stream": false
+            "contents": [{
+                "parts": parts
+            }]
         }))
         .send()
         .await
@@ -306,14 +430,15 @@ async fn send_ai_request(
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-    // LM Studio response format is different
-    result["choices"][0]["message"]["content"]
+    result["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .map(|s| s.to_string())
         .ok_or_else(|| "Invalid response format".to_string())
 }
 
 pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
+    let api_key = "AIzaSyD-MR3wktGCly6h64DH_f7lstxCTxA3iKQ";
+
     if let Some(img_b64) = &prompt.base_image {
         let cleaned = img_b64
             .trim()
@@ -322,15 +447,9 @@ pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
             .replace("data:image/jpg;base64,", "")
             .replace("data:image/webp;base64,", "");
 
-        send_ai_request(
-            &client,
-            "hermes-3-llama-3.1-8b",
-            &prompt.text,
-            Some(vec![cleaned]),
-        )
-        .await
+        send_ai_request(&client, &prompt.text, Some(vec![cleaned]), api_key).await
     } else {
-        send_ai_request(&client, "hermes-3-llama-3.1-8b", &prompt.text, None).await
+        send_ai_request(&client, &prompt.text, None, api_key).await
     }
 }
 
@@ -464,6 +583,16 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
             commands::open_url(url).map(|_| String::new())
         }),
     );
+    // refractor the whole function to be async later
+    tools.insert(
+        "search_web",
+        Box::new(|args| {
+            let query = get_arg(&args, 0, "search_web")?;
+            tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(commands::search_web(query))
+            })
+        }),
+    );
 
     tools
 }
@@ -483,7 +612,7 @@ pub async fn call_tools(tool_call: ToolCall) -> Result<String, String> {
 #[tauri::command]
 pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
     let response = get_ai_response(prompt.clone()).await?;
-    println!("Raw Gemma response:\n{}", response);
+    println!("Raw response:\n{}", response);
 
     let clean_response = response
         .replace("```json", "")
@@ -551,13 +680,109 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                         }
                     }
                 }
-                ExecutionMode::SelfReprompt => {}
+                ExecutionMode::SelfReprompt => {
+                    let end_goal = group.end_goal.clone().unwrap_or("Complete the task".into());
+                    let max_steps = 10;
+                    let mut step_count = 0;
+
+                    if let Some(first_tool) = group.tools.first() {
+                        let mut last_tool = first_tool.clone();
+                        let mut last_result = match call_tools(last_tool.clone()).await {
+                            Ok(result) => result,
+                            Err(e) => {
+                                eprintln!("SelfReprompt initial tool error: {}", e);
+                                return;
+                            }
+                        };
+                        println!(
+                            "SelfReprompt step 1: executed {:?}, result: {}",
+                            last_tool, last_result
+                        );
+
+                        while step_count < max_steps {
+                            step_count += 1;
+
+                            let prompt = format!(
+                "{}\n\nGoal: {}\nLast action: {:?}\nResult: {}\n\nWhat's the next step to achieve the goal?",
+                SELF_REPROMPT_INSTRUCTIONS,
+                end_goal,
+                last_tool,
+                last_result
+            );
+
+                            let ai_response = match get_ai_response(Prompt {
+                                text: prompt,
+                                base_image: None,
+                            })
+                            .await
+                            {
+                                Ok(response) => response,
+                                Err(e) => {
+                                    eprintln!("SelfReprompt AI call error: {}", e);
+                                    break;
+                                }
+                            };
+
+                            let clean_response = ai_response
+                                .replace("```json", "")
+                                .replace("```", "")
+                                .trim()
+                                .to_string();
+
+                            if let Ok(done_check) =
+                                serde_json::from_str::<serde_json::Value>(&clean_response)
+                            {
+                                if done_check
+                                    .get("done")
+                                    .and_then(|v| v.as_bool())
+                                    .unwrap_or(false)
+                                {
+                                    println!("SelfReprompt completed after {} steps", step_count);
+                                    break;
+                                }
+                            }
+
+                            match serde_json::from_str::<ToolCall>(&clean_response) {
+                                Ok(next_tool) => {
+                                    last_tool = next_tool.clone();
+                                    match call_tools(next_tool.clone()).await {
+                                        Ok(result) => {
+                                            last_result = result;
+                                            println!(
+                                                "SelfReprompt step {}: executed {:?}, result: {}",
+                                                step_count + 1,
+                                                next_tool,
+                                                last_result
+                                            );
+                                        }
+                                        Err(e) => {
+                                            eprintln!(
+                                                "SelfReprompt tool error at step {}: {}",
+                                                step_count + 1,
+                                                e
+                                            );
+                                            break;
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    eprintln!("Failed to parse SelfReprompt response: {}", e);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if step_count >= max_steps {
+                            eprintln!("SelfReprompt hit max steps ({})", max_steps);
+                        }
+                    }
+                }
             }
         });
         group_handles.push(handle);
     }
 
-    // Wait for all groups to finish
+    // wait for all groups to finish
     for handle in group_handles {
         if let Err(e) = handle.await {
             eprintln!("Group execution error: {}", e);
