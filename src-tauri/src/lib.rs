@@ -1,8 +1,8 @@
 mod ai_module;
 mod commands;
-mod types;
 mod settings;
-mod sys_instructions;
+mod types;
+pub mod system_instructions;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

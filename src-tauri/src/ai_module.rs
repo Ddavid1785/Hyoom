@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::types::{ExecutionMode, Prompt, TaskRequest, ToolCall, ToolFn};
-use crate::{commands, settings, sys_instructions};
+use crate::{commands, settings, system_instructions};
 use reqwest::Client;
 use serde_json::json;
 
@@ -78,7 +78,7 @@ pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
 pub async fn get_ai_response(prompt: Prompt) -> Result<String, String> {
     let full_prompt = format!(
         "{}\nUser: {}",
-        sys_instructions::build_system_instructions(),
+        system_instructions::system_prompt::build_full_prompt(),
         prompt.text
     );
     let client = Client::new();
@@ -340,12 +340,11 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                             step_count += 1;
                             let prompt = format!(
                 "{}\n\nGoal: {}\nLast action: {:?}\nResult: {}\n\nWhat's the next step to achieve the goal?",
-                sys_instructions::self_reprompt_instructions(),
+                system_instructions::system_prompt::build_self_reprompt(),
                 end_goal,
                 last_tool,
                 last_result
             );
-
                             let ai_response = match get_ai_response(Prompt {
                                 text: prompt,
                                 base_image: None,

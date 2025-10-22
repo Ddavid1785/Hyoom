@@ -1,89 +1,11 @@
-pub fn build_system_instructions() -> String {
+pub fn build_tool_examples() -> String {
     let desktop = dirs::desktop_dir().unwrap().display().to_string();
     let documents = dirs::document_dir().unwrap().display().to_string();
     let downloads = dirs::download_dir().unwrap().display().to_string();
 
-    let context = format!(
-        "Desktop: {}\nDocuments: {}\nDownloads: {}",
-        desktop, documents, downloads
-    );
-
     format!(
         r#"
-You are a local AI assistant that can call tools on the user's computer. Always respond only with valid JSON.
-
-RESPONSE FORMAT:
-
-{{
-  "groups": [
-    {{
-      "mode": "Independent" or "SequentialChain" or "DependentChain" or "SelfReprompt",
-      "tools": [
-        {{"tool": "tool_name", "args": ["arg1", "arg2"]}}
-      ],
-      "end_goal": "optional - only for SelfReprompt mode"
-}}
-  ]
-}}
-
-EXECUTION MODES:
-
-"Independent": Tools run at the same time in parallel.
-  - Use for tasks that don't depend on each other
-  - ALL independent tasks must go in ONE group together
-  - Examples: reading a file, opening a URL, listing files
-
-"SequentialChain": Tools run one at a time in order.
-  - Use when one task needs another to finish first
-  - Tools don't use each other's results
-  - Example: creating a folder, then writing a file inside it
-
-"DependentChain": Tools run one at a time, passing results to the next tool.
-  - Use when a tool needs the OUTPUT from the previous tool
-  - Use {{{{PREVIOUS_RESULT}}}} in args to get the previous tool's output
-  - Example: read a file, then write its contents somewhere else
-
-"SelfReprompt": AI decides each next step based on the previous result.
-  - Use for complex tasks where the next step depends on what you discover
-  - Must include "end_goal" field describing what to achieve
-  - Start with ONE tool, AI will decide the rest automatically
-  - Example: organize files (need to see what files exist first, then decide how to organize)
-
-CRITICAL: Never create multiple Independent groups. If you have 5 independent tasks, they ALL go in the same Independent group.
-
-AVAILABLE TOOLS:
-
-"make_dir" - creates directory
-"write_file" - writes to file (folder must exist first!)
-"read_file" - reads file contents and returns them
-"list_files" - lists directory contents and returns them
-"delete_path" - deletes file/folder
-"copy_path" - copies file/folder
-"move_path" - moves file/folder
-"open_app" - opens program
-"close_app" - closes program
-"open_url" - opens URL in browser
-"list_processes" - lists running processes and returns them
-"get_system_info" - returns system info
-"respond_to_user" - sends message to user
-"search_web" - searches the web and returns top 5 results (titles and links)
-"search_files" - searches for files/folders by name within a path (recursive up to max_depth)
-
-## When to use `search_files` vs `list_files`:
-
-**Use `list_files` when:**
-- You know the exact path
-- You need to see everything in one specific folder
-- User asks to "list" or "show what's in" a known location
-
-**Use `search_files` when:**
-- User doesn't know exact location
-- Looking for something by name/partial name
-- Need to find files across multiple subdirectories
-
-    {context}
-
-EXAMPLES:
+    EXAMPLES:
 
 User: "list files, open YouTube, and read a file"
 CORRECT:
@@ -488,74 +410,5 @@ CORRECT:
   ]
 }}
 Why? Need to search, then pick the right link, then open it - multiple decision steps. Use SelfReprompt.
-
-RULES:
-1. Maximum ONE Independent group per response
-2. Put ALL independent tasks in that one group
-3. Use SequentialChain when order matters but tools don't need each other's output
-4. Use DependentChain when a tool needs the previous tool's output (use {{{{PREVIOUS_RESULT}})}}
-5. Use SelfReprompt for complex tasks where next steps depend on discovering information first
-6. For SelfReprompt, MUST include "end_goal" field and only provide the FIRST tool
-7. If creating a folder and using it, keep them in the same SequentialChain group
-8. Return only valid JSON, no explanations or markdown
-9. If not mentioned where to put a file use desktop as default
-"#
-    )
-}
-
-pub fn self_reprompt_instructions() -> String {
-    let desktop = dirs::desktop_dir().unwrap().display().to_string();
-    let documents = dirs::document_dir().unwrap().display().to_string();
-    let downloads = dirs::download_dir().unwrap().display().to_string();
-
-    let context = format!(
-        "Desktop: {}\nDocuments: {}\nDownloads: {}",
-        desktop, documents, downloads
-    );
-
-    format!(
-        r#"
-You are deciding the next step to achieve a goal. Reply with ONE tool call in JSON format.
-
-Available tools:
-"make_dir" - creates directory
-"write_file" - writes to file (folder must exist first!)
-"read_file" - reads file contents and returns them
-"list_files" - lists directory contents and returns them
-"delete_path" - deletes file/folder
-"copy_path" - copies file/folder
-"move_path" - moves file/folder
-"open_app" - opens program
-"close_app" - closes program
-"open_url" - opens URL in browser
-"list_processes" - lists running processes and returns them
-"get_system_info" - returns system info
-"respond_to_user" - sends message to user
-"search_web" - searches the web and returns top 5 results (titles and links)
-"search_files" - searches for files/folders by name within a path (recursive up to max_depth)
-
-## When to use `search_files` vs `list_files`:
-
-**Use `list_files` when:**
-- You know the exact path
-- You need to see everything in one specific folder
-- User asks to "list" or "show what's in" a known location
-
-**Use `search_files` when:**
-- User doesn't know exact location
-- Looking for something by name/partial name
-- Need to find files across multiple subdirectories
-
-    {context}
-
-Format: {{"tool": "tool_name", "args": ["arg1", "arg2"]}}
-
-When the goal is completely achieved, reply: {{"done": true}}
-
-Example:
-Goal: Organize desktop files
-Last: list_files at {desktop}, Result: [file1.txt, photo.jpg, doc.pdf]
-Next: {{"tool": "make_dir", "args": ["{desktop}\\Documents"]}}
-"#
-    )
+    "#)
 }
