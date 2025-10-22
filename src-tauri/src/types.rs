@@ -37,22 +37,30 @@ pub struct Prompt {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ExecutionMode {
-    Independent,      // tools run in parallel
-    SequentialChain,  // ordered, no data passing
-    DependentChain,   // ordered, with data passing
-    SelfReprompt,     // AI loop
+    Independent,     // tools run in parallel
+    SequentialChain, // ordered, no data passing
+    DependentChain,  // ordered, with data passing
+    SelfReprompt,    // AI loop
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskGroup {
     pub tools: Vec<ToolCall>,
     pub mode: ExecutionMode,
-    pub end_goal: Option<String>
+    pub end_goal: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskRequest {
-   pub groups: Vec<TaskGroup>,  // each group runs on separate threads
+    pub groups: Vec<TaskGroup>, // each group runs on separate threads
 }
 
 pub type ToolFn = Box<dyn Fn(Vec<String>) -> Result<String, String>>;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AppSettings {
+    pub gemini_api_key: String,
+    pub google_search_api_key: Option<String>,
+    pub google_search_engine_id: Option<String>,
+}

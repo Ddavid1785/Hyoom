@@ -3,8 +3,8 @@ import { ArrowUpCircle, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
 import { useImageUpload } from "../Hooks/useImageUpload";
 import { useWebSpeech } from "../Hooks/useWebSpeech";
-import Prompt from "../types";
 import { invoke } from "@tauri-apps/api/core";
+import { Prompt } from "../types";
 
 export default function InputHandler() {
   const [text, setText] = useState<string>("");
@@ -69,10 +69,11 @@ export default function InputHandler() {
 
   return (
     <div className="relative w-full max-w-3xl">
-      <div className="relative bg-zinc-900 border-2 rounded-xl overflow-hidden transition-all"
+      <div
+        className="relative bg-zinc-900 border-2 rounded-xl overflow-hidden transition-all"
         style={{
           borderColor: isDragging ? "#3b82f6" : "#52525b",
-          boxShadow: isDragging ? "0 0 0 3px rgba(59, 130, 246, 0.3)" : "none"
+          boxShadow: isDragging ? "0 0 0 3px rgba(59, 130, 246, 0.3)" : "none",
         }}
       >
         {imagePreview && (
@@ -88,10 +89,10 @@ export default function InputHandler() {
           onKeyDown={handleKeyDown}
           onPaste={handlePasteImage}
           className="w-full px-6 py-4 bg-transparent text-white text-lg placeholder-zinc-500 focus:outline-none resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900"
-          style={{ 
+          style={{
             fontFamily: "'Inter', sans-serif",
             minHeight: "60px",
-            maxHeight: "300px"
+            maxHeight: "300px",
           }}
           rows={1}
         />
@@ -106,9 +107,9 @@ export default function InputHandler() {
           <div className="flex items-center gap-2">
             <button
               onClick={openFilePicker}
-              className={`p-2 rounded-lg transition-all ${
-                imageFile 
-                  ? "text-white bg-zinc-800" 
+              className={`p-2 rounded-lg transition-all hover:cursor-pointer ${
+                imageFile
+                  ? "text-white bg-zinc-800"
                   : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
               }`}
               title="Attach image"
@@ -117,7 +118,7 @@ export default function InputHandler() {
             </button>
             <button
               onClick={handleVoiceInput}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-2 rounded-lg transition-all hover:cursor-pointer ${
                 isRecording
                   ? "text-red-500 bg-red-950 animate-pulse"
                   : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
@@ -132,7 +133,7 @@ export default function InputHandler() {
             onClick={handleSubmit}
             className={`p-2 rounded-lg transition-all ${
               text
-                ? "text-white hover:bg-zinc-800 hover:scale-105"
+                ? "text-white hover:bg-zinc-800 hover:scale-105 hover:cursor-pointer"
                 : "text-zinc-700 cursor-not-allowed"
             }`}
             title="Send message"

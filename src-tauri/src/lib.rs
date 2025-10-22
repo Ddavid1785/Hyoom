@@ -1,6 +1,8 @@
 mod ai_module;
 mod commands;
 mod types;
+mod settings;
+mod sys_instructions;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,7 +24,10 @@ pub fn run() {
             commands::get_system_info,
             commands::open_url,
             commands::respond_to_user,
-            commands::search_web
+            commands::search_web,
+            commands::search_files,
+            settings::save_settings,
+            settings::load_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

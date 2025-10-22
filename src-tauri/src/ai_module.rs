@@ -1,388 +1,9 @@
 use std::collections::HashMap;
 
-use crate::commands;
 use crate::types::{ExecutionMode, Prompt, TaskRequest, ToolCall, ToolFn};
+use crate::{commands, settings, sys_instructions};
 use reqwest::Client;
 use serde_json::json;
-
-const SYSTEM_INSTRUCTIONS: &str = r#"
-You are a local AI assistant that can call tools on the user's computer. Always respond only with valid JSON.
-
-RESPONSE FORMAT:
-
-{
-  "groups": [
-    {
-      "mode": "Independent" or "SequentialChain" or "DependentChain" or "SelfReprompt",
-      "tools": [
-        {"tool": "tool_name", "args": ["arg1", "arg2"]}
-      ],
-      "end_goal": "optional - only for SelfReprompt mode"
-    }
-  ]
-}
-
-EXECUTION MODES:
-
-"Independent": Tools run at the same time in parallel.
-  - Use for tasks that don't depend on each other
-  - ALL independent tasks must go in ONE group together
-  - Examples: reading a file, opening a URL, listing files
-
-"SequentialChain": Tools run one at a time in order.
-  - Use when one task needs another to finish first
-  - Tools don't use each other's results
-  - Example: creating a folder, then writing a file inside it
-
-"DependentChain": Tools run one at a time, passing results to the next tool.
-  - Use when a tool needs the OUTPUT from the previous tool
-  - Use {{PREVIOUS_RESULT}} in args to get the previous tool's output
-  - Example: read a file, then write its contents somewhere else
-
-"SelfReprompt": AI decides each next step based on the previous result.
-  - Use for complex tasks where the next step depends on what you discover
-  - Must include "end_goal" field describing what to achieve
-  - Start with ONE tool, AI will decide the rest automatically
-  - Example: organize files (need to see what files exist first, then decide how to organize)
-
-CRITICAL: Never create multiple Independent groups. If you have 5 independent tasks, they ALL go in the same Independent group.
-
-AVAILABLE TOOLS:
-
-"make_dir" - creates directory
-"write_file" - writes to file (folder must exist first!)
-"read_file" - reads file contents and returns them
-"list_files" - lists directory contents and returns them
-"delete_path" - deletes file/folder
-"copy_path" - copies file/folder
-"move_path" - moves file/folder
-"open_app" - opens program
-"close_app" - closes program
-"open_url" - opens URL in browser
-"list_processes" - lists running processes and returns them
-"get_system_info" - returns system info
-"respond_to_user" - sends message to user
-"search_web" - searches the web and returns top 5 results (titles and links)
-
-Desktop path: C:\\Users\\David\\Desktop
-
-EXAMPLES:
-
-User: "list files, open YouTube, and read a file"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "Independent",
-      "tools": [
-        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]},
-        {"tool": "open_url", "args": ["https://youtube.com"]},
-        {"tool": "read_file", "args": ["C:\\Users\\David\\Desktop\\notes.txt"]}
-      ]
-    }
-  ]
-}
-
-INCORRECT:
-{
-  "groups": [
-    {"mode": "Independent", "tools": [{"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]}]},
-    {"mode": "Independent", "tools": [{"tool": "open_url", "args": ["https://youtube.com"]}]},
-    {"mode": "Independent", "tools": [{"tool": "read_file", "args": ["C:\\Users\\David\\Desktop\\notes.txt"]}]}
-  ]
-}
-Why incorrect? All three are independent, so they must be in ONE group, not three separate groups.
-
----
-
-User: "create folder called work and put a file in it"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\work"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\work\\notes.txt", "Hello"]}
-      ]
-    }
-  ]
-}
-Why? Folder must exist before file can be written inside it. Use SequentialChain because we don't need the folder creation result.
-
----
-
-User: "read file A and write its contents to file B"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "DependentChain",
-      "tools": [
-        {"tool": "read_file", "args": ["C:\\Users\\David\\Desktop\\A.txt"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\B.txt", "{{PREVIOUS_RESULT}}"]}
-      ]
-    }
-  ]
-}
-Why? The second tool needs the OUTPUT from the first tool. {{PREVIOUS_RESULT}} gets replaced with the file contents.
-
-INCORRECT:
-{
-  "groups": [
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "read_file", "args": ["C:\\Users\\David\\Desktop\\A.txt"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\B.txt", "some text"]}
-      ]
-    }
-  ]
-}
-Why incorrect? This would just write "some text", not the contents of A.txt. Need DependentChain with {{PREVIOUS_RESULT}}.
-
----
-
-User: "organize my desktop files by type"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "SelfReprompt",
-      "end_goal": "organize desktop files by type into appropriate folders",
-      "tools": [
-        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]}
-      ]
-    }
-  ]
-}
-Why? You need to see what files exist before deciding how to organize them. SelfReprompt will automatically decide the next steps (create folders, move files, etc.) based on what it finds. The end_goal tells the AI what to achieve.
-
-INCORRECT:
-{
-  "groups": [
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]},
-        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\Images"]}
-      ]
-    }
-  ]
-}
-Why incorrect? You don't know what folders to create until you see what file types exist. Use SelfReprompt to decide dynamically.
-
----
-
-User: "find and delete all .tmp files on my desktop"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "SelfReprompt",
-      "end_goal": "find and delete all .tmp files on desktop",
-      "tools": [
-        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]}
-      ]
-    }
-  ]
-}
-Why? Need to see what files exist, then delete only the .tmp ones. SelfReprompt will list files, identify .tmp files, and delete them one by one. The end_goal guides the AI's decisions.
-
----
-
-User: "get system info and write it to a log file"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "DependentChain",
-      "tools": [
-        {"tool": "get_system_info", "args": []},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\system_log.txt", "{{PREVIOUS_RESULT}}"]}
-      ]
-    }
-  ]
-}
-Why? get_system_info returns data, and write_file needs that data. Use {{PREVIOUS_RESULT}} to pass it.
-
----
-
-User: "create 2 folders (work and chill) with a file in each"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\work"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\work\\file.txt", "Work"]}
-      ]
-    },
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\chill"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\chill\\file.txt", "Chill"]}
-      ]
-    }
-  ]
-}
-Why? Each folder+file is self-contained, so they can run in parallel as separate groups.
-
----
-
-User: "list files, open YouTube, and create a folder with a file"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "Independent",
-      "tools": [
-        {"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]},
-        {"tool": "open_url", "args": ["https://youtube.com"]}
-      ]
-    },
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\work"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\work\\todo.txt", "Tasks"]}
-      ]
-    }
-  ]
-}
-Why? Independent tasks in one group, dependent tasks in another.
-
-INCORRECT:
-{
-  "groups": [
-    {"mode": "Independent", "tools": [{"tool": "list_files", "args": ["C:\\Users\\David\\Desktop"]}]},
-    {"mode": "Independent", "tools": [{"tool": "open_url", "args": ["https://youtube.com"]}]},
-    {"mode": "SequentialChain", "tools": [...]}
-  ]
-}
-Why incorrect? list_files and open_url are both independent, so they must share ONE Independent group.
-
----
-
-User: "copy file A to B, then delete A"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "copy_path", "args": ["C:\\Users\\David\\Desktop\\A.txt", "C:\\Users\\David\\Desktop\\B.txt"]},
-        {"tool": "delete_path", "args": ["C:\\Users\\David\\Desktop\\A.txt"]}
-      ]
-    }
-  ]
-}
-Why? Must copy before deleting. Use SequentialChain because we don't need the copy result.
-
----
-
-User: "list all processes and write them to a file"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "DependentChain",
-      "tools": [
-        {"tool": "list_processes", "args": []},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\processes.txt", "{{PREVIOUS_RESULT}}"]}
-      ]
-    }
-  ]
-}
-Why? list_processes returns data, write_file needs that data. Use DependentChain with {{PREVIOUS_RESULT}}.
-
-INCORRECT:
-{
-  "groups": [
-    {
-      "mode": "SequentialChain",
-      "tools": [
-        {"tool": "list_processes", "args": []},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\processes.txt", "{{PREVIOUS_RESULT}}"]}
-      ]
-    }
-  ]
-}
-Why incorrect? Using {{PREVIOUS_RESULT}} requires DependentChain, not SequentialChain!
-
-User: "search for Python tutorials and save the results to a file"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "DependentChain",
-      "tools": [
-        {"tool": "search_web", "args": ["Python tutorials"]},
-        {"tool": "write_file", "args": ["C:\\Users\\David\\Desktop\\search_results.txt", "{{PREVIOUS_RESULT}}"]}
-      ]
-    }
-  ]
-}
-Why? Saving ALL search results to a file - DependentChain passes all results through.
-
-User: "play the song circles on youtube"
-CORRECT:
-{
-  "groups": [
-    {
-      "mode": "SelfReprompt",
-      "end_goal": "play circles song on youtube",
-      "tools": [
-        {"tool": "search_web", "args": ["circles song youtube"]}
-      ]
-    }
-  ]
-}
-Why? Need to search, then pick the right link, then open it - multiple decision steps. Use SelfReprompt.
-
-RULES:
-1. Maximum ONE Independent group per response
-2. Put ALL independent tasks in that one group
-3. Use SequentialChain when order matters but tools don't need each other's output
-4. Use DependentChain when a tool needs the previous tool's output (use {{PREVIOUS_RESULT}})
-5. Use SelfReprompt for complex tasks where next steps depend on discovering information first
-6. For SelfReprompt, MUST include "end_goal" field and only provide the FIRST tool
-7. If creating a folder and using it, keep them in the same SequentialChain group
-8. Return only valid JSON, no explanations or markdown
-"#;
-
-const SELF_REPROMPT_INSTRUCTIONS: &str = r#"
-You are deciding the next step to achieve a goal. Reply with ONE tool call in JSON format.
-
-Available tools:
-"make_dir" - creates directory
-"write_file" - writes to file (folder must exist first!)
-"read_file" - reads file contents and returns them
-"list_files" - lists directory contents and returns them
-"delete_path" - deletes file/folder
-"copy_path" - copies file/folder
-"move_path" - moves file/folder
-"open_app" - opens program
-"close_app" - closes program
-"open_url" - opens URL in browser
-"list_processes" - lists running processes and returns them
-"get_system_info" - returns system info
-"respond_to_user" - sends message to user
-"search_web" - searches the web and returns top 5 results (titles and links)
-
-Desktop path: C:\\Users\\David\\Desktop
-
-Format: {"tool": "tool_name", "args": ["arg1", "arg2"]}
-
-When the goal is completely achieved, reply: {"done": true}
-
-Example:
-Goal: Organize desktop files
-Last: list_files at C:\\Desktop, Result: [file1.txt, photo.jpg, doc.pdf]
-Next: {"tool": "make_dir", "args": ["C:\\Users\\David\\Desktop\\Documents"]}
-"#;
 
 async fn send_ai_request(
     client: &Client,
@@ -395,7 +16,6 @@ async fn send_ai_request(
 
     let mut parts = vec![json!({"text": content})];
 
-    // Add image if provided
     if let Some(imgs) = images {
         for img in imgs {
             parts.push(json!({
@@ -437,7 +57,8 @@ async fn send_ai_request(
 }
 
 pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
-    let api_key = "AIzaSyD-MR3wktGCly6h64DH_f7lstxCTxA3iKQ";
+    let settings = settings::load_settings()?;
+    let api_key = settings.gemini_api_key.as_str();
 
     if let Some(img_b64) = &prompt.base_image {
         let cleaned = img_b64
@@ -455,7 +76,11 @@ pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn get_ai_response(prompt: Prompt) -> Result<String, String> {
-    let full_prompt = format!("{}\nUser: {}", SYSTEM_INSTRUCTIONS, prompt.text);
+    let full_prompt = format!(
+        "{}\nUser: {}",
+        sys_instructions::build_system_instructions(),
+        prompt.text
+    );
     let client = Client::new();
     let parsed_prompt = Prompt {
         text: full_prompt,
@@ -593,7 +218,19 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
             })
         }),
     );
+    tools.insert(
+        "search_files",
+        Box::new(|args| {
+            let search_term = get_arg(&args, 0, "search_files")?;
+            let search_path = get_arg(&args, 1, "search_files")?;
+            let max_depth_str = get_arg(&args, 2, "search_files")?;
 
+            let max_depth = max_depth_str.parse::<usize>().ok();
+
+            commands::search_files(search_term, search_path, max_depth)
+                .map(|results| serde_json::to_string(&results).unwrap_or_default())
+        }),
+    );
     tools
 }
 
@@ -701,10 +338,9 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
 
                         while step_count < max_steps {
                             step_count += 1;
-
                             let prompt = format!(
                 "{}\n\nGoal: {}\nLast action: {:?}\nResult: {}\n\nWhat's the next step to achieve the goal?",
-                SELF_REPROMPT_INSTRUCTIONS,
+                sys_instructions::self_reprompt_instructions(),
                 end_goal,
                 last_tool,
                 last_result

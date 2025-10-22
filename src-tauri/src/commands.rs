@@ -1,3 +1,4 @@
+use crate::settings;
 use crate::types::FileEntry;
 use crate::types::ProcessInfo;
 use crate::types::SystemInfo;
@@ -11,8 +12,7 @@ use sysinfo::System;
 #[tauri::command]
 pub fn make_dir(path: String) -> Result<(), String> {
     let path = Path::new(&path);
-    fs::create_dir_all(path)
-        .map_err(|e| format!("Failed to create {}: {}", path.display(), e))
+    fs::create_dir_all(path).map_err(|e| format!("Failed to create {}: {}", path.display(), e))
 }
 
 #[tauri::command]
@@ -57,6 +57,68 @@ pub fn list_files(file_path: String) -> Result<Vec<FileEntry>, String> {
         }
     });
     Ok(files)
+}
+
+#[tauri::command]
+pub fn search_files(
+    search_term: String,
+    search_path: String,
+    max_depth: Option<usize>,
+) -> Result<Vec<FileEntry>, String> {
+    let max_depth = max_depth.unwrap_or(3);
+    let search_term_lower = search_term.to_lowercase();
+    let mut results = Vec::new();
+
+    fn search_recursive(
+        path: &Path,
+        term: &str,
+        results: &mut Vec<FileEntry>,
+        current_depth: usize,
+        max_depth: usize,
+    ) {
+        if current_depth > max_depth {
+            return;
+        }
+
+        if let Ok(entries) = fs::read_dir(path) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                let name_lower = name.to_lowercase();
+
+                if name_lower.contains(term) {
+                    if let Ok(metadata) = entry.metadata() {
+                        let is_dir = metadata.is_dir();
+                        let extension = entry
+                            .path()
+                            .extension()
+                            .and_then(|ext| ext.to_str())
+                            .map(|s| s.to_string());
+
+                        results.push(FileEntry {
+                            name,
+                            path: entry.path().display().to_string(),
+                            file_type: if is_dir {
+                                "dir".to_string()
+                            } else {
+                                "file".to_string()
+                            },
+                            is_dir,
+                            extension,
+                        });
+                    }
+                }
+
+                if entry.path().is_dir() {
+                    search_recursive(&entry.path(), term, results, current_depth + 1, max_depth);
+                }
+            }
+        }
+    }
+
+    let path = Path::new(&search_path);
+    search_recursive(path, &search_term_lower, &mut results, 0, max_depth);
+
+    Ok(results)
 }
 
 #[tauri::command]
@@ -222,29 +284,35 @@ pub fn move_path(file_path: String, destination_path: String) -> Result<(), Stri
 
 #[tauri::command]
 pub async fn search_web(query: String) -> Result<String, String> {
-    let api_key = "AIzaSyBKrTRA3CAf_WR8dVQeARqNazHIUwNykss";
-    let search_engine_id = "67bcdc58f61ef4092";
-    
+    let settings = settings::load_settings()?;
+    let api_key = settings.google_search_api_key.unwrap_or_default();
+    let search_engine_id = settings.google_search_engine_id.unwrap_or_default();
+    if api_key.is_empty() || search_engine_id.is_empty() {
+        return Err("Search api or search engine id not provided".to_string());
+    }
+
     let client = reqwest::Client::new();
     let url = format!(
         "https://www.googleapis.com/customsearch/v1?key={}&cx={}&q={}",
         api_key, search_engine_id, query
     );
-    
+
     let response = client.get(&url).send().await.map_err(|e| e.to_string())?;
     let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
-    
-    let results = json["items"].as_array()
+
+    let results = json["items"]
+        .as_array()
         .map(|items| {
-            items.iter()
+            items
+                .iter()
                 .take(5)
                 .map(|item| format!("{}: {}", item["title"], item["link"]))
                 .collect::<Vec<_>>()
                 .join("\n")
         })
         .unwrap_or_else(|| "No results".into());
-    
-    Ok(results)
+
+        Ok(results)
 }
 
 #[tauri::command]
