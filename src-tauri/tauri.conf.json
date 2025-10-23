@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "aitooltest",
+  "productName": "Hyoom",
   "version": "0.1.0",
-  "identifier": "com.david.aitooltest",
+  "identifier": "com.david.hyoom",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "bun dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
-        "title": "aitooltest",
+        "title": "Hyoom",
         "width": 2000,
         "height": 1000,
         "dragDropEnabled": false

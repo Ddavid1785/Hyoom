@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 fn get_settings_path() -> PathBuf {
     let mut path = dirs::config_dir().expect("Could not find config directory");
-    path.push("AIToolTest");
+    path.push("Hyoom");
     fs::create_dir_all(&path).ok();
     path.push("settings.json");
     path
