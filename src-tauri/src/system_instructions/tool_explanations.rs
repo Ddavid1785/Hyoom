@@ -57,6 +57,12 @@ search_web(query: String) -> String
 respond_to_user(text: String)
 - Sends a message to the user
 - Use this to communicate results
+
+zip_path(path: String) -> String
+- Creates a zip archive of a file or folder
+- For folders, includes all contents recursively
+- Returns the name of the created zip file
+- Zip file is created in the same directory as the source
     "#
     .to_string()
 }

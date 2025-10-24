@@ -4,10 +4,16 @@ use crate::types::ProcessInfo;
 use crate::types::SystemInfo;
 use std::fs;
 use std::fs::read_to_string;
+use std::fs::File;
 use std::io;
+use std::io::Read;
+use std::io::Write;
 use std::path::PathBuf;
 use std::{path::Path, process::Command};
 use sysinfo::System;
+use walkdir::WalkDir;
+use zip::write::FileOptions;
+use zip::CompressionMethod;
 
 #[tauri::command]
 pub fn make_dir(path: String) -> Result<(), String> {
@@ -312,7 +318,7 @@ pub async fn search_web(query: String) -> Result<String, String> {
         })
         .unwrap_or_else(|| "No results".into());
 
-        Ok(results)
+    Ok(results)
 }
 
 #[tauri::command]
@@ -326,4 +332,69 @@ pub fn read_file(file_path: String) -> Result<String, String> {
         Ok(contents) => Ok(contents),
         Err(_) => Err("Could't read file".to_string()),
     }
+}
+
+#[tauri::command]
+pub fn zip_path(path: String) -> Result<String, String> {
+    let source_path = Path::new(&path);
+    
+    if !source_path.exists() {
+        return Err("Path does not exist".to_string());
+    }
+
+    let parent_dir = source_path.parent()
+        .ok_or("Cannot get parent directory")?;
+    
+    let base_name = source_path.file_name()
+        .ok_or("Cannot get file name")?
+        .to_str()
+        .ok_or("Invalid file name")?;
+    
+    let zip_path = parent_dir.join(format!("{}.zip", base_name));
+    let zip_file = File::create(&zip_path).map_err(|e| e.to_string())?;
+    let mut zip = zip::ZipWriter::new(zip_file);
+    
+    let file_options: FileOptions<()> = FileOptions::default()
+        .compression_method(CompressionMethod::Deflated);
+
+    if source_path.is_file() {
+        let file_name = source_path.file_name().unwrap().to_str().unwrap();
+        zip.start_file(file_name, file_options).map_err(|e| e.to_string())?;
+        
+        let mut input_file = File::open(source_path).map_err(|e| e.to_string())?;
+        let mut buffer = Vec::new();
+        input_file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
+        zip.write_all(&buffer).map_err(|e| e.to_string())?;
+    } else {
+        let walkdir = WalkDir::new(source_path);
+        let it = walkdir.into_iter().filter_map(|e| e.ok());
+
+        for entry in it {
+            let entry_path = entry.path();
+            let relative_path = entry_path.strip_prefix(source_path)
+                .map_err(|e| e.to_string())?;
+            
+            if relative_path.as_os_str().is_empty() {
+                continue;
+            }
+
+            let name = relative_path.to_str().unwrap();
+
+            if entry_path.is_file() {
+                zip.start_file(name, file_options).map_err(|e| e.to_string())?;
+                
+                let mut input_file = File::open(entry_path).map_err(|e| e.to_string())?;
+                let mut buffer = Vec::new();
+                input_file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
+                zip.write_all(&buffer).map_err(|e| e.to_string())?;
+            } else if entry_path.is_dir() {
+                zip.add_directory(format!("{}/", name), file_options)
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    zip.finish().map_err(|e| e.to_string())?;
+    
+    Ok(zip_path.to_str().unwrap().to_string())
 }

@@ -88,9 +88,8 @@ export default function InputHandler() {
           placeholder="Ask me to do anything on your PC..."
           onKeyDown={handleKeyDown}
           onPaste={handlePasteImage}
-          className="w-full px-6 py-4 bg-transparent text-white text-lg placeholder-zinc-500 focus:outline-none resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900"
+          className="w-full px-6 py-4 bg-transparent font-Quicksand text-white text-lg placeholder-zinc-500 focus:outline-none resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900"
           style={{
-            fontFamily: "'Inter', sans-serif",
             minHeight: "60px",
             maxHeight: "300px",
           }}

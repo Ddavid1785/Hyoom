@@ -26,6 +26,7 @@ pub fn run() {
             commands::respond_to_user,
             commands::search_web,
             commands::search_files,
+            commands::zip_path,
             settings::save_settings,
             settings::load_settings,
         ])

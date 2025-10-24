@@ -68,6 +68,54 @@ Why incorrect? You're guessing folder names and making multiple calls. search_fi
 
 ---
 
+User: "create a backup zip of my projects folder"
+CORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "SelfReprompt",
+      "end_goal": "find the projects folder and create a zip backup",
+      "tools": [
+        {{"tool": "search_files", "args": ["projects", "{documents}", "3"]}}
+      ]
+    }}
+  ]
+}}
+Why? You don't know where the projects folder is, so search for it first. Then SelfReprompt will zip it once found.
+
+---
+
+User: "zip all my photos on desktop"
+CORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "SelfReprompt",
+      "end_goal": "find all photo files on desktop and zip them together",
+      "tools": [
+        {{"tool": "list_files", "args": ["{desktop}"]}}
+      ]
+    }}
+  ]
+}}
+Why? Need to see what photos exist first, then decide whether to zip individual files or create a folder and zip that. SelfReprompt handles the decision-making.
+
+---
+
+INCORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "Independent",
+      "tools": [
+        {{"tool": "zip_path", "args": ["{desktop}\\photo1.jpg"]}}
+      ]
+    }}
+  ]
+}}
+Why incorrect? You're guessing which photos exist. Use list_files or search_files first to discover what's actually there.
+
+---
 User: "I have a folder called ProjectX somewhere on my D drive, can you find it?"
 CORRECT:
 {{

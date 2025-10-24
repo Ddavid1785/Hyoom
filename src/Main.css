@@ -2,7 +2,8 @@
 @import "tailwindcss";
 
 @theme{
-    --font-Inter: "Inter", Inter;
+    /*--font-Inter: "Inter", Inter;*/
+    --font-Quicksand: "Quicksand", Quicksand
 }
 
 textarea::-webkit-scrollbar {

@@ -231,6 +231,13 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
                 .map(|results| serde_json::to_string(&results).unwrap_or_default())
         }),
     );
+        tools.insert(
+        "zip_path",
+        Box::new(|args| {
+            let file_path = get_arg(&args, 0, "zip_path")?;
+            commands::zip_path(file_path).map(|_| String::new())
+        }),
+    );
     tools
 }
 
