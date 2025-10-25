@@ -55,6 +55,29 @@ pub struct TaskRequest {
     pub groups: Vec<TaskGroup>, // each group runs on separate threads
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolResult {
+    pub tool_name: String,
+    pub success: bool,
+    pub result: String,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GroupResult {
+    pub mode: ExecutionMode,
+    pub tool_results: Vec<ToolResult>,
+    pub user_message: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskResponse {
+    pub groups: Vec<GroupResult>,
+}
+
 pub type ToolFn = Box<dyn Fn(Vec<String>) -> Result<String, String>>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

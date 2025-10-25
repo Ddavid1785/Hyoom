@@ -17,3 +17,22 @@ export interface Message {
   content: string;
   timestamp: Date;
 }
+
+export interface ToolResult{
+toolName: string,
+success: boolean,
+result: string,
+error: string | null
+}
+ 
+export type ExecutionMode = "Independent" | "SequentialChain" | "DependentChain" | "SelfReprompt"
+
+export interface GroupResult{
+    mode: ExecutionMode,
+    toolResults: ToolResult[],
+    userMessage: string | null
+}
+
+export interface TaskResponse{
+    groups: GroupResult[]
+}

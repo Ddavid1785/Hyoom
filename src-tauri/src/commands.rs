@@ -23,11 +23,7 @@ pub fn make_dir(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn respond_to_user(text: String) -> Result<String, String> {
-    if text.is_empty() {
-        Ok(text)
-    } else {
-        Err("Model didn't respond".to_string())
-    }
+    Ok(text)
 }
 
 #[tauri::command]

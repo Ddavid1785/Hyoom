@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::types::{ExecutionMode, Prompt, TaskRequest, ToolCall, ToolFn};
+use crate::types::{ExecutionMode, GroupResult, Prompt, TaskRequest, TaskResponse, ToolCall, ToolFn, ToolResult};
 use crate::{commands, settings, system_instructions};
 use reqwest::Client;
 use serde_json::json;
@@ -179,7 +179,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
         Box::new(|args| {
             let path = get_arg(&args, 0, "write_file")?;
             let content = get_arg(&args, 1, "write_file")?;
-            commands::write_file(path, content).map(|_| "write_file succeeded".into())
+            commands::write_file(path, content).map(|_| String::new())
         }),
     );
 
@@ -197,7 +197,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
         Box::new(|args| {
             let old_path = get_arg(&args, 0, "move_path")?;
             let new_path = get_arg(&args, 1, "move_path")?;
-            commands::move_path(old_path, new_path).map(|_| "move path succeeded".into())
+            commands::move_path(old_path, new_path).map(|_| String::new())
         }),
     );
 
@@ -271,28 +271,75 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
 
     for group in task_request.groups {
         let handle = tokio::spawn(async move {
+            let mut tool_results = Vec::new();
+            let mut user_message: Option<String> = None;
+            
             match group.mode {
                 ExecutionMode::Independent => {
                     let mut handles = vec![];
 
                     for tool in group.tools {
-                        let handle = tokio::spawn(async move { call_tools(tool).await });
+                        let tool_name = tool.tool.clone();
+                        let handle = tokio::spawn(async move { 
+                            (tool_name, call_tools(tool).await)
+                        });
                         handles.push(handle);
                     }
 
                     for handle in handles {
                         match handle.await {
-                            Ok(Ok(result)) => println!("Tool result: {}", result),
-                            Ok(Err(e)) => eprintln!("Tool error: {}", e),
+                            Ok((tool_name, result)) => {
+                                match result {
+                                    Ok(output) => {
+                                        if tool_name == "respond_to_user" {
+                                            user_message = Some(output.clone());
+                                        }
+                                        tool_results.push(ToolResult {
+                                            tool_name,
+                                            success: true,
+                                            result: output,
+                                            error: None,
+                                        });
+                                    }
+                                    Err(e) => {
+                                        tool_results.push(ToolResult {
+                                            tool_name,
+                                            success: false,
+                                            result: String::new(),
+                                            error: Some(e),
+                                        });
+                                    }
+                                }
+                            }
                             Err(e) => eprintln!("Task join error: {}", e),
                         }
                     }
                 }
                 ExecutionMode::SequentialChain => {
                     for tool in group.tools {
-                        if let Err(e) = call_tools(tool).await {
-                            eprintln!("Sequential tool error: {e}");
-                            break;
+                        let tool_name = tool.tool.clone();
+                        match call_tools(tool).await {
+                            Ok(output) => {
+                                if tool_name == "respond_to_user" {
+                                    user_message = Some(output.clone());
+                                }
+                                tool_results.push(ToolResult {
+                                    tool_name,
+                                    success: true,
+                                    result: output,
+                                    error: None,
+                                });
+                            }
+                            Err(e) => {
+                                tool_results.push(ToolResult {
+                                    tool_name,
+                                    success: false,
+                                    result: String::new(),
+                                    error: Some(e.clone()),
+                                });
+                                eprintln!("Sequential tool error: {e}");
+                                break;
+                            }
                         }
                     }
                 }
@@ -300,6 +347,7 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                     let mut last_result = String::new();
 
                     for mut tool in group.tools {
+                        let tool_name = tool.tool.clone();
                         tool.args = tool
                             .args
                             .iter()
@@ -314,10 +362,24 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
 
                         match call_tools(tool).await {
                             Ok(result) => {
-                                last_result = result;
-                                println!("Tool result: {}", last_result);
+                                last_result = result.clone();
+                                if tool_name == "respond_to_user" {
+                                    user_message = Some(result.clone());
+                                }
+                                tool_results.push(ToolResult {
+                                    tool_name,
+                                    success: true,
+                                    result,
+                                    error: None,
+                                });
                             }
                             Err(e) => {
+                                tool_results.push(ToolResult {
+                                    tool_name,
+                                    success: false,
+                                    result: String::new(),
+                                    error: Some(e.clone()),
+                                });
                                 eprintln!("DependentChain tool error: {}", e);
                                 break;
                             }
@@ -331,27 +393,47 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
 
                     if let Some(first_tool) = group.tools.first() {
                         let mut last_tool = first_tool.clone();
+                        let tool_name = last_tool.tool.clone();
+                        
                         let mut last_result = match call_tools(last_tool.clone()).await {
-                            Ok(result) => result,
+                            Ok(result) => {
+                                if tool_name == "respond_to_user" {
+                                    user_message = Some(result.clone());
+                                }
+                                tool_results.push(ToolResult {
+                                    tool_name: tool_name.clone(),
+                                    success: true,
+                                    result: result.clone(),
+                                    error: None,
+                                });
+                                result
+                            }
                             Err(e) => {
+                                tool_results.push(ToolResult {
+                                    tool_name: tool_name.clone(),
+                                    success: false,
+                                    result: String::new(),
+                                    error: Some(e.clone()),
+                                });
                                 eprintln!("SelfReprompt initial tool error: {}", e);
-                                return;
+                                return GroupResult {
+                                    mode: group.mode,
+                                    tool_results,
+                                    user_message,
+                                };
                             }
                         };
-                        println!(
-                            "SelfReprompt step 1: executed {:?}, result: {}",
-                            last_tool, last_result
-                        );
 
                         while step_count < max_steps {
                             step_count += 1;
                             let prompt = format!(
-                "{}\n\nGoal: {}\nLast action: {:?}\nResult: {}\n\nWhat's the next step to achieve the goal?",
-                system_instructions::system_prompt::build_self_reprompt(),
-                end_goal,
-                last_tool,
-                last_result
-            );
+                                "{}\n\nGoal: {}\nLast action: {:?}\nResult: {}\n\nWhat's the next step to achieve the goal?",
+                                system_instructions::system_prompt::build_self_reprompt(),
+                                end_goal,
+                                last_tool,
+                                last_result
+                            );
+                            
                             let ai_response = match get_ai_response(Prompt {
                                 text: prompt,
                                 base_image: None,
@@ -379,7 +461,6 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                                     .and_then(|v| v.as_bool())
                                     .unwrap_or(false)
                                 {
-                                    println!("SelfReprompt completed after {} steps", step_count);
                                     break;
                                 }
                             }
@@ -387,22 +468,29 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                             match serde_json::from_str::<ToolCall>(&clean_response) {
                                 Ok(next_tool) => {
                                     last_tool = next_tool.clone();
+                                    let tool_name = next_tool.tool.clone();
+                                    
                                     match call_tools(next_tool.clone()).await {
                                         Ok(result) => {
-                                            last_result = result;
-                                            println!(
-                                                "SelfReprompt step {}: executed {:?}, result: {}",
-                                                step_count + 1,
-                                                next_tool,
-                                                last_result
-                                            );
+                                            last_result = result.clone();
+                                            if tool_name == "respond_to_user" {
+                                                user_message = Some(result.clone());
+                                            }
+                                            tool_results.push(ToolResult {
+                                                tool_name,
+                                                success: true,
+                                                result,
+                                                error: None,
+                                            });
                                         }
                                         Err(e) => {
-                                            eprintln!(
-                                                "SelfReprompt tool error at step {}: {}",
-                                                step_count + 1,
-                                                e
-                                            );
+                                            tool_results.push(ToolResult {
+                                                tool_name,
+                                                success: false,
+                                                result: String::new(),
+                                                error: Some(e.clone()),
+                                            });
+                                            eprintln!("SelfReprompt tool error at step {}: {}", step_count + 1, e);
                                             break;
                                         }
                                     }
@@ -420,16 +508,30 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                     }
                 }
             }
+
+            GroupResult {
+                mode: group.mode,
+                tool_results,
+                user_message,
+            }
         });
         group_handles.push(handle);
     }
 
-    // wait for all groups to finish
+    let mut group_results = Vec::new();
     for handle in group_handles {
-        if let Err(e) = handle.await {
-            eprintln!("Group execution error: {}", e);
+        match handle.await {
+            Ok(group_result) => {
+                group_results.push(group_result);
+            }
+            Err(e) => eprintln!("Group execution error: {}", e),
         }
     }
 
-    Ok("All tool calls executed successfully".into())
+    let task_response = TaskResponse {
+        groups: group_results,
+    };
+
+    serde_json::to_string(&task_response)
+        .map_err(|e| format!("Failed to serialize response: {}", e))
 }
