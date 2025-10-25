@@ -10,3 +10,10 @@ export interface AppSettings {
 }
 
 export type Tab = "chat" | "tools" | "settings";
+
+export interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}

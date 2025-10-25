@@ -3,10 +3,13 @@ import { ArrowUpCircle, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
 import { useImageUpload } from "../../Hooks/useImageUpload";
 import { useWebSpeech } from "../../Hooks/useWebSpeech";
-import { invoke } from "@tauri-apps/api/core";
 import { Prompt } from "../../types";
 
-export default function GlassInputHandler() {
+export default function GlassInputHandler({
+  onSendMessage,
+}: {
+  onSendMessage: (prompt: Prompt) => void;
+}) {
   const [text, setText] = useState<string>("");
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -36,28 +39,18 @@ export default function GlassInputHandler() {
     }
   }, [text]);
 
+  function handleSubmit() {
+    const prompt: Prompt = { text: text, baseImage: getBase64() };
+    onSendMessage(prompt);
+    setText("");
+    clearImage();
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey && text) {
       e.preventDefault();
       handleSubmit();
     }
-  }
-
-  async function handleSubmit() {
-    if (!text) {
-      return;
-    }
-
-    const prompt: Prompt = {
-      text: text,
-      baseImage: getBase64(),
-    };
-
-    setText("");
-    clearImage();
-
-    let res = await invoke<string>("ai_tool_calling", { prompt: prompt });
-    console.log(res);
   }
 
   function handleVoiceInput() {
