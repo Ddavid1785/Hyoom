@@ -76,12 +76,12 @@ export default function HomePage({
               <div ref={messagesEndRef} />
             </div>
             <div className="flex-shrink-0">
-              <GlassInputHandler onSendMessage={onSendMessage} />
+              <GlassInputHandler onSendMessage={onSendMessage}/>
             </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <GlassInputHandler onSendMessage={onSendMessage} />
+            <GlassInputHandler onSendMessage={onSendMessage}/>
           </div>
         )}
       </div>

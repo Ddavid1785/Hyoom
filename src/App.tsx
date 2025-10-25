@@ -11,7 +11,7 @@ import { Tab } from "./types";
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [chatMode, setChatMode] = useState(false);
-const { messages, handleSendMessage } = useHandleSendMessage();
+  const { messages, handleSendMessage } = useHandleSendMessage();
 
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center relative">

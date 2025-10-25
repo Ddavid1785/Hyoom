@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::types::{ExecutionMode, GroupResult, Prompt, TaskRequest, TaskResponse, ToolCall, ToolFn, ToolResult};
+use crate::types::{
+    ChatMessage, ExecutionMode, GroupResult, Prompt, TaskRequest, TaskResponse, ToolCall, ToolFn,
+    ToolResult,
+};
 use crate::{commands, settings, system_instructions};
 use reqwest::Client;
 use serde_json::json;
@@ -10,6 +13,7 @@ async fn send_ai_request(
     content: &str,
     images: Option<Vec<String>>,
     api_key: &str,
+    chat_history: Option<Vec<ChatMessage>>,
 ) -> Result<String, String> {
     let url =
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
@@ -27,14 +31,33 @@ async fn send_ai_request(
         }
     }
 
+    let mut contents = Vec::new();
+
+    // Add chat history if provided
+    if let Some(history) = chat_history {
+        for msg in history {
+            contents.push(json!({
+                "role": msg.role.to_string().to_lowercase(),
+                "parts": msg.parts
+            }));
+        }
+    }
+
+    // Add current user message
+    contents.push(json!({
+        "role": "user",
+        "parts": parts
+    }));
+
     let response = client
         .post(url)
         .header("x-goog-api-key", api_key)
         .header("Content-Type", "application/json")
         .json(&json!({
-            "contents": [{
-                "parts": parts
-            }]
+            "systemInstruction": {
+                "parts": [{"text": system_instructions::system_prompt::build_full_prompt()}]
+            },
+            "contents": contents
         }))
         .send()
         .await
@@ -60,34 +83,25 @@ pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
     let settings = settings::load_settings()?;
     let api_key = settings.gemini_api_key.as_str();
 
-    if let Some(img_b64) = &prompt.base_image {
+    let images = if let Some(img_b64) = &prompt.base_image {
         let cleaned = img_b64
             .trim()
             .replace("data:image/png;base64,", "")
             .replace("data:image/jpeg;base64,", "")
             .replace("data:image/jpg;base64,", "")
             .replace("data:image/webp;base64,", "");
-
-        send_ai_request(&client, &prompt.text, Some(vec![cleaned]), api_key).await
+        Some(vec![cleaned])
     } else {
-        send_ai_request(&client, &prompt.text, None, api_key).await
-    }
+        None
+    };
+
+    send_ai_request(&client, &prompt.text, images, api_key, prompt.chat_history).await
 }
 
 #[tauri::command]
 pub async fn get_ai_response(prompt: Prompt) -> Result<String, String> {
-    let full_prompt = format!(
-        "{}\nUser: {}",
-        system_instructions::system_prompt::build_full_prompt(),
-        prompt.text
-    );
     let client = Client::new();
-    let parsed_prompt = Prompt {
-        text: full_prompt,
-        base_image: prompt.base_image,
-    };
-
-    call_ai(parsed_prompt, client).await
+    call_ai(prompt, client).await
 }
 
 fn get_arg(args: &[String], index: usize, tool_name: &str) -> Result<String, String> {
@@ -231,7 +245,7 @@ pub fn build_tool_map() -> HashMap<&'static str, ToolFn> {
                 .map(|results| serde_json::to_string(&results).unwrap_or_default())
         }),
     );
-        tools.insert(
+    tools.insert(
         "zip_path",
         Box::new(|args| {
             let file_path = get_arg(&args, 0, "zip_path")?;
@@ -273,44 +287,41 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
         let handle = tokio::spawn(async move {
             let mut tool_results = Vec::new();
             let mut user_message: Option<String> = None;
-            
+
             match group.mode {
                 ExecutionMode::Independent => {
                     let mut handles = vec![];
 
                     for tool in group.tools {
                         let tool_name = tool.tool.clone();
-                        let handle = tokio::spawn(async move { 
-                            (tool_name, call_tools(tool).await)
-                        });
+                        let handle =
+                            tokio::spawn(async move { (tool_name, call_tools(tool).await) });
                         handles.push(handle);
                     }
 
                     for handle in handles {
                         match handle.await {
-                            Ok((tool_name, result)) => {
-                                match result {
-                                    Ok(output) => {
-                                        if tool_name == "respond_to_user" {
-                                            user_message = Some(output.clone());
-                                        }
-                                        tool_results.push(ToolResult {
-                                            tool_name,
-                                            success: true,
-                                            result: output,
-                                            error: None,
-                                        });
+                            Ok((tool_name, result)) => match result {
+                                Ok(output) => {
+                                    if tool_name == "respond_to_user" {
+                                        user_message = Some(output.clone());
                                     }
-                                    Err(e) => {
-                                        tool_results.push(ToolResult {
-                                            tool_name,
-                                            success: false,
-                                            result: String::new(),
-                                            error: Some(e),
-                                        });
-                                    }
+                                    tool_results.push(ToolResult {
+                                        tool_name,
+                                        success: true,
+                                        result: output,
+                                        error: None,
+                                    });
                                 }
-                            }
+                                Err(e) => {
+                                    tool_results.push(ToolResult {
+                                        tool_name,
+                                        success: false,
+                                        result: String::new(),
+                                        error: Some(e),
+                                    });
+                                }
+                            },
                             Err(e) => eprintln!("Task join error: {}", e),
                         }
                     }
@@ -394,7 +405,7 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                     if let Some(first_tool) = group.tools.first() {
                         let mut last_tool = first_tool.clone();
                         let tool_name = last_tool.tool.clone();
-                        
+
                         let mut last_result = match call_tools(last_tool.clone()).await {
                             Ok(result) => {
                                 if tool_name == "respond_to_user" {
@@ -426,17 +437,18 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
 
                         while step_count < max_steps {
                             step_count += 1;
-                            let prompt = format!(
-                                "{}\n\nGoal: {}\nLast action: {:?}\nResult: {}\n\nWhat's the next step to achieve the goal?",
-                                system_instructions::system_prompt::build_self_reprompt(),
-                                end_goal,
-                                last_tool,
-                                last_result
-                            );
-                            
+                            let prompt_text = format!(
+                "{}\n\nGoal: {}\nLast action: {:?}\nResult: {}\n\nWhat's the next step to achieve the goal?",
+                system_instructions::system_prompt::build_self_reprompt(),
+                end_goal,
+                last_tool,
+                last_result
+            );
+
                             let ai_response = match get_ai_response(Prompt {
-                                text: prompt,
+                                text: prompt_text,
                                 base_image: None,
+                                chat_history: None,
                             })
                             .await
                             {
@@ -469,7 +481,7 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                                 Ok(next_tool) => {
                                     last_tool = next_tool.clone();
                                     let tool_name = next_tool.tool.clone();
-                                    
+
                                     match call_tools(next_tool.clone()).await {
                                         Ok(result) => {
                                             last_result = result.clone();
@@ -490,7 +502,11 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                                                 result: String::new(),
                                                 error: Some(e.clone()),
                                             });
-                                            eprintln!("SelfReprompt tool error at step {}: {}", step_count + 1, e);
+                                            eprintln!(
+                                                "SelfReprompt tool error at step {}: {}",
+                                                step_count + 1,
+                                                e
+                                            );
                                             break;
                                         }
                                     }
@@ -530,6 +546,7 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
 
     let task_response = TaskResponse {
         groups: group_results,
+        raw_ai_response: clean_response,
     };
 
     serde_json::to_string(&task_response)

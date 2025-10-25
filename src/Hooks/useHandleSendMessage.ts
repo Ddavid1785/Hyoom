@@ -1,40 +1,54 @@
-import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Message, Prompt, TaskResponse } from "../types";
+import { ChatMessage, ChatPrompt, Message, Prompt, TaskResponse } from "../types";
+import { useState } from "react";
 
 export function useHandleSendMessage() {
   const [messages, setMessages] = useState<Message[]>([]);
-
-  const handleSendMessage = async (prompt: Prompt) => {
+  
+const handleSendMessage = async (prompt: Prompt) => {
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
       content: prompt.text,
+      displayContent: prompt.text,
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+
+    const MAX_MESSAGES = 20;
+
+    setMessages((prev) => [...prev, userMsg].slice(-MAX_MESSAGES));
 
     try {
-      const responseStr = await invoke<string>("ai_tool_calling", { prompt });
+      const chatHistory: ChatMessage[] = messages.map(msg => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.content }]
+      }));
+      
+      const chatPrompt: ChatPrompt = {
+        ...prompt,
+        chatHistory: chatHistory.length > 0 ? chatHistory : undefined,
+      };
+
+      const responseStr = await invoke<string>("ai_tool_calling", { 
+        prompt: chatPrompt 
+      });
       const response: TaskResponse = JSON.parse(responseStr);
 
-      console.log("Parsed response:", response);
-
-      let content = "";
+      let displayContent = "";
 
       response.groups.forEach((group, groupIndex) => {
         if (response.groups.length > 1) {
-          content += `\n### Group ${groupIndex + 1} (${group.mode})\n\n`;
+          displayContent += `\n### Group ${groupIndex + 1} (${group.mode})\n\n`;
         }
 
         if (group.userMessage) {
-          content += `${group.userMessage}\n\n`;
+          displayContent += `${group.userMessage}\n\n`;
         }
 
         if (group.toolResults?.length) {
           group.toolResults.forEach((tool, index) => {
             const icon = tool.success ? "✅" : "❌";
-            content += `**${index + 1}. ${icon} ${tool.toolName}**\n`;
+            displayContent += `**${index + 1}. ${icon} ${tool.toolName}**\n`;
 
             if (
               tool.success &&
@@ -45,43 +59,52 @@ export function useHandleSendMessage() {
                 tool.result.length > 200
                   ? tool.result.substring(0, 200) + "..."
                   : tool.result;
-              content += `\`\`\`\n${displayResult}\n\`\`\`\n`;
+              displayContent += `\`\`\`\n${displayResult}\n\`\`\`\n`;
             }
 
             if (!tool.success && tool.error) {
-              content += `*Error: ${tool.error}*\n`;
+              displayContent += `*Error: ${tool.error}*\n`;
             }
           });
         }
 
         if (groupIndex < response.groups.length - 1) {
-          content += "---\n";
+          displayContent += "---\n";
         }
       });
 
-      if (!content.trim()) {
-        content = "Task completed successfully. No response generated.";
+      if (!displayContent.trim()) {
+        displayContent = "Task completed successfully. No response generated.";
       }
 
       const aiMsg: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: content.trim(),
+        content: response.rawAiResponse,
+        displayContent: displayContent.trim(), 
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, aiMsg].slice(-20));
+      setMessages((prev) => [...prev, aiMsg].slice(-MAX_MESSAGES));
+
     } catch (error) {
       console.error("Error in handleSendMessage:", error);
       const errorMsg: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
         content: `Error: ${error}`,
+        displayContent: `Error: ${error}`, 
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMsg].slice(-20));
+      
+      setMessages((prev) => [...prev, errorMsg].slice(-MAX_MESSAGES));
     }
   };
 
-  return { messages, setMessages, handleSendMessage };
+
+  const clearMessages = () => {
+    setMessages([]);
+  };
+
+  return { messages, setMessages, handleSendMessage, clearMessages };
 }

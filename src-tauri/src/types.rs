@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(serde::Deserialize, Debug, Serialize, Clone)]
@@ -29,12 +31,36 @@ pub struct SystemInfo {
     pub number_of_cpus: usize,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    User,
+    Model
+}
+
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Role::User => write!(f, "user"),
+            Role::Model => write!(f, "model"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ChatMessage {
+    pub role: Role,
+    pub parts: Vec<serde_json::Value>,
+}
+
 #[derive(Serialize, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Prompt {
     pub text: String,
     pub base_image: Option<String>,
+    pub chat_history: Option<Vec<ChatMessage>>,
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ExecutionMode {
     Independent,     // tools run in parallel
@@ -76,6 +102,7 @@ pub struct GroupResult {
 #[serde(rename_all = "camelCase")]
 pub struct TaskResponse {
     pub groups: Vec<GroupResult>,
+    pub raw_ai_response: String
 }
 
 pub type ToolFn = Box<dyn Fn(Vec<String>) -> Result<String, String>>;

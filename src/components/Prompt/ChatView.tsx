@@ -25,7 +25,7 @@ function MessageBubble({ message }: { message: Message }) {
           }
         `}
       >
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.displayContent || message.content}</p>
       </div>
 
       {isUser && (
