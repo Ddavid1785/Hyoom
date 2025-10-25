@@ -8,3 +8,5 @@ export interface AppSettings {
     googleSearchApiKey: string;
     googleSearchEngineId: string;
 }
+
+export type Tab = "chat" | "tools" | "settings";

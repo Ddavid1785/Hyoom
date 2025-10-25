@@ -1,26 +1,22 @@
 import { useState } from "react";
-import Header from "./components/Header";
-import InputHandler from "./components/InputHandler";
 import "./Main.css";
-import SettingsModal from "./components/Settings/SettingsModal";
-import SettingsButton from "./components/Settings/SettingsButton";
+import { Tab } from "./types";
+import TabNavigation from "./components/General/TabNavigation";
+import HomePage from "./components/Pages/HomePage";
+import AnimatedBackground from "./components/General/AnimatedBackground";
+import AppLogo from "./components/General/AppLogo";
+import SettingsPage from "./components/Pages/SettingsPage";
 
 export default function App() {
-  const [showSettings, setShowSettings] = useState(false);
-
+  const [activeTab, setActiveTab] = useState<Tab>("chat");
   return (
-    <div className="w-full h-screen flex flex-col items-center justify-center bg-black relative">
-     <SettingsButton setShowSettings={setShowSettings}/>
-
-      <div className="w-full px-8 max-w-4xl">
-        <Header />
-        <InputHandler />
-      </div>
-
-      <SettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
+    <div className="w-full h-screen flex flex-col items-center justify-center relative">
+      <AnimatedBackground />
+      <AppLogo />
+      {activeTab === "chat" && <HomePage />}
+      {activeTab === "tools" && <div></div>}
+      {activeTab === "settings" && <SettingsPage />}
+      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }
