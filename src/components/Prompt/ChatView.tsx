@@ -18,14 +18,30 @@ function MessageBubble({ message }: { message: Message }) {
       
       <div
         className={`
-          max-w-[70%] px-4 py-3 rounded-2xl font-Inter
+          max-w-[70%] rounded-2xl font-Inter
           ${isUser 
             ? "bg-blue-600 text-white" 
             : "bg-zinc-800/40 backdrop-blur-sm text-white border border-zinc-700/50"
           }
         `}
       >
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.displayContent || message.content}</p>
+        {/* Show image if present */}
+        {message.imageData && (
+          <div className="p-2">
+            <img 
+              src={`data:image/jpeg;base64,${message.imageData}`}
+              alt="Uploaded"
+              className="rounded-lg max-w-full h-auto max-h-64 object-contain"
+            />
+          </div>
+        )}
+        
+        {/* Show text content */}
+        <div className="px-4 py-3">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {message.displayContent || message.content}
+          </p>
+        </div>
       </div>
 
       {isUser && (

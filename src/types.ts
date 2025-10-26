@@ -5,7 +5,7 @@ export interface Prompt{
 
 export interface ChatMessage {
   role: "user" | "model"; 
-  parts: Array<{ text: string }>;
+  parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }>;
 }
 
 export interface ChatPrompt extends Prompt {
@@ -26,6 +26,7 @@ export interface Message {
   content: string; 
   timestamp: Date;
   displayContent?: string;
+  imageData?: string;
 }
 
 export interface ToolResult{

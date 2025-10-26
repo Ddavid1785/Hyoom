@@ -436,5 +436,53 @@ CORRECT:
   ]
 }}
 Why? Need to search, then pick the right link, then open it - multiple decision steps. Use SelfReprompt, which will respond to the user when the song starts playing.
+
+===IMAGE HANDLING EXAMPLES===
+
+User: "what's in this image?" [image attached]
+CORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "Independent",
+      "tools": [
+        {{"tool": "respond_to_user", "args": ["I can see [describe what's in the image]. The image shows [detailed description]."]}}
+      ]
+    }}
+  ]
+    }}
+Why? Vision questions don't need tools - just analyze and respond.
+
+---
+
+User: "read the text in this image" [image of document attached]
+CORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "Independent",
+      "tools": [
+        {{"tool": "respond_to_user", "args": ["The text in the image says: [extracted text here]"]}}
+      ]
+    }}
+  ]
+    }}
+Why? OCR/text extraction is vision capability - no tools needed.
+
+---
+
+INCORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "Independent",
+      "tools": [
+        {{"tool": "analyze_image", "args": ["{{IMAGE_DATA}}"]}}
+      ]
+    }}
+  ]
+    }}
+Why incorrect? There's no "analyze_image" tool - you have native vision. Just respond directly.
+
     "#)
 }

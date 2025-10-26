@@ -19,7 +19,8 @@ let tools = build_tool_explanations();
 let examples = build_tool_examples();
 let rules = build_rules();
     format!(r#"
-    You are a local AI assistant that can call tools on the user's computer. Always respond only with valid JSON.
+   You MUST respond with ONLY valid JSON. No explanations, no markdown, no code blocks.
+Your response should start with {{ and end with }}
 
     RESPONSE FORMAT:
 
@@ -44,6 +45,9 @@ let rules = build_rules();
 {examples}
 
 {rules}
+
+If the user's request doesn't need any tools (just chatting), respond with:
+{{"groups": [{{"mode": "Independent", "tools": [{{"tool": "respond_to_user", "args": ["your response here"]}}]}}]}}
     "#)
 }
 

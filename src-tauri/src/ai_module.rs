@@ -22,9 +22,11 @@ async fn send_ai_request(
 
     if let Some(imgs) = images {
         for img in imgs {
+            let mime_type = detect_image_mime_type(&img).unwrap_or("image/jpeg".to_string());
+            
             parts.push(json!({
                 "inline_data": {
-                    "mime_type": "image/jpeg",
+                    "mime_type": mime_type,
                     "data": img
                 }
             }));
@@ -33,7 +35,6 @@ async fn send_ai_request(
 
     let mut contents = Vec::new();
 
-    // Add chat history if provided
     if let Some(history) = chat_history {
         for msg in history {
             contents.push(json!({
@@ -43,7 +44,6 @@ async fn send_ai_request(
         }
     }
 
-    // Add current user message
     contents.push(json!({
         "role": "user",
         "parts": parts
@@ -57,7 +57,13 @@ async fn send_ai_request(
             "systemInstruction": {
                 "parts": [{"text": system_instructions::system_prompt::build_full_prompt()}]
             },
-            "contents": contents
+            "contents": contents,
+            "generationConfig": {
+                "temperature": 0.7,
+                "topK": 40,
+                "topP": 0.95,
+                "maxOutputTokens": 8192,
+            }
         }))
         .send()
         .await
@@ -68,15 +74,29 @@ async fn send_ai_request(
         return Err(format!("API error: {}", error));
     }
 
-    let result: serde_json::Value = response
+    let json_response: serde_json::Value = response
         .json()
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-    result["candidates"][0]["content"]["parts"][0]["text"]
+    json_response["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| "Invalid response format".to_string())
+        .ok_or_else(|| "No text found in response".to_string())
+}
+
+fn detect_image_mime_type(base64_data: &str) -> Option<String> {
+    if base64_data.starts_with("/9j/") {
+        Some("image/jpeg".to_string())
+    } else if base64_data.starts_with("iVBORw0KGgo") {
+        Some("image/png".to_string())
+    } else if base64_data.starts_with("R0lGOD") {
+        Some("image/gif".to_string())
+    } else if base64_data.starts_with("UklGR") {
+        Some("image/webp".to_string())
+    } else {
+        Some("image/jpeg".to_string())
+    }
 }
 
 pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {

@@ -6,12 +6,13 @@ import { formatTaskResponse } from "./formatTaskResponse";
   export function useHandleSendMessage() {
     const [messages, setMessages] = useState<Message[]>([]);
     
-  const handleSendMessage = async (prompt: Prompt) => {
+ const handleSendMessage = async (prompt: Prompt) => {
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
       content: prompt.text,
       displayContent: prompt.text,
+      imageData: prompt.baseImage || undefined, // Store the base64 image
       timestamp: new Date(),
     };
 
@@ -19,10 +20,26 @@ import { formatTaskResponse } from "./formatTaskResponse";
     setMessages((prev) => [...prev, userMsg].slice(-MAX_MESSAGES));
 
     try {
-      const chatHistory: ChatMessage[] = messages.map(msg => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.content }]
-      }));
+      const chatHistory: ChatMessage[] = messages.map(msg => {
+        const parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }> = [
+          { text: msg.content }
+        ];
+        
+        // Add image to history if it exists
+        if (msg.imageData) {
+          parts.push({
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: msg.imageData
+            }
+          });
+        }
+        
+        return {
+          role: msg.role === "user" ? "user" : "model",
+          parts
+        };
+      });
       
       const chatPrompt: ChatPrompt = {
         ...prompt,

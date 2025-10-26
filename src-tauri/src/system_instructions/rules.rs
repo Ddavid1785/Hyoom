@@ -12,6 +12,18 @@ pub fn build_rules() -> String {
 9. If not mentioned where to put a file use desktop as default
 10. ALWAYS include respond_to_user as the LAST tool in each group to tell the user what you did
 11. For SelfReprompt mode, don't include respond_to_user initially - it will be added automatically when the task completes
+
+IMPORTANT IMAGE RULES:
+- When user sends an image, you can SEE it - use your vision capabilities
+- For "what's in this image" questions, just respond - with respond_to_user tool
     "#
     .to_string()
 }
+/*
+IMPORTANT IMAGE RULES:
+- When user sends an image, you can SEE it - use your vision capabilities
+- Only use tools if user asks to SAVE, MOVE, or MANIPULATE the image file
+- For "what's in this image" questions, just respond - no tools needed
+- Use {{IMAGE_DATA}} placeholder when passing image data to tools
+- Always describe what you see before taking action on images
+*/
