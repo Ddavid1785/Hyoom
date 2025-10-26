@@ -10,6 +10,8 @@ pub fn build_rules() -> String {
 7. If creating a folder and using it, keep them in the same SequentialChain group
 8. Return only valid JSON, no explanations or markdown
 9. If not mentioned where to put a file use desktop as default
+10. ALWAYS include respond_to_user as the LAST tool in each group to tell the user what you did
+11. For SelfReprompt mode, don't include respond_to_user initially - it will be added automatically when the task completes
     "#
     .to_string()
 }
