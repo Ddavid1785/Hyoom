@@ -25,18 +25,25 @@ function MessageBubble({ message }: { message: Message }) {
           }
         `}
       >
-        {/* Show image if present */}
-        {message.imageData && (
+        {message.images && message.images.length > 0 && (
           <div className="p-2">
-            <img 
-              src={`data:image/jpeg;base64,${message.imageData}`}
-              alt="Uploaded"
-              className="rounded-lg max-w-full h-auto max-h-64 object-contain"
-            />
+            <div className={`flex flex-wrap gap-2 ${message.images.length === 1 ? '' : 'grid grid-cols-2'}`}>
+              {message.images.map((imageData, index) => (
+                <img 
+                  key={index}
+                  src={`data:image/jpeg;base64,${imageData}`}
+                  alt={`Uploaded ${index + 1}`}
+                  className={`rounded-lg object-contain ${
+                    message.images!.length === 1 
+                      ? 'max-w-full h-auto max-h-64' 
+                      : 'w-full h-32 object-cover'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         )}
         
-        {/* Show text content */}
         <div className="px-4 py-3">
           <p className="text-sm leading-relaxed whitespace-pre-wrap">
             {message.displayContent || message.content}

@@ -439,35 +439,67 @@ Why? Need to search, then pick the right link, then open it - multiple decision 
 
 ===IMAGE HANDLING EXAMPLES===
 
-User: "what's in this image?" [image attached]
+User: "what's in this image?" [image attached showing a cat on a laptop]
 CORRECT:
 {{
   "groups": [
     {{
       "mode": "Independent",
       "tools": [
-        {{"tool": "respond_to_user", "args": ["I can see [describe what's in the image]. The image shows [detailed description]."]}}
+        {{"tool": "respond_to_user", "args": ["I can see a gray tabby cat sitting on top of an open laptop computer. The cat appears to be resting comfortably on the keyboard while looking at the camera."]}}
       ]
     }}
   ]
-    }}
-Why? Vision questions don't need tools - just analyze and respond.
+}}
+Why? Vision questions don't need tools - just analyze and respond with actual details.
 
 ---
 
-User: "read the text in this image" [image of document attached]
+User: "describe both images" [two images attached: one of a sunset, one of a city skyline]
 CORRECT:
 {{
   "groups": [
     {{
       "mode": "Independent",
       "tools": [
-        {{"tool": "respond_to_user", "args": ["The text in the image says: [extracted text here]"]}}
+        {{"tool": "respond_to_user", "args": ["The first image shows a beautiful orange and pink sunset over the ocean with clouds reflecting the warm colors. The second image displays a modern city skyline at night with tall illuminated buildings against a dark blue sky."]}}
       ]
     }}
   ]
+}}
+Why? Describe all images naturally in one response.
+
+---
+
+User: "read the text in this image" [image of a sign that says "COFFEE SHOP - OPEN 7AM"]
+CORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "Independent",
+      "tools": [
+        {{"tool": "respond_to_user", "args": ["The text in the image says: 'COFFEE SHOP - OPEN 7AM'"]}}
+      ]
     }}
-Why? OCR/text extraction is vision capability - no tools needed.
+  ]
+}}
+Why? OCR/text extraction is a vision capability - extract the actual text you see.
+
+---
+
+User: "what does this error message say?" [screenshot of error dialog]
+CORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "Independent",
+      "tools": [
+        {{"tool": "respond_to_user", "args": ["The error message reads: 'Error 404: File not found. The requested resource could not be located on the server.'"]}}
+      ]
+    }}
+  ]
+}}
+Why? Read the actual text from the screenshot and report it.
 
 ---
 
@@ -477,11 +509,26 @@ INCORRECT:
     {{
       "mode": "Independent",
       "tools": [
-        {{"tool": "analyze_image", "args": ["{{IMAGE_DATA}}"]}}
+        {{"tool": "respond_to_user", "args": ["I can see [description]. The image shows [detailed description]."]}}
       ]
     }}
   ]
+}}
+Why incorrect? Never use placeholder brackets! Always describe what you actually see with specific details.
+
+---
+
+INCORRECT:
+{{
+  "groups": [
+    {{
+      "mode": "Independent",
+      "tools": [
+        {{"tool": "analyze_image", "args": ["{{{{IMAGE_DATA}}}}"]}}
+      ]
     }}
+  ]
+}}
 Why incorrect? There's no "analyze_image" tool - you have native vision. Just respond directly.
 
     "#)

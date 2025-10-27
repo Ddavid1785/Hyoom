@@ -1,8 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 
+interface ImageData {
+  id: string;
+  file: File;
+  preview: string;
+}
+
 export function useImageUpload() {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [images, setImages] = useState<ImageData[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -26,8 +31,11 @@ export function useImageUpload() {
       setIsDragging(false);
 
       const files = e.dataTransfer?.files;
-      if (files && files[0] && files[0].type.startsWith("image/")) {
-        processImageFile(files[0]);
+      if (files) {
+        const imageFiles = Array.from(files).filter(file => 
+          file.type.startsWith("image/")
+        );
+        imageFiles.forEach(file => processImageFile(file));
       }
     };
 
@@ -43,18 +51,22 @@ export function useImageUpload() {
   }, []);
 
   function processImageFile(file: File) {
-    setImageFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
-      setImagePreview(reader.result as string);
+      const newImage: ImageData = {
+        id: crypto.randomUUID(),
+        file: file,
+        preview: reader.result as string,
+      };
+      setImages(prev => [...prev, newImage]);
     };
     reader.readAsDataURL(file);
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      processImageFile(file);
+    const files = e.target.files;
+    if (files) {
+      Array.from(files).forEach(file => processImageFile(file));
     }
   }
 
@@ -68,43 +80,40 @@ export function useImageUpload() {
         if (file) {
           processImageFile(file);
         }
-        break;
       }
     }
   }
 
-  function removeImage() {
-    setImageFile(null);
-    setImagePreview(null);
+  function removeImage(id: string) {
+    setImages(prev => prev.filter(img => img.id !== id));
+  }
+
+  function clearImages() {
+    setImages([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  }
-
-  function clearImage() {
-    setImageFile(null);
-    setImagePreview(null);
   }
 
   function openFilePicker() {
     fileInputRef.current?.click();
   }
 
-  function getBase64() {
-    if (!imagePreview) return null;
-    return imagePreview.split(",")[1];
+  function getBase64Array() {
+    if (images.length === 0) return null;
+    return images.map(img => img.preview.split(",")[1]);
   }
 
   return {
-    imageFile,
-    imagePreview,
+    images,
+    hasImages: images.length > 0,
     isDragging,
     fileInputRef,
     handleImageChange,
     handlePasteImage,
     removeImage,
-    clearImage,
+    clearImages,
     openFilePicker,
-    getBase64,
+    getBase64Array,
   };
 }

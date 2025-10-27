@@ -3,16 +3,16 @@
   import { useState } from "react";
 import { formatTaskResponse } from "./formatTaskResponse";
 
-  export function useHandleSendMessage() {
-    const [messages, setMessages] = useState<Message[]>([]);
-    
- const handleSendMessage = async (prompt: Prompt) => {
+export function useHandleSendMessage() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  
+  const handleSendMessage = async (prompt: Prompt) => {
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
       content: prompt.text,
       displayContent: prompt.text,
-      imageData: prompt.baseImage || undefined, // Store the base64 image
+      images: prompt.baseImages || undefined,
       timestamp: new Date(),
     };
 
@@ -25,13 +25,14 @@ import { formatTaskResponse } from "./formatTaskResponse";
           { text: msg.content }
         ];
         
-        // Add image to history if it exists
-        if (msg.imageData) {
-          parts.push({
-            inline_data: {
-              mime_type: "image/jpeg",
-              data: msg.imageData
-            }
+        if (msg.images && msg.images.length > 0) {
+          msg.images.forEach(imageData => {
+            parts.push({
+              inline_data: {
+                mime_type: "image/jpeg",
+                data: imageData
+              }
+            });
           });
         }
         

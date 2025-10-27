@@ -11,9 +11,9 @@ use serde_json::json;
 async fn send_ai_request(
     client: &Client,
     content: &str,
-    images: Option<Vec<String>>,
+    images: &Option<Vec<String>>,
     api_key: &str,
-    chat_history: Option<Vec<ChatMessage>>,
+    chat_history: &Option<Vec<ChatMessage>>,
 ) -> Result<String, String> {
     let url =
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
@@ -22,8 +22,8 @@ async fn send_ai_request(
 
     if let Some(imgs) = images {
         for img in imgs {
-            let mime_type = detect_image_mime_type(&img).unwrap_or("image/jpeg".to_string());
-            
+            let mime_type = detect_image_mime_type(img).unwrap_or("image/jpeg".to_string());
+
             parts.push(json!({
                 "inline_data": {
                     "mime_type": mime_type,
@@ -98,30 +98,18 @@ fn detect_image_mime_type(base64_data: &str) -> Option<String> {
         Some("image/jpeg".to_string())
     }
 }
-
-pub async fn call_ai(prompt: Prompt, client: Client) -> Result<String, String> {
+pub async fn get_ai_response(prompt: &Prompt, client: &Client) -> Result<String, String> {
     let settings = settings::load_settings()?;
     let api_key = settings.gemini_api_key.as_str();
 
-    let images = if let Some(img_b64) = &prompt.base_image {
-        let cleaned = img_b64
-            .trim()
-            .replace("data:image/png;base64,", "")
-            .replace("data:image/jpeg;base64,", "")
-            .replace("data:image/jpg;base64,", "")
-            .replace("data:image/webp;base64,", "");
-        Some(vec![cleaned])
-    } else {
-        None
-    };
-
-    send_ai_request(&client, &prompt.text, images, api_key, prompt.chat_history).await
-}
-
-#[tauri::command]
-pub async fn get_ai_response(prompt: Prompt) -> Result<String, String> {
-    let client = Client::new();
-    call_ai(prompt, client).await
+    send_ai_request(
+        client,
+        &prompt.text,
+        &prompt.base_image,
+        api_key,
+        &prompt.chat_history,
+    )
+    .await
 }
 
 fn get_arg(args: &[String], index: usize, tool_name: &str) -> Result<String, String> {
@@ -289,7 +277,8 @@ pub async fn call_tools(tool_call: ToolCall) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
-    let response = get_ai_response(prompt.clone()).await?;
+    let client = Client::new();
+    let response = get_ai_response(&prompt, &client).await?;
     println!("Raw response:\n{}", response);
 
     let clean_response = response
@@ -420,6 +409,7 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                 ExecutionMode::SelfReprompt => {
                     let end_goal = group.end_goal.clone().unwrap_or("Complete the task".into());
                     let max_steps = 10;
+                    let client = Client::new();
                     let mut step_count = 0;
 
                     if let Some(first_tool) = group.tools.first() {
@@ -465,11 +455,14 @@ pub async fn ai_tool_calling(prompt: Prompt) -> Result<String, String> {
                 last_result
             );
 
-                            let ai_response = match get_ai_response(Prompt {
-                                text: prompt_text,
-                                base_image: None,
-                                chat_history: None,
-                            })
+                            let ai_response = match get_ai_response(
+                                &Prompt {
+                                    text: prompt_text,
+                                    base_image: None,
+                                    chat_history: None,
+                                },
+                                &client,
+                            )
                             .await
                             {
                                 Ok(response) => response,

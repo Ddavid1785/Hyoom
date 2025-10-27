@@ -1,6 +1,6 @@
 export interface Prompt{
     text: string,
-    baseImage: string | null,
+    baseImages?: string[] | null;
 }
 
 export interface ChatMessage {
@@ -26,7 +26,7 @@ export interface Message {
   content: string; 
   timestamp: Date;
   displayContent?: string;
-  imageData?: string;
+images?: string[];
 }
 
 export interface ToolResult{

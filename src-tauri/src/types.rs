@@ -57,7 +57,7 @@ pub struct ChatMessage {
 #[serde(rename_all = "camelCase")]
 pub struct Prompt {
     pub text: String,
-    pub base_image: Option<String>,
+    pub base_image: Option<Vec<String>>,
     pub chat_history: Option<Vec<ChatMessage>>,
 }
 

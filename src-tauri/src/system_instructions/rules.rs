@@ -16,6 +16,7 @@ pub fn build_rules() -> String {
 IMPORTANT IMAGE RULES:
 - When user sends an image, you can SEE it - use your vision capabilities
 - For "what's in this image" questions, just respond - with respond_to_user tool
+- Always describe with specific details: colors, objects, text, composition, etc.
     "#
     .to_string()
 }

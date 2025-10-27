@@ -15,16 +15,16 @@ export default function GlassInputHandler({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const {
-    imageFile,
-    imagePreview,
+    images,
+    hasImages,
     isDragging,
     fileInputRef,
     handleImageChange,
     handlePasteImage,
     removeImage,
-    clearImage,
+    clearImages,
     openFilePicker,
-    getBase64,
+    getBase64Array,
   } = useImageUpload();
 
   const { isRecording, startRecording } = useWebSpeech();
@@ -40,10 +40,10 @@ export default function GlassInputHandler({
   }, [text]);
 
   function handleSubmit() {
-    const prompt: Prompt = { text: text, baseImage: getBase64() };
+    const prompt: Prompt = { text: text, baseImages: getBase64Array() };
     onSendMessage(prompt);
     setText("");
-    clearImage();
+    clearImages();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -80,9 +80,9 @@ export default function GlassInputHandler({
           }
         `}
       >
-        {imagePreview && (
+        {images.length > 0 && (
           <div className="p-4 pb-0">
-            <ImagePreview preview={imagePreview} onRemove={removeImage} />
+            <ImagePreview images={images} onRemove={removeImage} />
           </div>
         )}
         <textarea
@@ -106,6 +106,7 @@ export default function GlassInputHandler({
           ref={fileInputRef}
           onChange={handleImageChange}
           accept="image/*"
+          multiple
           className="hidden"
         />
         <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/20">
@@ -113,11 +114,11 @@ export default function GlassInputHandler({
             <button
               onClick={openFilePicker}
               className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
-                imageFile
+                hasImages
                   ? "text-white bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-600/30"
                   : "text-zinc-400 hover:text-white hover:bg-white/10"
               }`}
-              title="Attach image"
+              title="Attach images"
             >
               <Image size={20} />
             </button>
