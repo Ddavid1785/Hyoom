@@ -63,6 +63,7 @@ async fn send_ai_request(
                 "topK": 40,
                 "topP": 0.95,
                 "maxOutputTokens": 8192,
+                "responseMimeType": "application/json"
             }
         }))
         .send()

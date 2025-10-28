@@ -1,34 +1,55 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, RefObject } from "react";
 import { ArrowUpCircle, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
-import { useImageUpload } from "../../Hooks/useImageUpload";
-import { useWebSpeech } from "../../Hooks/useWebSpeech";
 import { Prompt } from "../../types";
+
+interface ImageData {
+  id: string;
+  file: File;
+  preview: string;
+}
+
+interface GlassInputHandlerProps {
+  onSendMessage: (prompt: Prompt) => void;
+  text: string;
+  setText: React.Dispatch<React.SetStateAction<string>>;
+  isFocused: boolean;
+  setIsFocused: (focused: boolean) => void;
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  images: ImageData[];
+  hasImages: boolean;
+  isDragging: boolean;
+  fileInputRef: RefObject<HTMLInputElement  | null>;
+  handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handlePasteImage: (e: React.ClipboardEvent) => void;
+  removeImage: (id: string) => void;
+  clearImages: () => void;
+  openFilePicker: () => void;
+  getBase64Array: () => string[] | null;
+  isRecording: boolean;
+  startRecording: (callback: (transcript: string) => void) => void;
+}
 
 export default function GlassInputHandler({
   onSendMessage,
-}: {
-  onSendMessage: (prompt: Prompt) => void;
-}) {
-  const [text, setText] = useState<string>("");
-  const [isFocused, setIsFocused] = useState<boolean>(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const {
-    images,
-    hasImages,
-    isDragging,
-    fileInputRef,
-    handleImageChange,
-    handlePasteImage,
-    removeImage,
-    clearImages,
-    openFilePicker,
-    getBase64Array,
-  } = useImageUpload();
-
-  const { isRecording, startRecording } = useWebSpeech();
-
+  text,
+  setText,
+  isFocused,
+  setIsFocused,
+  textareaRef,
+  images,
+  hasImages,
+  isDragging,
+  fileInputRef,
+  handleImageChange,
+  handlePasteImage,
+  removeImage,
+  clearImages,
+  openFilePicker,
+  getBase64Array,
+  isRecording,
+  startRecording,
+}: GlassInputHandlerProps) {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -37,7 +58,7 @@ export default function GlassInputHandler({
         300
       )}px`;
     }
-  }, [text]);
+  }, [text, textareaRef]);
 
   function handleSubmit() {
     const prompt: Prompt = { text: text, baseImages: getBase64Array() };
