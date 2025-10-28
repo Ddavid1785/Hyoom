@@ -8,6 +8,7 @@ import SettingsPage from "./components/Pages/SettingsPage";
 import { useHandleSendMessage } from "./Hooks/useHandleSendMessage";
 import { usePageTransition } from "./Hooks/usePageTransition";
 import Titlebar from "./components/General/Titlebar";
+import "./Main.css";
 
 export default function App() {
   const [chatMode, setChatMode] = useState(false);
