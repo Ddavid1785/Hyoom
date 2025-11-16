@@ -1,3 +1,5 @@
+use std::{process::Child, sync::Mutex};
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -7,3 +9,5 @@ pub struct AppSettings {
     pub google_search_api_key: Option<String>,
     pub google_search_engine_id: Option<String>,
 }
+
+pub struct DenoProcess(pub Mutex<Option<Child>>);

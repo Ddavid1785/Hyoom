@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Message, Prompt } from "../types";
+import { Message, Prompt } from "../types.ts";
 
 export function useHandleSendMessage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -14,7 +14,10 @@ export function useHandleSendMessage() {
     };
 
     const MAX_MESSAGES = 20;
-    setMessages((prev) => [...prev, userMsg].slice(-MAX_MESSAGES));
+
+const history = [...messages, userMsg].slice(-MAX_MESSAGES);
+
+  setMessages(history);
 
     try {
       const response = await fetch('http://localhost:3000/chat', {
@@ -23,7 +26,7 @@ export function useHandleSendMessage() {
         body: JSON.stringify({
           prompt: prompt.text,
           images: prompt.baseImages,
-          history: messages.slice(-MAX_MESSAGES)
+          history: history
         })
       });
 
