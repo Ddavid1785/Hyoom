@@ -12,13 +12,33 @@
   "app": {
     "windows": [
       {
-        "title": "hyoom",
-        "width": 800,
-        "height": 600
+        "title": "Hyoom",
+        "width": 2000,
+        "height": 1000,
+         "dragDropEnabled": false,
+        "decorations": false,
+        "transparent": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "main-capability",
+          "windows": ["main"],
+          "permissions": [
+            "core:window:allow-start-dragging",
+            "core:window:allow-minimize",
+            "core:window:allow-maximize",
+            "core:window:allow-unmaximize",
+            "core:window:allow-toggle-maximize",
+            "core:window:allow-close",
+            "core:window:allow-is-maximized",
+            "core:event:allow-listen",
+            "core:event:default"
+          ]
+        }
+      ]
     }
   },
   "bundle": {
