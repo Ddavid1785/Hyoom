@@ -1,21 +1,28 @@
-mod settings;
-mod types;
-
-use tauri::Manager;
-use std::process::{Command, Child};
+use std::process::{Child, Command};
 use std::sync::Mutex;
-use types::DenoProcess;
+use tauri::Manager;
+use tokio::time::{sleep, Duration};
+
+struct DenoProcess(Mutex<Option<Child>>);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let deno_process = spawn_deno_server()?;
-            
-            app.manage(DenoProcess(Mutex::new(Some(deno_process))));
-            
-            println!("✅ Deno server started on http://localhost:3000");
-            
+            let app_handle = app.handle().clone();
+
+            tauri::async_runtime::spawn(async move {
+                match spawn_deno_server().await {
+                    Ok(process) => {
+                        app_handle.manage(DenoProcess(Mutex::new(Some(process))));
+                        println!("✅ Deno server started");
+                    }
+                    Err(e) => {
+                        eprintln!("❌ Failed to start Deno: {}", e);
+                    }
+                }
+            });
+
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -30,16 +37,12 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![
-            handle_prompt,
-            settings::save_settings,
-            settings::load_settings,
-        ])
+        .invoke_handler(tauri::generate_handler![handle_prompt,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
-fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
+async fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
     let child = Command::new("deno")
         .arg("run")
         .arg("--allow-net")
@@ -47,22 +50,34 @@ fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
         .arg("--allow-write")
         .arg("--allow-env")
         .arg("--allow-run")
-        .arg("../src/denoBackend/main.ts")
+        .arg("../denoBackend/main.ts")
         .spawn()?;
-    
-    std::thread::sleep(std::time::Duration::from_millis(1000));
-    
-    Ok(child)
+
+    let client = reqwest::Client::new();
+    let max_attempts = 50;
+
+    for attempt in 1..=max_attempts {
+        sleep(Duration::from_millis(100)).await;
+
+        if let Ok(response) = client.get("http://localhost:3000/health").send().await {
+            if response.status().is_success() {
+                println!("✅ Deno ready after {}ms", attempt * 100);
+                return Ok(child);
+            }
+        }
+    }
+
+    Err("Deno server failed to start within 5 seconds".into())
 }
 
 #[tauri::command]
 async fn handle_prompt(
-    prompt: String, 
-    images: Option<Vec<String>>, 
-    history: Vec<serde_json::Value>
+    prompt: String,
+    images: Option<Vec<String>>,
+    history: Vec<serde_json::Value>,
 ) -> Result<String, String> {
     let client = reqwest::Client::new();
-    
+
     let response = client
         .post("http://localhost:3000/chat")
         .json(&serde_json::json!({
@@ -73,7 +88,7 @@ async fn handle_prompt(
         .send()
         .await
         .map_err(|e| e.to_string())?;
-    
+
     let text = response.text().await.map_err(|e| e.to_string())?;
     Ok(text)
 }

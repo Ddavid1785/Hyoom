@@ -1,10 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-
-interface ImageData {
-  id: string;
-  file: File;
-  preview: string;
-}
+import { ImageData } from "../types";
 
 export function useImageUpload() {
   const [images, setImages] = useState<ImageData[]>([]);

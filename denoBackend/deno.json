@@ -1,0 +1,7 @@
+{
+  "include": ["./denoBackend"],
+    "exclude": ["../src", "../src-tauri"],
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.window"]
+  }
+}
