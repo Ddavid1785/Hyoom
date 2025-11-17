@@ -20,6 +20,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "denoBackend/LLM/LLMChoices.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

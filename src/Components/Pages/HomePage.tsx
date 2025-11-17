@@ -180,6 +180,7 @@ export default function HomePage({
                     getBase64Array={getBase64Array}
                     isRecording={isRecording}
                     startRecording={startRecording}
+                    isTop={true}
                   />
                 </div>
               </motion.div>
@@ -217,6 +218,7 @@ export default function HomePage({
                   getBase64Array={getBase64Array}
                   isRecording={isRecording}
                   startRecording={startRecording}
+                  isTop={false}
                 />
               </motion.div>
             )}

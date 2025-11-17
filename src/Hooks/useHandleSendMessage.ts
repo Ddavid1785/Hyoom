@@ -31,7 +31,7 @@ const history = [...messages, userMsg].slice(-MAX_MESSAGES);
       });
 
       const data = await response.json();
-
+      console.log("I got response", data)
       const aiMsg: Message = {
         id: crypto.randomUUID(),
         role: "assistant",

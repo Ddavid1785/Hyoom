@@ -1,14 +1,21 @@
 import { useState, useEffect } from "react";
-import { Save, Check } from "lucide-react";
+import { Save, Check, X } from "lucide-react";
 import SettingsInputField from "../Settings/SettingsInputField";
 import { useAppSettings } from "../../Hooks/useAppSettings";
+import { AppSettings } from "../../types";
+import LLMSelect from "../Settings/LLMSelect";
+import { llmChoices, providerIcons } from "../../../denoBackend/LLM/LLMChoices.ts";
 
 interface APIConfigurationProps {
-  settings: any;
+  settings: AppSettings;
   onChange: (settings: any) => void;
 }
 
-function APIConfigurationSection({ settings, onChange }: APIConfigurationProps) {
+function APIConfigurationSection({
+  settings,
+  onChange,
+}: APIConfigurationProps) {
+
   return (
     <section>
       <div className="mb-6">
@@ -22,21 +29,24 @@ function APIConfigurationSection({ settings, onChange }: APIConfigurationProps) 
 
       <div className="space-y-6 max-w-2xl">
         <SettingsInputField
-          label="Gemini API Key"
-          value={settings.geminiApiKey}
-          onChange={(value) =>
-            onChange({ ...settings, geminiApiKey: value })
-          }
-          placeholder="Enter your Gemini API key"
+          label="LLM API Key"
+          value={settings.llmApiKey}
+          onChange={(value) => onChange({ ...settings, llmApiKey: value })}
+          placeholder="Enter your LLM API key"
           type="password"
           required
-          helpText="Get your API key from"
-          helpLink={{
-            text: "Google AI Studio",
-            url: "https://aistudio.google.com/apikey",
-          }}
         />
-
+        <LLMSelect
+          choices={llmChoices}
+          providerIcons={providerIcons}
+          selected={
+            llmChoices.find((choice) => choice.name === settings.llmChoice) ||
+            null
+          }
+          onSelect={(value) => onChange({ ...settings, llmChoice: value })}
+          isTop={false}
+        />
+        {/* 
         <SettingsInputField
           label="Google Search API Key"
           value={settings.googleSearchApiKey}
@@ -60,12 +70,7 @@ function APIConfigurationSection({ settings, onChange }: APIConfigurationProps) 
             })
           }
           placeholder="Enter your Search Engine ID"
-          helpText="Create a custom search engine at"
-          helpLink={{
-            text: "Google Programmable Search",
-            url: "https://programmablesearchengine.google.com/",
-          }}
-        />
+        /> */}
       </div>
     </section>
   );
@@ -83,7 +88,8 @@ export default function SettingsPage() {
     }
   }, [savedSettings]);
 
-  const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(savedSettings);
+  const hasChanges =
+    JSON.stringify(localSettings) !== JSON.stringify(savedSettings);
 
   useEffect(() => {
     if (hasChanges && justSaved) {
@@ -127,7 +133,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-12">
-          <APIConfigurationSection 
+          <APIConfigurationSection
             settings={localSettings}
             onChange={setLocalSettings}
           />
@@ -136,9 +142,9 @@ export default function SettingsPage() {
         <div className="flex items-center gap-4 pt-6 border-t border-zinc-800/50 mt-12">
           <button
             onClick={handleSave}
-            disabled={isSaving || !hasChanges || !localSettings.geminiApiKey}
+            disabled={isSaving || !hasChanges || !localSettings.llmApiKey}
             className={`px-8 py-3 rounded-xl font-medium flex items-center gap-2 transition-all font-Inter ${
-              isSaving || !hasChanges || !localSettings.geminiApiKey
+              isSaving || !hasChanges || !localSettings.llmApiKey
                 ? "bg-zinc-800/40 text-zinc-600 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/40 hover:scale-105 hover:cursor-pointer"
             }`}
@@ -155,6 +161,20 @@ export default function SettingsPage() {
               </>
             )}
           </button>
+
+          <button
+            onClick={() => setLocalSettings(savedSettings)}
+            disabled={!hasChanges || isSaving}
+            className={`px-6 py-3 rounded-xl font-medium transition-all font-Inter flex hover:cursor-pointer ${
+              !hasChanges || isSaving
+                ? "bg-zinc-900/40 text-zinc-600 cursor-not-allowed"
+                : "bg-zinc-700 hover:bg-zinc-600 text-white shadow-md hover:scale-105"
+            }`}
+          >
+            <X />
+            Cancel
+          </button>
+
           {hasChanges && !isSaving && (
             <span className="text-zinc-500 text-sm font-Inter">
               You have unsaved changes

@@ -1,13 +1,10 @@
 import { useEffect, RefObject } from "react";
 import { ArrowUpCircle, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
-import { Prompt } from "../../types";
-
-interface ImageData {
-  id: string;
-  file: File;
-  preview: string;
-}
+import { ImageData, Prompt } from "../../types";
+import { llmChoices, providerIcons } from "../../../denoBackend/LLM/LLMChoices.ts";
+import LLMSelect from "../Settings/LLMSelect";
+import { useAppSettings } from "../../Hooks/useAppSettings";
 
 interface GlassInputHandlerProps {
   onSendMessage: (prompt: Prompt) => void;
@@ -19,7 +16,7 @@ interface GlassInputHandlerProps {
   images: ImageData[];
   hasImages: boolean;
   isDragging: boolean;
-  fileInputRef: RefObject<HTMLInputElement  | null>;
+  fileInputRef: RefObject<HTMLInputElement | null>;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handlePasteImage: (e: React.ClipboardEvent) => void;
   removeImage: (id: string) => void;
@@ -28,6 +25,7 @@ interface GlassInputHandlerProps {
   getBase64Array: () => string[] | null;
   isRecording: boolean;
   startRecording: (callback: (transcript: string) => void) => void;
+  isTop: boolean;
 }
 
 export default function GlassInputHandler({
@@ -49,6 +47,7 @@ export default function GlassInputHandler({
   getBase64Array,
   isRecording,
   startRecording,
+  isTop,
 }: GlassInputHandlerProps) {
   useEffect(() => {
     if (textareaRef.current) {
@@ -59,6 +58,8 @@ export default function GlassInputHandler({
       )}px`;
     }
   }, [text, textareaRef]);
+
+  const { settings: savedSettings, saveSettings, loading } = useAppSettings();
 
   function handleSubmit() {
     const prompt: Prompt = { text: text, baseImages: getBase64Array() };
@@ -86,7 +87,7 @@ export default function GlassInputHandler({
     <div className="relative w-full max-w-3xl">
       <div
         className={`
-          relative rounded-2xl overflow-hidden transition-all duration-300
+          relative rounded-2xl overflow-visible transition-all duration-300
           bg-zinc-900/40 backdrop-blur-xl
           border border-zinc-800/50
           ${
@@ -130,43 +131,62 @@ export default function GlassInputHandler({
           multiple
           className="hidden"
         />
-        <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/20">
-          <div className="flex items-center gap-2">
+        <div className="relative">
+          <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/20 overflow-visible">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={openFilePicker}
+                className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
+                  hasImages
+                    ? "text-white bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-600/30"
+                    : "text-zinc-400 hover:text-white hover:bg-white/10"
+                }`}
+                title="Attach images"
+              >
+                <Image size={20} />
+              </button>
+              <button
+                onClick={handleVoiceInput}
+                className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
+                  isRecording
+                    ? "text-white bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-600/30 animate-pulse"
+                    : "text-zinc-400 hover:text-white hover:bg-white/10"
+                }`}
+                title="Voice input"
+              >
+                <Mic size={20} />
+              </button>
+              {loading || !savedSettings ? (
+                <div>Loading model</div>
+              ) : (
+                <LLMSelect
+                  choices={llmChoices}
+                  providerIcons={providerIcons}
+                  selected={
+                    llmChoices.find(
+                      (choice) => choice.name === savedSettings.llmChoice
+                    ) || null
+                  }
+                  onSelect={(value) => {
+                    saveSettings({ ...savedSettings, llmChoice: value });
+                  }}
+                  isTop={isTop}
+                />
+              )}
+            </div>
             <button
-              onClick={openFilePicker}
-              className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
-                hasImages
-                  ? "text-white bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-600/30"
-                  : "text-zinc-400 hover:text-white hover:bg-white/10"
+              disabled={!text}
+              onClick={handleSubmit}
+              className={`p-2.5 rounded-xl transition-all ${
+                text
+                  ? "text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/40 hover:scale-105 hover:cursor-pointer"
+                  : "text-zinc-600 cursor-not-allowed"
               }`}
-              title="Attach images"
+              title="Send message"
             >
-              <Image size={20} />
-            </button>
-            <button
-              onClick={handleVoiceInput}
-              className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
-                isRecording
-                  ? "text-white bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-600/30 animate-pulse"
-                  : "text-zinc-400 hover:text-white hover:bg-white/10"
-              }`}
-              title="Voice input"
-            >
-              <Mic size={20} />
+              <ArrowUpCircle size={24} />
             </button>
           </div>
-          <button
-            disabled={!text}
-            onClick={handleSubmit}
-            className={`p-2.5 rounded-xl transition-all ${
-              text
-                ? "text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/40 hover:scale-105 hover:cursor-pointer"
-                : "text-zinc-600 cursor-not-allowed"
-            }`}
-            title="Send message"
-          >
-            <ArrowUpCircle size={24} />
-          </button>
         </div>
       </div>
     </div>

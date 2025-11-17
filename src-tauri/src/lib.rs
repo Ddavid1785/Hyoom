@@ -2,8 +2,10 @@ use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
 use tokio::time::{sleep, Duration};
+use crate::types::DenoProcess;
 
-struct DenoProcess(Mutex<Option<Child>>);
+mod types;
+mod settings;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -37,7 +39,7 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![handle_prompt,])
+        .invoke_handler(tauri::generate_handler![handle_prompt, settings::load_settings, settings::save_settings])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
