@@ -1,4 +1,4 @@
-import { LLMMessage, LLMProvider, LLMResponse } from "../types.ts";
+import { LLMMessage, LLMProvider, LLMResponse } from "../LLMtypes.ts";
 
 export class OpenAIProvider implements LLMProvider {
   constructor(private apiKey: string, private modelId: string) {}
@@ -26,9 +26,24 @@ export class OpenAIProvider implements LLMProvider {
 
     const data = await response.json();
 
-    const text =
+    const raw =
       data?.choices?.[0]?.message?.content ?? "[No response from model]";
+      
+    //can be any since model might not return LLMResponse
+    // deno-lint-ignore no-explicit-any
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return { content: raw };
+    }
 
-    return text;
+const parsedResponse: LLMResponse = {
+      content: parsed.content,
+      code: parsed.code,
+      toolCalls: parsed.toolCalls,
+    };
+
+    return parsedResponse;
   }
 }

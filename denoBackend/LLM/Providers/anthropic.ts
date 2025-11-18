@@ -1,4 +1,4 @@
-import { LLMMessage, LLMProvider, LLMResponse } from "../types.ts";
+import { LLMMessage, LLMProvider, LLMResponse } from "../LLMtypes.ts";
 
 export class AnthropicProvider implements LLMProvider {
   constructor(
@@ -38,8 +38,23 @@ export class AnthropicProvider implements LLMProvider {
 
     const data = await response.json();
 
-    const text = data?.completion ?? "[No response from model]";
+    const raw = data?.completion ?? "[No response from model]";
 
-    return text;
+//can be any since model might not return LLMResponse
+    // deno-lint-ignore no-explicit-any
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return { content: raw };
+    }
+
+const parsedResponse: LLMResponse = {
+      content: parsed.content,
+      code: parsed.code,
+      toolCalls: parsed.toolCalls,
+    };
+
+    return parsedResponse;
   }
 }

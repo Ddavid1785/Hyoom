@@ -1,6 +1,147 @@
 {
   "version": "5",
+  "specifiers": {
+    "jsr:@std/internal@^1.0.12": "1.0.12",
+    "jsr:@std/path@*": "1.1.3",
+    "jsr:@std/path@^1.1.3": "1.1.3",
+    "npm:onnxruntime-node@*": "1.23.2",
+    "npm:onnxruntime-node@^1.23.2": "1.23.2"
+  },
+  "jsr": {
+    "@std/internal@1.0.12": {
+      "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
+    },
+    "@std/path@1.1.3": {
+      "integrity": "b015962d82a5e6daea980c32b82d2c40142149639968549c649031a230b1afb3",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    }
+  },
+  "npm": {
+    "adm-zip@0.5.16": {
+      "integrity": "sha512-TGw5yVi4saajsSEgz25grObGHEUaDrniwvA2qwSC060KfqGPdglhvPMA2lPIoxs3PQIItj2iag35fONcQqgUaQ=="
+    },
+    "boolean@3.2.0": {
+      "integrity": "sha512-d0II/GO9uf9lfUHH2BQsjxzRJZBdsjgsBiW4BvhWk/3qoKwQFjIDVN19PfX8F2D/r9PCMTtLWjYVCFrpeYUzsw==",
+      "deprecated": true
+    },
+    "define-data-property@1.1.4": {
+      "integrity": "sha512-rBMvIzlpA8v6E+SJZoo++HAYqsLrkg7MSfIinMPFhmkorw7X+dOXVJQs+QT69zGkzMyfDnIMN2Wid1+NbL3T+A==",
+      "dependencies": [
+        "es-define-property",
+        "es-errors",
+        "gopd"
+      ]
+    },
+    "define-properties@1.2.1": {
+      "integrity": "sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg==",
+      "dependencies": [
+        "define-data-property",
+        "has-property-descriptors",
+        "object-keys"
+      ]
+    },
+    "detect-node@2.1.0": {
+      "integrity": "sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g=="
+    },
+    "es-define-property@1.0.1": {
+      "integrity": "sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g=="
+    },
+    "es-errors@1.3.0": {
+      "integrity": "sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw=="
+    },
+    "es6-error@4.1.1": {
+      "integrity": "sha512-Um/+FxMr9CISWh0bi5Zv0iOD+4cFh5qLeks1qhAopKVAJw3drgKbKySikp7wGhDL0HPeaja0P5ULZrxLkniUVg=="
+    },
+    "escape-string-regexp@4.0.0": {
+      "integrity": "sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA=="
+    },
+    "global-agent@3.0.0": {
+      "integrity": "sha512-PT6XReJ+D07JvGoxQMkT6qji/jVNfX/h364XHZOWeRzy64sSFr+xJ5OX7LI3b4MPQzdL4H8Y8M0xzPpsVMwA8Q==",
+      "dependencies": [
+        "boolean",
+        "es6-error",
+        "matcher",
+        "roarr",
+        "semver",
+        "serialize-error"
+      ]
+    },
+    "globalthis@1.0.4": {
+      "integrity": "sha512-DpLKbNU4WylpxJykQujfCcwYWiV/Jhm50Goo0wrVILAv5jOr9d+H+UR3PhSCD2rCCEIg0uc+G+muBTwD54JhDQ==",
+      "dependencies": [
+        "define-properties",
+        "gopd"
+      ]
+    },
+    "gopd@1.2.0": {
+      "integrity": "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg=="
+    },
+    "has-property-descriptors@1.0.2": {
+      "integrity": "sha512-55JNKuIW+vq4Ke1BjOTjM2YctQIvCT7GFzHwmfZPGo5wnrgkid0YQtnAleFSqumZm4az3n2BS+erby5ipJdgrg==",
+      "dependencies": [
+        "es-define-property"
+      ]
+    },
+    "json-stringify-safe@5.0.1": {
+      "integrity": "sha512-ZClg6AaYvamvYEE82d3Iyd3vSSIjQ+odgjaTzRuO3s7toCdFKczob2i0zCh7JE8kWn17yvAWhUVxvqGwUalsRA=="
+    },
+    "matcher@3.0.0": {
+      "integrity": "sha512-OkeDaAZ/bQCxeFAozM55PKcKU0yJMPGifLwV4Qgjitu+5MoAfSQN4lsLJeXZ1b8w0x+/Emda6MZgXS1jvsapng==",
+      "dependencies": [
+        "escape-string-regexp"
+      ]
+    },
+    "object-keys@1.1.1": {
+      "integrity": "sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA=="
+    },
+    "onnxruntime-common@1.23.2": {
+      "integrity": "sha512-5LFsC9Dukzp2WV6kNHYLNzp8sT6V02IubLCbzw2Xd6X5GOlr65gAX6xiJwyi2URJol/s71gaQLC5F2C25AAR2w=="
+    },
+    "onnxruntime-node@1.23.2": {
+      "integrity": "sha512-OBTsG0W8ddBVOeVVVychpVBS87A9YV5sa2hJ6lc025T97Le+J4v++PwSC4XFs1C62SWyNdof0Mh4KvnZgtt4aw==",
+      "dependencies": [
+        "adm-zip",
+        "global-agent",
+        "onnxruntime-common"
+      ],
+      "os": ["win32", "darwin", "linux"],
+      "scripts": true
+    },
+    "roarr@2.15.4": {
+      "integrity": "sha512-CHhPh+UNHD2GTXNYhPWLnU8ONHdI+5DI+4EYIAOaiD63rHeYlZvyh8P+in5999TTSFgUYuKUAjzRI4mdh/p+2A==",
+      "dependencies": [
+        "boolean",
+        "detect-node",
+        "globalthis",
+        "json-stringify-safe",
+        "semver-compare",
+        "sprintf-js"
+      ]
+    },
+    "semver-compare@1.0.0": {
+      "integrity": "sha512-YM3/ITh2MJ5MtzaM429anh+x2jiLVjqILF4m4oyQB18W7Ggea7BfqdH/wGMK7dDiMghv/6WG7znWMwUDzJiXow=="
+    },
+    "semver@7.7.3": {
+      "integrity": "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==",
+      "bin": true
+    },
+    "serialize-error@7.0.1": {
+      "integrity": "sha512-8I8TjW5KMOKsZQTvoxjuSIa7foAwPWGOts+6o7sgjz41/qMD9VQHEDxi6PBvK2l0MXUmqZyNpUK+T2tQaaElvw==",
+      "dependencies": [
+        "type-fest"
+      ]
+    },
+    "sprintf-js@1.1.3": {
+      "integrity": "sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA=="
+    },
+    "type-fest@0.13.1": {
+      "integrity": "sha512-34R7HTnG0XIJcBSn5XhDd7nNFPRcXYRZrBB2O2jdKqYODldSzBAqzsWoZYYvduky73toYS/ESqxPvkDf/F0XMg=="
+    }
+  },
   "remote": {
+    "https://cdn.jsdelivr.net/npm/@xenova/transformers/dist/transformers.min.js": "bcf7cf304e51f470ed59409622b9d6ffbad80dfcf5baf6a40c919e4b9c4ff812",
     "https://deno.land/std@0.203.0/assert/assert.ts": "9a97dad6d98c238938e7540736b826440ad8c1c1e54430ca4c4e623e585607ee",
     "https://deno.land/std@0.203.0/assert/assertion_error.ts": "4d0bde9b374dfbcbe8ac23f54f567b77024fb67dbb1906a852d67fe050d42f56",
     "https://deno.land/std@0.203.0/path/_basename.ts": "057d420c9049821f983f784fd87fa73ac471901fb628920b67972b0f44319343",
@@ -39,5 +180,11 @@
     "https://deno.land/std@0.203.0/path/to_file_url.ts": "00e6322373dd51ad109956b775e4e72e5f9fa68ce2c6b04e4af2a6eed3825d31",
     "https://deno.land/std@0.203.0/path/to_namespaced_path.ts": "1b1db3055c343ab389901adfbda34e82b7386bcd1c744d54f9c1496ee0fd0c3d",
     "https://deno.land/std@0.203.0/path/win32.ts": "8b3f80ef7a462511d5e8020ff490edcaa0a0d118f1b1e9da50e2916bdd73f9dd"
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/path@^1.1.3",
+      "npm:onnxruntime-node@^1.23.2"
+    ]
   }
 }

@@ -52,6 +52,7 @@ async fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
         .arg("--allow-write")
         .arg("--allow-env")
         .arg("--allow-run")
+        .arg("--allow-ffi")
         .arg("../denoBackend/main.ts")
         .spawn()?;
 

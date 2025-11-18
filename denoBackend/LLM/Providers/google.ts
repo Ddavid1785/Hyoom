@@ -1,4 +1,4 @@
-import { LLMMessage, LLMProvider, LLMResponse } from "../types.ts";
+import { LLMMessage, LLMProvider, LLMResponse } from "../LLMtypes.ts";
 
 export class GeminiProvider implements LLMProvider {
   constructor(private apiKey: string, private modelId: string) {}
@@ -28,10 +28,24 @@ export class GeminiProvider implements LLMProvider {
 
     const data = await response.json();
 
-    const text =
+const raw =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ??
       "[No response from model]";
 
-    return text;
+    // deno-lint-ignore no-explicit-any
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return { content: raw };
+    }
+    console.log("PARSED RESPONSE IS: ", parsed)
+const parsedResponse: LLMResponse = {
+      content: parsed.content,
+      code: parsed.code,
+      metaToolCalls: parsed.metaToolCalls,
+    };
+
+    return parsedResponse;
   }
 }

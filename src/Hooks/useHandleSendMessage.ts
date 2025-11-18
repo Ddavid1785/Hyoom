@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Message, Prompt } from "../types.ts";
 
+function stripForLLM(msg: Message) {
+  return {
+    role: msg.role,
+    content: msg.content,
+    images: msg.images ?? undefined
+  };
+}
+
 export function useHandleSendMessage() {
   const [messages, setMessages] = useState<Message[]>([]);
   
@@ -9,7 +17,7 @@ export function useHandleSendMessage() {
       id: crypto.randomUUID(),
       role: "user",
       content: prompt.text,
-      images: prompt.baseImages || undefined,
+      images: prompt.baseImages ?? undefined,
       timestamp: new Date(),
     };
 
@@ -23,15 +31,10 @@ const history = [...messages, userMsg].slice(-MAX_MESSAGES);
       const response = await fetch('http://localhost:3000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: prompt.text,
-          images: prompt.baseImages,
-          history: history
-        })
+        body: JSON.stringify({ history: history.map(stripForLLM) })
       });
 
       const data = await response.json();
-      console.log("I got response", data)
       const aiMsg: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
