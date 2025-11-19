@@ -82,7 +82,6 @@ async function agentLoop(provider: LLMProvider, messages: LLMMessage[]) {
   
   while (maxIterations-- > 0) {
     const response:LLMResponse = await provider.call(messages);
-    console.log("LLM RESPONSE IS: ",response)
     if (response.metaToolCalls) {
      const results = await executeMetaTools(response.metaToolCalls);
       
