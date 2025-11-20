@@ -29,7 +29,6 @@ export class OpenAIProvider implements LLMProvider {
     const raw =
       data?.choices?.[0]?.message?.content ?? "[No response from model]";
       
-    //can be any since model might not return LLMResponse
     // deno-lint-ignore no-explicit-any
     let parsed: any = {};
     try {
@@ -41,7 +40,7 @@ export class OpenAIProvider implements LLMProvider {
 const parsedResponse: LLMResponse = {
       content: parsed.content,
       code: parsed.code,
-      toolCalls: parsed.toolCalls,
+      metaToolCalls: parsed.metaToolCalls,
     };
 
     return parsedResponse;
