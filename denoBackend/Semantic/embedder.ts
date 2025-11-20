@@ -1,7 +1,7 @@
 import * as ort from "onnxruntime-node";
 import { join } from "std/path/mod.ts";
 
-const modelsDir = join(Deno.cwd(), "..", "denoBackend", "Semantic", "models");
+const modelsDir = join(Deno.cwd(), "Semantic", "models");
 
 class HuggingFaceTokenizer {
   vocab: Map<string, number>;

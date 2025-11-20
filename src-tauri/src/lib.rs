@@ -45,6 +45,19 @@ pub fn run() {
 }
 
 async fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
+
+    let deno_path = std::env::current_exe()?
+        .parent()
+        .ok_or("Failed to get parent directory")?
+        .parent() 
+        .ok_or("Failed to get target directory")?
+        .parent() 
+        .ok_or("Failed to get src-tauri directory")?
+        .parent()
+        .ok_or("Failed to get project root")?
+        .join("denoBackend")
+        .canonicalize()?;
+
     let child = Command::new("deno")
         .arg("run")
         .arg("--allow-net")
@@ -53,7 +66,8 @@ async fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
         .arg("--allow-env")
         .arg("--allow-run")
         .arg("--allow-ffi")
-        .arg("../denoBackend/main.ts")
+        .arg("main.ts")
+        .current_dir(&deno_path)
         .spawn()?;
 
     let client = reqwest::Client::new();

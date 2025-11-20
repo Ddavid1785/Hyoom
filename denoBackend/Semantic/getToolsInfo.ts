@@ -4,14 +4,12 @@ import { ToolInfo } from "./types.ts";
 export async function getToolsInfo(): Promise<ToolInfo[]> {
   const tools: ToolInfo[] = [];
 
-  // Absolute paths from project root
-  const rootDir = join(Deno.cwd(),"..","denoBackend", "Tools");
-  const llmDir = join(Deno.cwd(),"..","denoBackend", "LLM");
+  const rootDir = join(Deno.cwd(), "Tools");
+  const llmDir = join(Deno.cwd(), "LLM");
 
   console.log("Scanning tools in:", rootDir);
   console.log("CWD is:", Deno.cwd());
 
-  // Check if directory exists
   try {
     const stat = await Deno.stat(rootDir);
     if (!stat.isDirectory) {

@@ -2,7 +2,7 @@ import { join } from "std/path/mod.ts";
 
 export async function executeAICode(code: string) {
   try {
-    const toolsDir = join(Deno.cwd(), "..", "denoBackend", "Tools");
+    const toolsDir = join(Deno.cwd(), "Tools");
     
     let rewrittenCode = code.replace(
       /from ['"]\.\.\/Tools\/(.*?)['"]/g,

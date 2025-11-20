@@ -8,7 +8,7 @@ export async function toolRead(relativePath: string): Promise<string> {
   cleanPath = cleanPath.replace(/^\.\.\//, "");
   
   // Build absolute path: src-tauri -> Hyoom -> denoBackend -> Tools/...
-  const absolutePath = join(Deno.cwd(), "..", "denoBackend", cleanPath);
+  const absolutePath = join(Deno.cwd(), cleanPath);
   
   console.log("📖 Reading tool from:", absolutePath);
   console.log("📖 Original path was:", relativePath);
