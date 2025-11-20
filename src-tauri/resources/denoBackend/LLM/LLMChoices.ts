@@ -1,4 +1,4 @@
-import { LLMChoice } from "../../src/types.ts";
+import { LLMChoice } from "../shared/sharedTypes.ts";
 
 export const llmChoices: LLMChoice[] = [
   // OpenAI

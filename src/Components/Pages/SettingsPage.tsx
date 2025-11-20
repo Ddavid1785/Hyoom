@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Save, Check, X } from "lucide-react";
 import SettingsInputField from "../Settings/SettingsInputField";
 import { useAppSettings } from "../../Hooks/useAppSettings";
-import { AppSettings } from "../../types";
+import { AppSettings } from "../../shared/sharedTypes.ts";
 import LLMSelect from "../Settings/LLMSelect";
-import { llmChoices, providerIcons } from "../../../denoBackend/LLM/LLMChoices.ts";
+import { llmChoices, providerIcons } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 
 interface APIConfigurationProps {
   settings: AppSettings;

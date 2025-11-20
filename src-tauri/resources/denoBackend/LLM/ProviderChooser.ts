@@ -1,7 +1,7 @@
 import { GeminiProvider } from "./Providers/google.ts";
 import { OpenAIProvider } from "./Providers/openAI.ts";
 import { AnthropicProvider } from "./Providers/anthropic.ts";
-import { LLMChoice } from "../../src/types.ts";
+import { LLMChoice } from "../shared/sharedTypes.ts";
 
 export function createProvider(apiKey: string, choice: LLMChoice){
 

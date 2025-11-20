@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Message, Prompt } from "../types.ts";
+import { fetch } from '@tauri-apps/plugin-http';
 
 function stripForLLM(msg: Message) {
   return {

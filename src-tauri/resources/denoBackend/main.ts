@@ -1,5 +1,5 @@
 import { findLLMChoice } from "./LLM/LLMChoices.ts";
-import { AppSettings } from "../src/types.ts";
+import { AppSettings } from "./shared/sharedTypes.ts";
 import { LLMMessage, LLMProvider, LLMResponse } from "./LLM/LLMtypes.ts";
 import { createProvider } from "./LLM/ProviderChooser.ts";
 import { SYSTEM_PROMPT } from "./LLM/SystemPrompt.ts";
@@ -40,38 +40,50 @@ Deno.serve({ port: 3000 }, async (req) => {
     return new Response(null, { status: 204, headers });
   }
 
-  if (url.pathname === "/chat" && req.method === "POST") {
-
-const body: { history: LLMMessage[] } = await req.json();
-    const  settings: AppSettings = await loadSettings();
+if (url.pathname === "/chat" && req.method === "POST") {
+  try {
+    const body: { history: LLMMessage[] } = await req.json();
+    console.log("📨 Received chat request");
+    
+    const settings: AppSettings = await loadSettings();
+    console.log("✅ Settings loaded");
 
     const llmChoice = validateSettings(settings);
-
     if (!llmChoice) {
-  return Response.json({ error: "No valid LLM configured" }, { headers, status: 400 });
+      console.error("❌ No valid LLM configured");
+      return Response.json({ error: "No valid LLM configured" }, { headers, status: 400 });
     }
 
-    console.log("📨 Received:", body);
+    console.log("🤖 Using LLM:", llmChoice);
 
-const provider = createProvider(settings.llmApiKey ,llmChoice);
-const messages: LLMMessage[] = [
-  { role: "system", content: SYSTEM_PROMPT, images: undefined },
-  ...body.history
-];
+    const provider = createProvider(settings.llmApiKey, llmChoice);
+    const messages: LLMMessage[] = [
+      { role: "system", content: SYSTEM_PROMPT, images: undefined },
+      ...body.history
+    ];
 
-const res = await agentLoop(provider, messages)
+    const res = await agentLoop(provider, messages);
 
-if (res.code){
-await executeAICode(res.code)
-}
+    if (res.code) {
+      await executeAICode(res.code);
+    }
 
-    return Response.json({
-      content: res.content
-    }, {headers});
+    console.log("✅ Chat response sent");
+    return Response.json({ content: res.content }, { headers });
+    
+  } catch (error) {
+    console.error("❌ Chat endpoint error:", error);
+    return Response.json({ 
+      error: error instanceof Error ? error.message : "Unknown error" 
+    }, { 
+      headers, 
+      status: 500 
+    });
   }
+}
   
   if (url.pathname === "/health") {
-    return Response.json({ status: "ok" }, {headers});
+    return Response.json({ status: "OK" }, {status:200,headers});
   }
   
   return new Response("Not Found", { status: 404, headers });

@@ -2,7 +2,7 @@ import { useEffect, RefObject } from "react";
 import { ArrowUpCircle, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
 import { ImageData, Prompt } from "../../types";
-import { llmChoices, providerIcons } from "../../../denoBackend/LLM/LLMChoices.ts";
+import { llmChoices, providerIcons } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 import LLMSelect from "../Settings/LLMSelect";
 import { useAppSettings } from "../../Hooks/useAppSettings";
 

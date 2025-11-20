@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Cpu, ChevronDown, X, ChevronRight } from "lucide-react";
-import { LLMChoice } from "../../types";
+import { LLMChoice } from "../../shared/sharedTypes.ts";
 
 interface Props {
   choices: LLMChoice[];

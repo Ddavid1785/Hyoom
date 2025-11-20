@@ -1,20 +1,31 @@
+use crate::types::DenoProcess;
+use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
 use tokio::time::{sleep, Duration};
-use crate::types::DenoProcess;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
-mod types;
 mod settings;
+mod types;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
 
             tauri::async_runtime::spawn(async move {
-                match spawn_deno_server().await {
+                let resource_dir = match app_handle.path().resource_dir() {
+                    Ok(dir) => dir,
+                    Err(e) => {
+                        eprintln!("❌ Failed to get resource dir: {:?}", e);
+                        return;
+                    }
+                };
+                match spawn_deno_server(resource_dir).await {
                     Ok(process) => {
                         app_handle.manage(DenoProcess(Mutex::new(Some(process))));
                         println!("✅ Deno server started");
@@ -39,26 +50,23 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![handle_prompt, settings::load_settings, settings::save_settings])
+        .invoke_handler(tauri::generate_handler![
+            settings::load_settings,
+            settings::save_settings
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
-async fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
+async fn spawn_deno_server(resource_dir: PathBuf) -> Result<Child, Box<dyn std::error::Error>> {
+    let deno_path = resource_dir.join("resources").join("denoBackend");
+    let deno_exe = resource_dir.join("bin").join("deno.exe");
 
-    let deno_path = std::env::current_exe()?
-        .parent()
-        .ok_or("Failed to get parent directory")?
-        .parent() 
-        .ok_or("Failed to get target directory")?
-        .parent() 
-        .ok_or("Failed to get src-tauri directory")?
-        .parent()
-        .ok_or("Failed to get project root")?
-        .join("denoBackend")
-        .canonicalize()?;
+    #[cfg(windows)]
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-    let child = Command::new("deno")
+    let mut command = Command::new(&deno_exe);
+    command
         .arg("run")
         .arg("--allow-net")
         .arg("--allow-read")
@@ -67,8 +75,21 @@ async fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
         .arg("--allow-run")
         .arg("--allow-ffi")
         .arg("main.ts")
-        .current_dir(&deno_path)
-        .spawn()?;
+        .current_dir(&deno_path);
+
+    #[cfg(all(windows, not(debug_assertions)))]
+    {
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    #[cfg(debug_assertions)]
+    {
+        use std::process::Stdio;
+        command.stdout(Stdio::inherit());
+        command.stderr(Stdio::inherit());
+    }
+
+    let child = command.spawn()?;
 
     let client = reqwest::Client::new();
     let max_attempts = 50;
@@ -84,28 +105,6 @@ async fn spawn_deno_server() -> Result<Child, Box<dyn std::error::Error>> {
         }
     }
 
+    println!("❌ Deno health check timeout");
     Err("Deno server failed to start within 5 seconds".into())
-}
-
-#[tauri::command]
-async fn handle_prompt(
-    prompt: String,
-    images: Option<Vec<String>>,
-    history: Vec<serde_json::Value>,
-) -> Result<String, String> {
-    let client = reqwest::Client::new();
-
-    let response = client
-        .post("http://localhost:3000/chat")
-        .json(&serde_json::json!({
-            "prompt": prompt,
-            "images": images,
-            "history": history
-        }))
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let text = response.text().await.map_err(|e| e.to_string())?;
-    Ok(text)
 }
