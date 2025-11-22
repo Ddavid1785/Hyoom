@@ -4,8 +4,6 @@ use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
 use tokio::time::{sleep, Duration};
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
 
 mod settings;
 mod types;
@@ -62,7 +60,7 @@ async fn spawn_deno_server(resource_dir: PathBuf) -> Result<Child, Box<dyn std::
     let deno_path = resource_dir.join("resources").join("denoBackend");
     let deno_exe = resource_dir.join("bin").join("deno.exe");
 
-    #[cfg(windows)]
+    #[cfg(all(windows, not(debug_assertions)))]
     const CREATE_NO_WINDOW: u32 = 0x08000000;
 
     let mut command = Command::new(&deno_exe);
