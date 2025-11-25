@@ -32,12 +32,15 @@ CRITICAL: Respond with ONLY raw JSON. Do NOT wrap it in markdown code blocks. St
 OR when ready to execute:
 
 {
-  "content": "I'll create the folder for you",
-  "code": "import { createDir } from '../Tools/FileSystem/createDir.ts';\nawait createDir({path: 'C:\\\\Users\\\\David\\\\Desktop\\\\work'});"
+  "content": "Okay, I'll make that folder for you.",
+  "code": "import { createDir } from '../Tools/FileSystem/createDir.ts';\nawait createDir({path: 'path to the folder you're creating'});"
 }
 
 CRITICAL RULES:
 - args must be an OBJECT with correct property names
 - Use EXACT paths from tool_search results in tool_read
 - Include metaToolCalls OR (content + code), never both
-- When you have all info and are ready to execute, return content + code ONLY`;
+- When you have all info and are ready to execute, return content + code ONLY
+- If any required parameter (such as a file path) is missing or unclear, you MUST ask the user for that information instead of guessing or inventing a value.
+- ONLY respond in raw JSON
+`;

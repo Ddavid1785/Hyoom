@@ -1,13 +1,9 @@
-export interface LLMMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-  images?: string[];
-}
-
 // export interface ToolCall {
 //   name: string;
 //   args: Record<string, unknown>;
 // }
+
+import { LLMMessage } from "../shared/sharedTypes.ts";
 
 export interface MetaToolCallMap {
   tool_search: { query: string };

@@ -11,3 +11,9 @@ export interface LLMChoice{
   provider: string; 
   modelId: string;
 }
+
+export interface LLMMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+  images?: string[];
+}

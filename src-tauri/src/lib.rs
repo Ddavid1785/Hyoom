@@ -1,12 +1,14 @@
+mod settings;
+mod types;
+mod voice;
+
 use crate::types::DenoProcess;
 use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
 use tokio::time::{sleep, Duration};
-
-mod settings;
-mod types;
+use voice::{start_voice_thread};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,14 +17,15 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
 
+               let app_handle_clone = app.handle().clone();
+                let resource_dir = app.path().resource_dir()?;
+
+let (voice_cmd_tx, voice_event_rx) = start_voice_thread(resource_dir.clone(), app_handle_clone);
+    
+    app.manage(voice_cmd_tx);
+    app.manage(Mutex::new(voice_event_rx));
+
             tauri::async_runtime::spawn(async move {
-                let resource_dir = match app_handle.path().resource_dir() {
-                    Ok(dir) => dir,
-                    Err(e) => {
-                        eprintln!("❌ Failed to get resource dir: {:?}", e);
-                        return;
-                    }
-                };
                 match spawn_deno_server(resource_dir).await {
                     Ok(process) => {
                         app_handle.manage(DenoProcess(Mutex::new(Some(process))));

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Message, Prompt } from "../types.ts";
 import { fetch } from '@tauri-apps/plugin-http';
+import { LLMMessage } from "../shared/sharedTypes.ts";
 
-function stripForLLM(msg: Message) {
+function stripForLLM(msg: Message):LLMMessage {
   return {
     role: msg.role,
     content: msg.content,
@@ -24,15 +25,16 @@ export function useHandleSendMessage() {
 
     const MAX_MESSAGES = 20;
 
-const history = [...messages, userMsg].slice(-MAX_MESSAGES);
-
-  setMessages(history);
+    setMessages(prev => {
+      const next = [...prev, userMsg];
+      return next.slice(-MAX_MESSAGES);
+    });
 
     try {
       const response = await fetch('http://localhost:3000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history: history.map(stripForLLM) })
+        body: JSON.stringify({ message:stripForLLM(userMsg) })
       });
 
       const data = await response.json();

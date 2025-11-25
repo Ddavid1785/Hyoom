@@ -1,4 +1,5 @@
-import { LLMMessage, LLMProvider, LLMResponse } from "../LLMtypes.ts";
+import { LLMMessage } from "../../shared/sharedTypes.ts";
+import { LLMProvider, LLMResponse } from "../LLMtypes.ts";
 
 export class AnthropicProvider implements LLMProvider {
   constructor(

@@ -71,8 +71,9 @@
       "icons/icon.ico"
     ],
   "resources": [
-    "resources/denoBackend/**/*", 
-    "bin/deno.exe"
+    "resources/denoBackend/**/*",
+    "resources/voice_models/*", 
+    "bin/*"
   ]
   }
 }

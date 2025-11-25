@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "sync-shared-types": "node scripts/sync-shared-types.js",
+    "sync-shared-types": "bun scripts/sync-shared-types.js",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
