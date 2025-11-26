@@ -1,9 +1,12 @@
 import { join } from "std/path/mod.ts";
 
-export async function executeAICode(code: string) {
+export async function executeAICode(code: string): Promise<string> {
+  let tempDir = "";
+
   try {
     const toolsDir = join(Deno.cwd(), "Tools");
     
+
     let rewrittenCode = code.replace(
       /from ['"]\.\.\/Tools\/(.*?)['"]/g,
       `from 'file://${toolsDir.replace(/\\/g, "/")}/$1'`
@@ -16,24 +19,47 @@ export async function executeAICode(code: string) {
         return `${quote}${escapedPath}${quote}`;
       }
     );
+
+    console.log("🚀 Executing code...");
     
-    console.log("🚀 Executing code:");
-    console.log(rewrittenCode);
-    
-    const tempDir = await Deno.makeTempDir();
+    tempDir = await Deno.makeTempDir();
     const tempFile = join(tempDir, `code_${Date.now()}.ts`);
-    
     await Deno.writeTextFile(tempFile, rewrittenCode);
     
-    await import(`file://${tempFile}`);
+
+    const command = new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "--allow-all",
+        tempFile
+      ],
+      stdout: "piped",
+      stderr: "piped",
+    });
+
+    const output = await command.output();
     
     await Deno.remove(tempDir, { recursive: true });
     
-    console.log("✅ Code executed successfully");
-    return { success: true };
+    const outStr = new TextDecoder().decode(output.stdout);
+    const errStr = new TextDecoder().decode(output.stderr);
+
+    if (errStr) {
+      console.log("⚠️ Code had stderr output");
+      return `${outStr}\n[Error Log]: ${errStr}`;
+    }
+
+    const finalResult = outStr.trim() || "Code executed successfully (no output).";
+    console.log("✅ Result:", finalResult);
+    return finalResult;
+
   // deno-lint-ignore no-explicit-any
   } catch (error: any) {
-    console.error("❌ Code execution failed:", error);
-    return { success: false, error: error.message };
+    if(tempDir) {
+        // deno-lint-ignore no-empty
+        try { await Deno.remove(tempDir, { recursive: true }) } catch(_){}
+    }
+    console.error("❌ Execution failed:", error);
+    return `System Execution Error: ${error.message}`;
   }
 }

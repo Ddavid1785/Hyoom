@@ -8,7 +8,7 @@ export async function toolSearch(query:string) {
     const toolEmbeddings = await loadTools();
 
     if(!toolEmbeddings){
-        return "Failed to search for tools";
+        return [];
     }
 
     const embedder = await getEmbedder();

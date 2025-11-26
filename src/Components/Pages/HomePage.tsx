@@ -196,42 +196,46 @@ export default function HomePage({
             ) : (
               <motion.div
                 key="quick"
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex-1 flex items-center justify-center relative"
+                className="flex-1 flex flex-col items-center justify-center w-full h-full pb-10"
               >
-                {messages.length > 0 && (
-                  <div className="absolute top-8 left-1/2 -translate-x-1/2 w-full max-w-3xl pointer-events-none">
-                    <QuickModeContext messages={messages} />
-                  </div>
-                )}
+                <div className="flex-1 min-h-0" />
 
-                <GlassInputHandler
-                  onSendMessage={onSendMessage}
-                  text={text}
-                  setText={setText}
-                  isFocused={isFocused}
-                  setIsFocused={setIsFocused}
-                  textareaRef={textareaRef}
-                  images={images}
-                  hasImages={hasImages}
-                  isDragging={isDragging}
-                  fileInputRef={fileInputRef}
-                  handleImageChange={handleImageChange}
-                  handlePasteImage={handlePasteImage}
-                  removeImage={removeImage}
-                  clearImages={clearImages}
-                  openFilePicker={openFilePicker}
-                  getBase64Array={getBase64Array}
-                  isTop={false}
-                  voiceStatus={status}
-                  isListening={isListening}
-                  onVoiceTrigger={triggerListening}
-                  voiceTranscript={lastTranscript}
-                  onClearTranscript={clearTranscript}
-                />
+                <div className="w-full max-w-3xl px-4 mb-6">
+                  <QuickModeContext messages={messages} />
+                </div>
+
+                <div className="w-full max-w-3xl shrink-0">
+                  <GlassInputHandler
+                    onSendMessage={onSendMessage}
+                    text={text}
+                    setText={setText}
+                    isFocused={isFocused}
+                    setIsFocused={setIsFocused}
+                    textareaRef={textareaRef}
+                    images={images}
+                    hasImages={hasImages}
+                    isDragging={isDragging}
+                    fileInputRef={fileInputRef}
+                    handleImageChange={handleImageChange}
+                    handlePasteImage={handlePasteImage}
+                    removeImage={removeImage}
+                    clearImages={clearImages}
+                    openFilePicker={openFilePicker}
+                    getBase64Array={getBase64Array}
+                    isTop={false}
+                    voiceStatus={status}
+                    isListening={isListening}
+                    onVoiceTrigger={triggerListening}
+                    voiceTranscript={lastTranscript}
+                    onClearTranscript={clearTranscript}
+                  />
+                </div>
+
+                <div className="flex-[0.8] min-h-0" />
               </motion.div>
             )}
           </AnimatePresence>

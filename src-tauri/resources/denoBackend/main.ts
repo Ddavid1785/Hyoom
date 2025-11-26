@@ -77,10 +77,6 @@ function addMessage(msg: LLMMessage) {
 
       const res = await agentLoop(provider, messages);
 
-      if (res.code) {
-        await executeAICode(res.code);
-      }
-
       console.log("✅ Chat response sent");
       console.log(res)
       return Response.json({ content: res.content }, { headers });
@@ -103,36 +99,61 @@ function addMessage(msg: LLMMessage) {
     return new Response("Not Found", { status: 404, headers });
   });
 
-  async function agentLoop(provider: LLMProvider, messages: LLMMessage[]) {
+async function agentLoop(provider: LLMProvider, messages: LLMMessage[]) {
     let maxIterations = 10; 
     
     while (maxIterations-- > 0) {
-      const response:LLMResponse = await provider.call(messages);
-      if (response.metaToolCalls) {
-      const results = await executeMetaTools(response.metaToolCalls);
+      console.log(`🔄 Turn ${10 - maxIterations}`);
+      
+      const response: LLMResponse = await provider.call(messages);
+
+      if (response.metaToolCalls && response.metaToolCalls.length > 0) {
+        console.log("🛠️  Meta Tool called");
+        const results = await executeMetaTools(response.metaToolCalls);
         
         addMessage({
           role: "assistant",
-          content: JSON.stringify(response.metaToolCalls),
-          images:undefined
+          content: JSON.stringify({ metaToolCalls: response.metaToolCalls }),
+          images: undefined
         });
+        
         addMessage({
           role: "user",
-          content: `[TOOL RESULTS]: ${JSON.stringify(results)}`,
+          content: `[TOOL SEARCH RESULTS (Includes Source Code)]:\n${JSON.stringify(results)}`,
           images: undefined
         });
         
         continue;
       }
       
-      if (response.code || response.content) {
-        return { content: response.content, code: response.code };
+      if (response.code) {
+        console.log("⚡ AI generated code");
+        
+        const executionResult = await executeAICode(response.code);
+
+        addMessage({
+          role: "assistant",
+          content: JSON.stringify({ content: response.content, code: response.code }),
+          images: undefined
+        });
+
+        addMessage({
+          role: "user",
+          content: `[CODE EXECUTION OUTPUT]:\n${executionResult}`,
+          images: undefined
+        });
+
+        continue;
       }
       
-      throw new Error("LLM returned neither tools nor response");
+      if (response.content) {
+        return { content: response.content };
+      }
+      
+      throw new Error("LLM returned empty response");
     }
     
-    throw new Error("Max iterations reached");
+    return { content: "I reached my maximum iteration limit." };
   }
 
 async function loadSettings() {
