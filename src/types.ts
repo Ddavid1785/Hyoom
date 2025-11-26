@@ -18,3 +18,5 @@ export interface Message {
   timestamp: Date;
   images?: string[];
 }
+
+export type VoiceStatus = "idle" | "listening" | "processing" | "error";

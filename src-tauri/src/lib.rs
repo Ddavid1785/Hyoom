@@ -5,10 +5,21 @@ mod voice;
 use crate::types::DenoProcess;
 use std::path::PathBuf;
 use std::process::{Child, Command};
-use std::sync::Mutex;
-use tauri::Manager;
+use std::sync::{mpsc, Mutex};
+use tauri::{Emitter, Manager, State};
 use tokio::time::{sleep, Duration};
-use voice::{start_voice_thread};
+use voice::{start_voice_thread, VoiceCommand};
+
+// Wrapper for the sender so Tauri can manage it
+struct VoiceSender(Mutex<mpsc::Sender<VoiceCommand>>);
+
+// ✅ NEW COMMAND: Called from React to start listening manually
+#[tauri::command]
+fn trigger_voice_listening(state: State<VoiceSender>) {
+    if let Ok(tx) = state.0.lock() {
+        let _ = tx.send(VoiceCommand::StartListening);
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,13 +27,35 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
+            let app_handle_clone = app.handle().clone();
+            let resource_dir = app.path().resource_dir()?;
 
-               let app_handle_clone = app.handle().clone();
-                let resource_dir = app.path().resource_dir()?;
+            // 1. Start the thread and get BOTH channels
+            let (cmd_tx, voice_event_rx) =
+                start_voice_thread(resource_dir.clone(), app_handle_clone.clone());
 
-let voice_event_rx = start_voice_thread(resource_dir.clone(), app_handle_clone);
-    
-    app.manage(Mutex::new(voice_event_rx));
+            // 2. Manage the command sender so the Invoke handler can find it
+            app.manage(VoiceSender(Mutex::new(cmd_tx)));
+
+            // 3. Listen for events and forward to React
+            tauri::async_runtime::spawn(async move {
+                for event in voice_event_rx {
+                    match event {
+                        voice::VoiceEvent::WakeWordDetected => {
+                            let _ = app_handle_clone.emit("voice-status", "listening");
+                        }
+                        voice::VoiceEvent::CommandTranscribed(text) => {
+                            // Emit data AND status update
+                            let _ = app_handle_clone.emit("voice-data", text);
+                            let _ = app_handle_clone.emit("voice-status", "processing");
+                        }
+                        voice::VoiceEvent::Error(e) => {
+                            eprintln!("Voice Error: {}", e);
+                            let _ = app_handle_clone.emit("voice-status", "error");
+                        }
+                    }
+                }
+            });
 
             tauri::async_runtime::spawn(async move {
                 match spawn_deno_server(resource_dir).await {
@@ -44,21 +77,24 @@ let voice_event_rx = start_voice_thread(resource_dir.clone(), app_handle_clone);
                     if let Ok(mut process) = state.0.lock() {
                         if let Some(mut child) = process.take() {
                             let _ = child.kill();
-                            println!("🛑 Deno server stopped");
                         }
                     }
                 }
             }
         })
+        // ✅ REGISTER THE NEW COMMAND
         .invoke_handler(tauri::generate_handler![
             settings::load_settings,
-            settings::save_settings
+            settings::save_settings,
+            trigger_voice_listening
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 async fn spawn_deno_server(resource_dir: PathBuf) -> Result<Child, Box<dyn std::error::Error>> {
+    // ... (This function remains exactly the same as before)
+    // I omitted it here for brevity, keep your existing code
     let deno_path = resource_dir.join("resources").join("denoBackend");
     let deno_exe = resource_dir.join("bin").join("deno.exe");
 

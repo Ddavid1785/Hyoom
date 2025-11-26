@@ -11,29 +11,33 @@ use capture::AudioCapture;
 use transcribe::WhisperTranscriber;
 use vad::VoiceDetector;
 
-// ✅ Added Debug, Clone (Fixes "field never read" warnings)
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum VoiceEvent {
     WakeWordDetected,
     CommandTranscribed(String),
     Error(String),
 }
 
-// Internal enum for the async thread
+// ✅ Re-added so Frontend can trigger it manually
+#[derive(Debug)]
+pub enum VoiceCommand {
+    StartListening,
+}
+
 enum WakeWordResult {
     Detected,
     NotDetected,
     Error(String),
 }
 
-// ✅ Signature changed: We only return the Event Receiver now
+// ✅ Returns (Sender, Receiver) so lib.rs can send commands AND receive events
 pub fn start_voice_thread(
     resource_dir: PathBuf,
     app_handle: AppHandle,
-) -> mpsc::Receiver<VoiceEvent> {
+) -> (mpsc::Sender<VoiceCommand>, mpsc::Receiver<VoiceEvent>) {
     
     let (event_tx, event_rx) = mpsc::channel();
+    let (cmd_tx, cmd_rx) = mpsc::channel(); // ✅ Channel for manual commands
     let (ww_result_tx, ww_result_rx) = mpsc::channel::<WakeWordResult>();
 
     std::thread::spawn(move || {
@@ -89,7 +93,23 @@ pub fn start_voice_thread(
         println!("👂 Listening for 'Hey Hyoom'...");
 
         loop {
-            // Check async wake word result
+            // 1. Check for Manual Trigger from Frontend
+            if let Ok(VoiceCommand::StartListening) = cmd_rx.try_recv() {
+                println!("🖱️ Manual Trigger received!");
+                
+                // Reset state
+                is_recording_command = true;
+                silence_counter = 0;
+                
+                // Notify UI immediately
+                let _ = event_tx.send(VoiceEvent::WakeWordDetected);
+                
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.set_focus();
+                }
+            }
+
+            // 2. Check async wake word result
             if let Ok(result) = ww_result_rx.try_recv() {
                 is_checking_wake_word = false; 
                 match result {
@@ -109,7 +129,7 @@ pub fn start_voice_thread(
                 }
             }
 
-            // Process Audio
+            // 3. Process Audio
             if let Ok(audio_chunk) = audio_rx.recv() {
                 buffer.extend_from_slice(&audio_chunk);
 
@@ -175,19 +195,8 @@ pub fn start_voice_thread(
                                     let final_command = clean_command(&full_text);
                                     println!("📝 Transcribed: '{}'", final_command);
 
+                                    // ✅ Just send to React. No Deno here.
                                     if !final_command.trim().is_empty() {
-                                        let cmd_clone = final_command.clone();
-                                        
-                                        // Async Deno Dispatch
-                                        let rt = tokio::runtime::Runtime::new().unwrap();
-                                        rt.block_on(async move {
-                                            println!("🚀 Sending to Deno..."); 
-                                            match send_to_deno(&cmd_clone).await {
-                                                Ok(_) => println!("✅ Sent successfully"),
-                                                Err(e) => eprintln!("❌ Deno send failed: {}", e)
-                                            }
-                                        });
-
                                         let _ = event_tx.send(VoiceEvent::CommandTranscribed(final_command));
                                     }
                                 }
@@ -204,7 +213,8 @@ pub fn start_voice_thread(
         }
     });
 
-    event_rx
+    // Return both channels
+    (cmd_tx, event_rx)
 }
 
 fn clean_command(text: &str) -> String {
@@ -225,18 +235,4 @@ fn clean_command(text: &str) -> String {
         }
     }
     text.to_string()
-}
-
-async fn send_to_deno(message: &str) -> Result<(), reqwest::Error> {
-    let client = reqwest::Client::new();
-    let payload = serde_json::json!({
-        "message": { "role": "user", "content": message }
-    });
-    client.post("http://localhost:3000/chat") 
-        .json(&payload)
-        .timeout(Duration::from_secs(60))
-        .send()
-        .await?
-        .error_for_status()?;
-    Ok(())
 }

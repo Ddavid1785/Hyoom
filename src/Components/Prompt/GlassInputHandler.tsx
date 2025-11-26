@@ -1,8 +1,11 @@
 import { useEffect, RefObject } from "react";
 import { ArrowUpCircle, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
-import { ImageData, Prompt } from "../../types";
-import { llmChoices, providerIcons } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
+import { ImageData, Prompt, VoiceStatus } from "../../types";
+import {
+  llmChoices,
+  providerIcons,
+} from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 import LLMSelect from "../Settings/LLMSelect";
 import { useAppSettings } from "../../Hooks/useAppSettings";
 
@@ -23,9 +26,12 @@ interface GlassInputHandlerProps {
   clearImages: () => void;
   openFilePicker: () => void;
   getBase64Array: () => string[] | null;
-  isRecording: boolean;
-  startRecording: (callback: (transcript: string) => void) => void;
   isTop: boolean;
+  voiceStatus: VoiceStatus;
+  isListening: boolean;
+  onVoiceTrigger: () => void;
+  voiceTranscript: string;
+  onClearTranscript: () => void;
 }
 
 export default function GlassInputHandler({
@@ -45,9 +51,12 @@ export default function GlassInputHandler({
   clearImages,
   openFilePicker,
   getBase64Array,
-  isRecording,
-  startRecording,
   isTop,
+  voiceStatus,
+  isListening,
+  onVoiceTrigger,
+  voiceTranscript,
+  onClearTranscript,
 }: GlassInputHandlerProps) {
   useEffect(() => {
     if (textareaRef.current) {
@@ -58,6 +67,18 @@ export default function GlassInputHandler({
       )}px`;
     }
   }, [text, textareaRef]);
+
+  useEffect(() => {
+    if (voiceTranscript && voiceTranscript.trim().length > 0) {
+      console.log("🚀 Auto-submitting voice command:", voiceTranscript);
+
+      const prompt: Prompt = { text: voiceTranscript, baseImages: null };
+
+      onSendMessage(prompt);
+
+      onClearTranscript();
+    }
+  }, [voiceTranscript, onClearTranscript]);
 
   const { settings: savedSettings, saveSettings, loading } = useAppSettings();
 
@@ -73,14 +94,6 @@ export default function GlassInputHandler({
       e.preventDefault();
       handleSubmit();
     }
-  }
-
-  function handleVoiceInput() {
-    startRecording((transcript) => {
-      setText((prev) => {
-        return prev ? `${prev} ${transcript}` : transcript;
-      });
-    });
   }
 
   return (
@@ -146,10 +159,12 @@ export default function GlassInputHandler({
                 <Image size={20} />
               </button>
               <button
-                onClick={handleVoiceInput}
+                onClick={onVoiceTrigger}
                 className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
-                  isRecording
-                    ? "text-white bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-600/30 animate-pulse"
+                  isListening
+                    ? "text-white bg-red-600/90 shadow-lg shadow-red-600/40 animate-pulse"
+                    : voiceStatus === "processing"
+                    ? "text-blue-400 bg-blue-500/10 animate-spin"
                     : "text-zinc-400 hover:text-white hover:bg-white/10"
                 }`}
                 title="Voice input"

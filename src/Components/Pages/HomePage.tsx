@@ -1,12 +1,12 @@
 import { useRef, useEffect, useState } from "react";
 import { MessageSquare, Zap } from "lucide-react";
 import { motion, AnimatePresence, type Transition } from "framer-motion";
-import { useWebSpeech } from "../../Hooks/useWebSpeech";
 import { useImageUpload } from "../../Hooks/useImageUpload";
 import GlassInputHandler from "../Prompt/GlassInputHandler";
 import ChatView from "../Prompt/ChatView";
 import QuickModeContext from "../Prompt/QuickModeContext";
 import { Message, Prompt } from "../../types";
+import { useVoiceAssistant } from "../../Hooks/useVoiceAssistant";
 
 interface HomePageProps {
   messages: Message[];
@@ -54,6 +54,14 @@ export default function HomePage({
   const [isFocused, setIsFocused] = useState<boolean>(false);
 
   const {
+    status,
+    isListening,
+    triggerListening,
+    lastTranscript,
+    clearTranscript,
+  } = useVoiceAssistant();
+
+  const {
     images,
     hasImages,
     isDragging,
@@ -65,8 +73,6 @@ export default function HomePage({
     openFilePicker,
     getBase64Array,
   } = useImageUpload();
-
-  const { isRecording, startRecording } = useWebSpeech();
 
   useEffect(() => {
     if (chatMode) {
@@ -178,9 +184,12 @@ export default function HomePage({
                     clearImages={clearImages}
                     openFilePicker={openFilePicker}
                     getBase64Array={getBase64Array}
-                    isRecording={isRecording}
-                    startRecording={startRecording}
                     isTop={true}
+                    voiceStatus={status}
+                    isListening={isListening}
+                    onVoiceTrigger={triggerListening}
+                    voiceTranscript={lastTranscript}
+                    onClearTranscript={clearTranscript}
                   />
                 </div>
               </motion.div>
@@ -216,9 +225,12 @@ export default function HomePage({
                   clearImages={clearImages}
                   openFilePicker={openFilePicker}
                   getBase64Array={getBase64Array}
-                  isRecording={isRecording}
-                  startRecording={startRecording}
                   isTop={false}
+                  voiceStatus={status}
+                  isListening={isListening}
+                  onVoiceTrigger={triggerListening}
+                  voiceTranscript={lastTranscript}
+                  onClearTranscript={clearTranscript}
                 />
               </motion.div>
             )}
