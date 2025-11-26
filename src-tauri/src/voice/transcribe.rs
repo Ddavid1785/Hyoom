@@ -1,152 +1,104 @@
-use hound::{WavSpec, WavWriter};
-use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::path::PathBuf;
+use std::ptr;
+use whisper_rs::{
+    set_log_callback, FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters,
+};
 
 pub struct WhisperTranscriber {
-    whisper_path: PathBuf,
-    tiny_model_path: PathBuf,
-    base_model_path: PathBuf,
-    temp_dir: PathBuf,
+    ctx_tiny: WhisperContext,
+    ctx_base: WhisperContext,
 }
 
 impl WhisperTranscriber {
     pub fn new(resource_dir: PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
-        let whisper_path = resource_dir.join("bin").join("whisper-cli.exe");
+    unsafe {
+        // 1. Provide a C-compatible function pointer with the expected signature
+        unsafe extern "C" fn log_callback(
+            _level: i32,
+            _msg: *const i8,
+            _user_data: *mut std::ffi::c_void,
+        ) {
+            // Do nothing. This eats the logs.
+        }
+
+        set_log_callback(
+            Some(log_callback),
+            // 2. The missing 2nd argument: A null pointer for user_data
+            ptr::null_mut(),
+        );
+    }
+
+        // Paths to your models
         let tiny_model_path = resource_dir.join("resources/voice_models/ggml-tiny.en.bin");
         let base_model_path = resource_dir.join("resources/voice_models/ggml-base.en.bin");
-        let temp_dir = std::env::temp_dir().join("hyoom_audio");
 
-        std::fs::create_dir_all(&temp_dir)?;
+        println!("🧠 Loading Whisper models into RAM... (This happens once)");
 
-        let strip_unc = |path: PathBuf| -> PathBuf {
-            PathBuf::from(path.to_string_lossy().replace(r"\\?\", ""))
-        };
+        // Load Tiny
+        let params = WhisperContextParameters::default();
+        let ctx_tiny = WhisperContext::new_with_params(&tiny_model_path.to_string_lossy(), params)
+            .map_err(|e| format!("Failed to load Tiny model: {}", e))?;
 
-        let whisper_path = strip_unc(whisper_path);
-        let tiny_model_path = strip_unc(tiny_model_path);
-        let base_model_path = strip_unc(base_model_path);
+        // Load Base
+        let params = WhisperContextParameters::default();
+        let ctx_base = WhisperContext::new_with_params(&base_model_path.to_string_lossy(), params)
+            .map_err(|e| format!("Failed to load Base model: {}", e))?;
 
-        if !whisper_path.exists() {
-            return Err(format!("Whisper executable not found at {:?}", whisper_path).into());
-        }
-        if !tiny_model_path.exists() {
-            return Err(format!("Tiny model not found at {:?}", tiny_model_path).into());
-        }
-        if !base_model_path.exists() {
-            return Err(format!("Base model not found at {:?}", base_model_path).into());
-        }
+        println!("✅ Models loaded successfully!");
 
-        println!("✅ Whisper initialized");
-
-        Ok(Self {
-            whisper_path,
-            tiny_model_path,
-            base_model_path,
-            temp_dir,
-        })
+        Ok(Self { ctx_tiny, ctx_base })
     }
 
     pub fn transcribe_tiny(&self, audio: &[f32]) -> Result<String, Box<dyn std::error::Error>> {
-        self.transcribe_internal(audio, &self.tiny_model_path)
+        self.run_inference(&self.ctx_tiny, audio)
     }
 
     pub fn transcribe_base(&self, audio: &[f32]) -> Result<String, Box<dyn std::error::Error>> {
-        self.transcribe_internal(audio, &self.base_model_path)
+        self.run_inference(&self.ctx_base, audio)
     }
 
-    fn transcribe_internal(
+    fn run_inference(
         &self,
+        ctx: &WhisperContext,
         audio: &[f32],
-        model_path: &Path,
     ) -> Result<String, Box<dyn std::error::Error>> {
-        if audio.is_empty() {
-            return Err("Empty audio buffer".into());
+        // Create a new state for this specific inference run.
+        // This is cheap to create and ensures thread safety.
+        let mut state = ctx
+            .create_state()
+            .map_err(|e| format!("Failed to create state: {}", e))?;
+
+        // Setup parameters
+        // Greedy sampling is fastest.
+        let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+
+        // Tuning for speed
+        params.set_n_threads(4); // Use 4 threads
+        params.set_translate(false);
+        params.set_language(Some("en"));
+
+        // Turn off all printing to stdout
+        params.set_print_special(false);
+        params.set_print_progress(false);
+        params.set_print_realtime(false);
+        params.set_print_timestamps(false);
+
+        state
+            .full(params, audio)
+            .map_err(|e| format!("Whisper inference failed: {}", e))?;
+
+        let num_segments = state.full_n_segments();
+        let mut text = String::new();
+
+        for i in 0..num_segments {
+            if let Some(segment) = state.get_segment(i) {
+                let segment_text = segment
+                    .to_str_lossy()
+                    .map_err(|e| format!("String error: {}", e))?;
+                text.push_str(&segment_text);
+            }
         }
 
-        let uuid = uuid::Uuid::new_v4();
-        let wav_path = self.temp_dir.join(format!("temp_{}.wav", uuid));
-
-        self.save_wav(&wav_path, audio)?;
-
-        let bin_dir = self
-            .whisper_path
-            .parent()
-            .ok_or("Could not get whisper bin directory")?;
-
-        let path_var = std::env::var("PATH").unwrap_or_default();
-        let new_path = format!("{};{}", bin_dir.display(), path_var);
-
-        let mut child = Command::new(&self.whisper_path)
-            .env("PATH", new_path)
-            .current_dir(bin_dir)
-            .args([
-                "-m",
-                model_path.to_str().unwrap(),
-                "-f",
-                wav_path.to_str().unwrap(),
-                "--no-timestamps",
-                "--threads",
-                "4",
-                "--processors",
-                "1",
-            ])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()?;
-
-        let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
-        let reader = BufReader::new(stdout);
-
-        let output_lines: Vec<String> = reader.lines().map_while(Result::ok).collect();
-
-        let status = child.wait()?;
-        let _ = std::fs::remove_file(&wav_path); // clean up temp file
-
-        if !status.success() {
-            return Err(format!("Whisper failed with exit code: {:?}", status.code()).into());
-        }
-
-        let output_text = output_lines.join("\n");
-        let transcription = self.parse_whisper_output(&output_text);
-
-        if transcription.is_empty() {
-            return Err("No transcription returned".into());
-        }
-
-        Ok(transcription)
-    }
-
-    fn save_wav(&self, path: &Path, audio: &[f32]) -> Result<(), Box<dyn std::error::Error>> {
-        let spec = WavSpec {
-            channels: 1,
-            sample_rate: 16000,
-            bits_per_sample: 16,
-            sample_format: hound::SampleFormat::Int,
-        };
-
-        let mut writer = WavWriter::create(path, spec)?;
-
-        for &sample in audio {
-            let sample_i16 = (sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
-            writer.write_sample(sample_i16)?;
-        }
-
-        writer.finalize()?;
-        Ok(())
-    }
-
-    fn parse_whisper_output(&self, output: &str) -> String {
-        output
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .filter(|line| !line.starts_with("whisper_"))
-            .filter(|line| !line.contains("processing"))
-            .filter(|line| !line.starts_with('['))
-            .collect::<Vec<_>>()
-            .join(" ")
-            .trim()
-            .to_string()
+        Ok(text.trim().to_string())
     }
 }

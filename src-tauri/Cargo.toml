@@ -31,3 +31,4 @@ webrtc-vad = "0.4.0"
 hound = "3.5.1"
 dasp = { version = "0.11.0", features = ["signal", "interpolate", "interpolate-linear"] }
 uuid = { version = "1.4", features = ["v4"] }
+whisper-rs = "0.15.1"

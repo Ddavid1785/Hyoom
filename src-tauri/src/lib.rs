@@ -20,9 +20,8 @@ pub fn run() {
                let app_handle_clone = app.handle().clone();
                 let resource_dir = app.path().resource_dir()?;
 
-let (voice_cmd_tx, voice_event_rx) = start_voice_thread(resource_dir.clone(), app_handle_clone);
+let voice_event_rx = start_voice_thread(resource_dir.clone(), app_handle_clone);
     
-    app.manage(voice_cmd_tx);
     app.manage(Mutex::new(voice_event_rx));
 
             tauri::async_runtime::spawn(async move {
