@@ -1,8 +1,12 @@
+// Tools/System/typeText.ts
+
 // deno-lint-ignore-file no-explicit-any
-export const description = "Simulates global keyboard input to type text or press key combinations";
+// 🔴 UPDATED DESCRIPTION TO CATCH 'PASTE' SEARCHES
+export const description = "Simulates global keyboard presses to TYPE text, PASTE content (Ctrl+V), or press shortcuts in the active window.";
 
 // - CAUTION: Sends keys to the CURRENTLY FOCUSED window.
-// - Usage: Combine with 'openApp' to launch something, wait a bit, then type.
+// - Use this when the user asks to "type", "paste", "write", or "enter" text into an app.
+// - Usage sequence: openApp -> wait -> typeText.
 // - Special Keys: "{ENTER}", "{TAB}", "{ESC}", "{BS}" (backspace).
 // - Modifiers: "^" (Ctrl), "%" (Alt), "+" (Shift).
 // - To Paste: Use "^v".
@@ -20,10 +24,8 @@ export interface TypeTextResult {
 
 export async function typeText(params: TypeTextParams): Promise<TypeTextResult> {
   try {
-    // Escape single quotes for PowerShell string wrapping
     const safeText = params.text.replace(/'/g, "''");
 
-    // PowerShell script using .NET SendWait
     const psScript = `
       Add-Type -AssemblyName System.Windows.Forms
       [System.Windows.Forms.SendKeys]::SendWait('${safeText}')

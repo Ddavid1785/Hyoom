@@ -1,11 +1,6 @@
 import { LLMMessage } from "../../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "../LLMtypes.ts";
-
-function cleanJsonOutput(text: string): string {
-  const clean = text.replace(/```json\n?/g, "").replace(/```/g, "");
-  return clean.trim();
-}
-
+import { parseLLMResponse } from "../responseParser.ts";
 
 export class AnthropicProvider implements LLMProvider {
   constructor(
@@ -15,16 +10,17 @@ export class AnthropicProvider implements LLMProvider {
   ) {}
 
   async call(messages: LLMMessage[]): Promise<LLMResponse> {
-    const lastMessage = messages[messages.length - 1];
+    const systemMessage = messages.find(m => m.role === "system");
+    const conversation = messages.filter(m => m.role !== "system");
 
     const body = {
       model: this.modelId,
-      messages: [
-        {
-          role: lastMessage.role,
-          content: lastMessage.content,
-        },
-      ],
+      system: systemMessage?.content,
+      messages: conversation.map(m => ({
+        role: m.role,
+        content: m.content
+      })),
+      max_tokens: 32000
     };
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -43,24 +39,9 @@ export class AnthropicProvider implements LLMProvider {
     }
 
     const data = await response.json();
+    
+    const raw = data?.content?.[0]?.text ?? "";
 
-    const raw = data?.completion ?? "[No response from model]";
-    const cleanedText = cleanJsonOutput(raw);
-
-    // deno-lint-ignore no-explicit-any
-    let parsed: any = {};
-    try {
-      parsed = JSON.parse(cleanedText);
-    } catch {
-      return { content: cleanedText };
-    }
-
-const parsedResponse: LLMResponse = {
-      content: parsed.content,
-      code: parsed.code,
-      metaToolCalls: parsed.metaToolCalls,
-    };
-
-    return parsedResponse;
+    return parseLLMResponse(raw);
   }
 }
