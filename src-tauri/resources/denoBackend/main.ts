@@ -68,6 +68,7 @@ Deno.serve({ port: 3000 }, async (req) => {
   if (url.pathname === "/chat" && req.method === "POST") {
     try {
       const body = await req.json();
+      console.log("user message: ", body.message);
       addMessage(body.message);
       const settings = await loadSettings();
       const llmChoice = validateSettings(settings);
