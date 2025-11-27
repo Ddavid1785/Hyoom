@@ -17,7 +17,7 @@ export default function QuickModeContext({
   if (recentMessages.length === 0 && !thinkingText) return null;
 
   return (
-    <div className="w-full flex flex-col justify-end">
+    <div className="w-full flex flex-col justify-end space-y-6">
       <AnimatePresence mode="popLayout">
         {recentMessages.map((message, index) => {
           return <MessageBubble message={message} key={`bubble ${index}`} />;
