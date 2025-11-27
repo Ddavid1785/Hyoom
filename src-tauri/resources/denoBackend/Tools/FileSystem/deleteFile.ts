@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 export const description = "Permanently deletes a specified file";
 
 // - DANGER: This action is irreversible.

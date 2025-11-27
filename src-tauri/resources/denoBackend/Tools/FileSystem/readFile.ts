@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 export const description = "Reads the text content of a specific file";
 
 // - You must obtain the full absolute path from the user or infer it from highly specific context (e.g., "read package.json on my desktop").

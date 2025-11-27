@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 export const description = "Recursively searches for files matching a specific name pattern within a directory";
 
 // - Use this when the user is looking for a file but doesn't know the exact path.

@@ -14,6 +14,7 @@ interface HomePageProps {
   chatMode: boolean;
   onToggleChatMode: () => void;
   direction?: number;
+  thinkingText: string | null;
 }
 
 const pageVariants = {
@@ -46,6 +47,7 @@ export default function HomePage({
   chatMode,
   onToggleChatMode,
   direction = 0,
+  thinkingText,
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -163,7 +165,7 @@ export default function HomePage({
                   [&::-webkit-scrollbar-thumb]:border-transparent
                   hover:[&::-webkit-scrollbar-thumb]:bg-zinc-700/70"
                 >
-                  <ChatView messages={messages} />
+                  <ChatView messages={messages} thinkingText={thinkingText}/>
                   <div ref={messagesEndRef} />
                 </div>
                 <div className="shrink-0">
@@ -205,7 +207,7 @@ export default function HomePage({
                 <div className="flex-1 min-h-0" />
 
                 <div className="w-full max-w-3xl px-4 mb-6">
-                  <QuickModeContext messages={messages} />
+                  <QuickModeContext messages={messages} thinkingText={thinkingText}/>
                 </div>
 
                 <div className="w-full max-w-3xl shrink-0">

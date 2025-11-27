@@ -11,7 +11,7 @@ import SettingsPage from "./Components/Pages/SettingsPage";
 import { useHandleSendMessage } from "./Hooks/useHandleSendMessage";
 
 export default function App() {
-    const { messages, handleSendMessage } = useHandleSendMessage();
+  const { messages, handleSendMessage, thinkingText } = useHandleSendMessage();
   const [chatMode, setChatMode] = useState(false);
   const {
     activeTab,
@@ -31,11 +31,12 @@ export default function App() {
         <AnimatePresence mode="wait" custom={direction}>
           {activeTab === "chat" && (
             <HomePage
-            messages={messages}
-            onSendMessage={handleSendMessage}
+              messages={messages}
+              onSendMessage={handleSendMessage}
               chatMode={chatMode}
               onToggleChatMode={() => setChatMode((prev) => !prev)}
               direction={direction}
+              thinkingText={thinkingText}
             />
           )}
 

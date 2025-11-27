@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-export const description = "Moves or renames a file from a source path to a destination path";
+export const description = "Moves or renames a file OR directory from a source path to a destination path"; 
 
 // - Requires absolute paths for both 'from' and 'to'.
 // - Use this for Renaming: from "path/old.txt" to "path/new.txt".

@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 export const description = "Writes text data to a file, either creating a new one or overwriting/appending to an existing one";
 
 // - Requires a full absolute path. Do not invent paths.

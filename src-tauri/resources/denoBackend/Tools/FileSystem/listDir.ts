@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 export const description = "Lists all files and directories within a specified path";
 
 // - You must infer or request the absolute path of the directory to list.

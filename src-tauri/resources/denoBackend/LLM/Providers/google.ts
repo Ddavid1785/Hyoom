@@ -1,6 +1,11 @@
 import { LLMMessage } from "../../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "../LLMtypes.ts";
 
+function cleanJsonOutput(text: string): string {
+  const clean = text.replace(/```json\n?/g, "").replace(/```/g, "");
+  return clean.trim();
+}
+
 export class GeminiProvider implements LLMProvider {
   constructor(private apiKey: string, private modelId: string) {}
 
@@ -32,13 +37,14 @@ export class GeminiProvider implements LLMProvider {
 const raw =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ??
       "[No response from model]";
+const cleanedText = cleanJsonOutput(raw);
 
     // deno-lint-ignore no-explicit-any
     let parsed: any = {};
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(cleanedText);
     } catch {
-      return { content: raw };
+      return { content: cleanedText };
     }
     console.log("PARSED RESPONSE IS: ", parsed)
 const parsedResponse: LLMResponse = {

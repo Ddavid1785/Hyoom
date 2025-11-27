@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 export const description = "Creates a directory at a specified path"
 
 // - You may infer the full absolute path ONLY if the user provides enough unambiguous information such as the username, operating system, or explicit location like "on my desktop".

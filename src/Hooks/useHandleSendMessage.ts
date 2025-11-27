@@ -3,7 +3,7 @@ import { Message, Prompt } from "../types.ts";
 import { fetch } from '@tauri-apps/plugin-http';
 import { LLMMessage } from "../shared/sharedTypes.ts";
 
-function stripForLLM(msg: Message):LLMMessage {
+function stripForLLM(msg: Message): LLMMessage {
   return {
     role: msg.role,
     content: msg.content,
@@ -13,6 +13,7 @@ function stripForLLM(msg: Message):LLMMessage {
 
 export function useHandleSendMessage() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [thinkingText, setThinkingText] = useState<string | null>(null);
   
   const handleSendMessage = async (prompt: Prompt) => {
     const userMsg: Message = {
@@ -34,18 +35,50 @@ export function useHandleSendMessage() {
       const response = await fetch('http://localhost:3000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message:stripForLLM(userMsg) })
+        body: JSON.stringify({ message: stripForLLM(userMsg) })
       });
 
-      const data = await response.json();
-      const aiMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: data.content,
-        timestamp: new Date(),
-      };
+      if (!response.body) throw new Error("No response body");
 
-      setMessages((prev) => [...prev, aiMsg].slice(-MAX_MESSAGES));
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          
+          try {
+            const update = JSON.parse(line);
+
+            if (update.type === "status") {
+              setThinkingText(update.message); 
+            } 
+            else if (update.type === "content") {
+              const aiMsg: Message = {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: update.text,
+                timestamp: new Date(),
+              };
+              setMessages((prev) => [...prev, aiMsg].slice(-MAX_MESSAGES));
+            }
+            else if (update.type === "error") {
+              console.error("Stream error:", update.error);
+            }
+          } catch (e) {
+            console.error("Error parsing stream chunk", e);
+          }
+        }
+      }
 
     } catch (error) {
       console.error("Error:", error);
@@ -56,10 +89,12 @@ export function useHandleSendMessage() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMsg].slice(-MAX_MESSAGES));
+    } finally {
+      setThinkingText(null);
     }
   };
 
   const clearMessages = () => setMessages([]);
 
-  return { messages, setMessages, handleSendMessage, clearMessages };
+  return { messages, setMessages, handleSendMessage, clearMessages, thinkingText };
 }
