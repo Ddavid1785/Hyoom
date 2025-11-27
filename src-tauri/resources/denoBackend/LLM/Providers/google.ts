@@ -19,6 +19,9 @@ export class GeminiProvider implements LLMProvider {
             role: m.role === "user" ? "user" : "model",
             parts: [{ text: m.content }],
           })),
+           generationConfig: {
+            response_mime_type: "application/json"
+          }
         }),
       }
     );

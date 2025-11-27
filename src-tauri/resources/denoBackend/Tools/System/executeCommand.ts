@@ -1,4 +1,4 @@
-export const description = "Executes a shell command on the system (PowerShell)";
+export const description = "Executes a shell command on the system (PowerShell). Use this for PING, network checks, ipconfig, or running CLI tools.";
 
 // - WARNING: Use with extreme caution. Only run commands you understand.
 // - Useful for system tasks not covered by other tools (e.g., 'ipconfig', 'ping', 'whoami').

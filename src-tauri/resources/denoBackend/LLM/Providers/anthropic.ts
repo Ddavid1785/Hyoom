@@ -13,14 +13,19 @@ export class AnthropicProvider implements LLMProvider {
     const systemMessage = messages.find(m => m.role === "system");
     const conversation = messages.filter(m => m.role !== "system");
 
+    const apiMessages: LLMMessage[] = conversation.map(m => ({
+        role: m.role,
+        content: m.content,
+        images: m.images
+    }));
+
+    apiMessages.push({ role: "assistant", content: "{" });
+
     const body = {
       model: this.modelId,
       system: systemMessage?.content,
-      messages: conversation.map(m => ({
-        role: m.role,
-        content: m.content
-      })),
-      max_tokens: 32000
+      messages: apiMessages,
+      max_tokens: 4096
     };
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -40,8 +45,9 @@ export class AnthropicProvider implements LLMProvider {
 
     const data = await response.json();
     
-    const raw = data?.content?.[0]?.text ?? "";
+    const rawBody = data?.content?.[0]?.text ?? "";
+    const fullJson = "{" + rawBody;
 
-    return parseLLMResponse(raw);
+    return parseLLMResponse(fullJson);
   }
 }

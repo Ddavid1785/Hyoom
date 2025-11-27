@@ -15,6 +15,7 @@ export async function toolSearch(query:string) {
     const queryEmbedding: TokenEmbedding = new Float32Array(await embedder.embed(query));
 
 const results = topMatches(queryEmbedding, toolEmbeddings, 3);
+console.log("results for", query, results)
 return results;
 
 }
