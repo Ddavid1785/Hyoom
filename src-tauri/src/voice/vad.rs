@@ -14,7 +14,7 @@ impl VoiceDetector {
         Ok(Self { vad })
     }
 
-    /// Frame must be 160 (10ms), 320 (20ms), or 480 (30ms) samples at 16kHz
+    /// frame must be 160 (10ms), 320 (20ms), or 480 (30ms) samples at 16kHz
     pub fn is_speech(&mut self, audio: &[i16]) -> Result<bool, Box<dyn std::error::Error>> {
         if matches!(audio.len(), 160 | 320 | 480) {
             self.vad
@@ -30,7 +30,7 @@ impl VoiceDetector {
     }
 }
 
-/// Convert f32 audio samples to i16 for VAD processing
+/// convert f32 audio samples to i16 for VAD processing
 pub fn f32_to_i16(samples: &[f32]) -> Vec<i16> {
     samples
         .iter()

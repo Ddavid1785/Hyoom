@@ -13,17 +13,17 @@ export function createProvider(settings: AppSettings, choice: LLMChoice) {
   switch (choice.provider) {
     case "OpenAI":
       apiKey = settings.llmKeys.openai;
-      if (!apiKey) throw new Error("OpenAI API key is missing in settings");
+      if (!apiKey) throw new Error("OpenAI API key is missing. Please add it in Settings.");
       return new OpenAIProvider(apiKey, choice.modelId);
 
     case "Anthropic":
       apiKey = settings.llmKeys.anthropic;
-      if (!apiKey) throw new Error("Anthropic API key is missing in settings");
+      if (!apiKey) throw new Error("Anthropic API key is missing. Please add it in Settings.");
       return new AnthropicProvider(apiKey, choice.modelId);
 
     case "Google":
       apiKey = settings.llmKeys.gemini;
-      if (!apiKey) throw new Error("Gemini API key is missing in settings");
+      if (!apiKey) throw new Error("Gemini API key is missing. Please add it in Settings.");
       return new GeminiProvider(apiKey, choice.modelId);
 
     default:

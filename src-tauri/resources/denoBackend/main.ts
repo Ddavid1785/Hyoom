@@ -73,7 +73,12 @@ Deno.serve({ port: 3000 }, async (req) => {
       const settings = await loadSettings();
       const llmChoice = validateSettings(settings);
       
-      if (!llmChoice) return Response.json({ error: "No LLM" }, { status: 400, headers });
+    if (!llmChoice) {
+        return Response.json(
+            { error: "No active LLM model selected or keys are missing." }, 
+            { status: 400, headers }
+        );
+      }
 
       const provider = createProvider(settings, llmChoice!);
 

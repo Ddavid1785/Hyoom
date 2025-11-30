@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Message, Prompt } from "../types.ts";
 import { fetch } from '@tauri-apps/plugin-http';
 import { LLMMessage } from "../shared/sharedTypes.ts";
+import { useToast } from "../Context/ToastContext"; // Import the hook
 
 function stripForLLM(msg: Message): LLMMessage {
   return {
@@ -14,6 +15,8 @@ function stripForLLM(msg: Message): LLMMessage {
 export function useHandleSendMessage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [thinkingText, setThinkingText] = useState<string | null>(null);
+  
+  const { addToast } = useToast();
   
   const handleSendMessage = async (prompt: Prompt) => {
     const userMsg: Message = {
@@ -37,6 +40,18 @@ export function useHandleSendMessage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: stripForLLM(userMsg) })
       });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to connect to AI server";
+        try {
+          const errData = await response.json();
+          if (errData.error) errorMessage = errData.error;
+        } catch (_) {
+             errorMessage = `Server Error: ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
 
       if (!response.body) throw new Error("No response body");
 
@@ -73,6 +88,7 @@ export function useHandleSendMessage() {
             }
             else if (update.type === "error") {
               console.error("Stream error:", update.error);
+              addToast(update.error, "error"); 
             }
           } catch (e) {
             console.error("Error parsing stream chunk", e);
@@ -80,12 +96,15 @@ export function useHandleSendMessage() {
         }
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error:", error);
+      
+      addToast(error.message || "An unexpected error occurred", "error"); 
+
       const errorMsg: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: `Error: ${error}`,
+        content: `Error: ${error.message}`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMsg].slice(-MAX_MESSAGES));

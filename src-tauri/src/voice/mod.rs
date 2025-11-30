@@ -18,7 +18,6 @@ pub enum VoiceEvent {
     Error(String),
 }
 
-// ✅ Re-added so Frontend can trigger it manually
 #[derive(Debug)]
 pub enum VoiceCommand {
     StartListening,
@@ -30,14 +29,13 @@ enum WakeWordResult {
     Error(String),
 }
 
-// ✅ Returns (Sender, Receiver) so lib.rs can send commands AND receive events
 pub fn start_voice_thread(
     resource_dir: PathBuf,
     app_handle: AppHandle,
 ) -> (mpsc::Sender<VoiceCommand>, mpsc::Receiver<VoiceEvent>) {
     
     let (event_tx, event_rx) = mpsc::channel();
-    let (cmd_tx, cmd_rx) = mpsc::channel(); // ✅ Channel for manual commands
+    let (cmd_tx, cmd_rx) = mpsc::channel();
     let (ww_result_tx, ww_result_rx) = mpsc::channel::<WakeWordResult>();
 
     std::thread::spawn(move || {
@@ -75,12 +73,10 @@ pub fn start_voice_thread(
             }
         };
 
-        // --- Constants ---
         const FRAME_SIZE: usize = 480; 
         const SILENCE_THRESHOLD_FRAMES: usize = 50; 
         const WAKE_WORD_WINDOW_SIZE: usize = 48000; 
         
-        // --- State ---
         let mut buffer: Vec<f32> = Vec::with_capacity(WAKE_WORD_WINDOW_SIZE * 2);
         let mut speech_buffer: Vec<f32> = Vec::new();
         
@@ -93,15 +89,12 @@ pub fn start_voice_thread(
         println!("👂 Listening for 'Hey Hyoom'...");
 
         loop {
-            // 1. Check for Manual Trigger from Frontend
             if let Ok(VoiceCommand::StartListening) = cmd_rx.try_recv() {
                 println!("🖱️ Manual Trigger received!");
                 
-                // Reset state
                 is_recording_command = true;
                 silence_counter = 0;
                 
-                // Notify UI immediately
                 let _ = event_tx.send(VoiceEvent::WakeWordDetected);
                 
                 if let Some(window) = app_handle.get_webview_window("main") {
@@ -109,7 +102,6 @@ pub fn start_voice_thread(
                 }
             }
 
-            // 2. Check async wake word result
             if let Ok(result) = ww_result_rx.try_recv() {
                 is_checking_wake_word = false; 
                 match result {
@@ -129,7 +121,6 @@ pub fn start_voice_thread(
                 }
             }
 
-            // 3. Process Audio
             if let Ok(audio_chunk) = audio_rx.recv() {
                 buffer.extend_from_slice(&audio_chunk);
 
@@ -195,7 +186,6 @@ pub fn start_voice_thread(
                                     let final_command = clean_command(&full_text);
                                     println!("📝 Transcribed: '{}'", final_command);
 
-                                    // ✅ Just send to React. No Deno here.
                                     if !final_command.trim().is_empty() {
                                         let _ = event_tx.send(VoiceEvent::CommandTranscribed(final_command));
                                     }
@@ -213,7 +203,6 @@ pub fn start_voice_thread(
         }
     });
 
-    // Return both channels
     (cmd_tx, event_rx)
 }
 

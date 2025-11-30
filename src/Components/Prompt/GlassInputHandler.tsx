@@ -8,6 +8,7 @@ import {
 } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 import LLMSelect from "../Settings/LLMSelectDropdown";
 import { AppSettings } from "../../shared/sharedTypes";
+import { useToast } from "../../Context/ToastContext";
 
 interface GlassInputHandlerProps {
   onSendMessage: (prompt: Prompt) => void;
@@ -58,7 +59,7 @@ export default function GlassInputHandler({
   onVoiceTrigger,
   voiceTranscript,
   onClearTranscript,
-   savedSettings,
+  savedSettings,
   saveSettings,
   loading,
 }: GlassInputHandlerProps) {
@@ -77,7 +78,6 @@ export default function GlassInputHandler({
       console.log("🚀 Auto-submitting voice command:", voiceTranscript);
 
       const prompt: Prompt = { text: voiceTranscript, baseImages: null };
-
       onSendMessage(prompt);
 
       onClearTranscript();

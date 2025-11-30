@@ -26,9 +26,23 @@ export class GeminiProvider implements LLMProvider {
       }
     );
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Gemini API error: ${err}`);
+if (!response.ok) {
+      const errText = await response.text();
+      let cleanError = `Gemini Error (${response.status})`;
+
+      try {
+        const jsonErr = JSON.parse(errText);
+        if (jsonErr.error?.message) {
+          cleanError = jsonErr.error.message;
+        } 
+        else if (Array.isArray(jsonErr) && jsonErr.length > 0 && jsonErr[0].error?.message) {
+           cleanError = jsonErr[0].error.message;
+        }
+      } catch {
+        cleanError = `Gemini Error: ${errText.substring(0, 100)}`;
+      }
+
+      throw new Error(cleanError);
     }
 
     const data = await response.json();

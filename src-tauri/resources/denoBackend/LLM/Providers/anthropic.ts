@@ -38,9 +38,16 @@ export class AnthropicProvider implements LLMProvider {
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Anthropic API error: ${err}`);
+   if (!response.ok) {
+      const errText = await response.text();
+      let cleanError = "Anthropic API Error";
+      try {
+          const jsonErr = JSON.parse(errText);
+          cleanError = jsonErr.error?.message || jsonErr.error?.type || errText;
+      } catch {
+          cleanError = errText.substring(0, 100);
+      }
+      throw new Error(cleanError);
     }
 
     const data = await response.json();

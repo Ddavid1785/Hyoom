@@ -1,22 +1,23 @@
-import { useState, useEffect, useCallback } from "react"; // Add useCallback
+import { useState, useEffect, useCallback } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-
-export type VoiceStatus = "idle" | "listening" | "processing" | "error";
+import { useToast } from "../Context/ToastContext";
+import { VoiceStatus } from "../types";
 
 export function useVoiceAssistant() {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [lastTranscript, setLastTranscript] = useState("");
+  const { addToast } = useToast();
 
   const triggerListening = useCallback(async () => {
     try {
       await invoke("trigger_voice_listening");
     } catch (e) {
       console.error("Failed to trigger voice:", e);
+      addToast("Failed to start voice listener", "error");
     }
-  }, []);
+  }, [addToast]);
 
-  // ✅ New function to wipe the text after we use it
   const clearTranscript = useCallback(() => {
     setLastTranscript("");
   }, []);
@@ -25,23 +26,27 @@ export function useVoiceAssistant() {
     const unlistenStatus = listen<string>("voice-status", (event) => {
       const newStatus = event.payload as VoiceStatus;
       setStatus(newStatus);
-      if (newStatus === "processing") {
+      
+      if (newStatus === "error") {
+        addToast("Voice Assistant encountered an error", "error");
+        setTimeout(() => setStatus("idle"), 2500);
+      }
+      else if (newStatus === "processing") {
         setTimeout(() => setStatus("idle"), 2500);
       }
     });
 
     const unlistenData = listen<string>("voice-data", (event) => {
-      // Only update if it's actually new text to prevent phantom triggers
       if (event.payload) {
         setLastTranscript(event.payload);
       }
     });
 
     return () => {
-      unlistenStatus.then((f) => f());
-      unlistenData.then((f) => f());
+      unlistenStatus.then((fn) => fn());
+      unlistenData.then((fn) => fn());
     };
-  }, []);
+  }, [addToast]);
 
   return {
     status,
@@ -49,6 +54,6 @@ export function useVoiceAssistant() {
     isProcessing: status === "processing",
     lastTranscript,
     triggerListening,
-    clearTranscript, // Export this
+    clearTranscript,
   };
 }

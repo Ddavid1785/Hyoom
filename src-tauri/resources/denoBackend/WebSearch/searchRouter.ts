@@ -14,14 +14,14 @@ export async function performWebSearch(query: string, settings: AppSettings): Pr
 
   if (provider === "brave") {
     const key = settings.searchKeys.brave;
-    if (!key) throw new Error("Brave API Key is missing.");
+    if (!key) throw new Error("CONFIGURATION ERROR: Brave API Key is missing in App Settings.");
     return await searchBrave(query, key);
   }
 
   if (provider === "google") {
     const config = settings.searchKeys.google;
     if (!config?.apiKey || !config?.searchEngineId) {
-      throw new Error("Google API Key or Search Engine ID is missing.");
+      throw new Error("CONFIGURATION ERROR: Google API Key or Search Engine ID is missing in App Settings.");
     }
     return await searchGoogle(query, config.apiKey, config.searchEngineId);
   }

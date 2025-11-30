@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import "./Main.css";
 import AnimatedBackground from "./Components/AppUi/AnimatedBackground";
@@ -10,6 +10,7 @@ import TabNavigation from "./Components/AppUi/TabNavigation";
 import SettingsPage from "./Components/Pages/SettingsPage";
 import { useHandleSendMessage } from "./Hooks/useHandleSendMessage";
 import { useAppSettings } from "./Hooks/useAppSettings";
+import { useVoiceAssistant } from "./Hooks/useVoiceAssistant";
 
 export default function App() {
   const { messages, handleSendMessage, thinkingText } = useHandleSendMessage();
@@ -22,6 +23,20 @@ export default function App() {
     pageTransition,
   } = usePageTransition();
   const { settings, saveSettings, loading:loadingSettings } = useAppSettings();
+
+  const {
+    status,
+    isListening,
+    triggerListening,
+    lastTranscript,
+    clearTranscript,
+  } = useVoiceAssistant();
+
+  useEffect(() => {
+    if ((status === "listening" || status === "processing") && activeTab !== "chat") {
+      handleTabChange("chat");
+    }
+  }, [status, activeTab, handleTabChange]);
 
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center relative overflow-hidden">
@@ -42,6 +57,11 @@ export default function App() {
               settings={settings}
               saveSettings={saveSettings}
               settingsLoading={loadingSettings}
+              voiceStatus={status}
+              isListening={isListening}
+              triggerListening={triggerListening}
+              lastTranscript={lastTranscript}
+              clearTranscript={clearTranscript}
             />
           )}
 

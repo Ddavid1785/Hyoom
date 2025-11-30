@@ -5,8 +5,7 @@ import { useImageUpload } from "../../Hooks/useImageUpload";
 import GlassInputHandler from "../Prompt/GlassInputHandler";
 import ChatView from "../Prompt/ChatView";
 import QuickModeContext from "../Prompt/QuickModeContext";
-import { Message, Prompt } from "../../types";
-import { useVoiceAssistant } from "../../Hooks/useVoiceAssistant";
+import { Message, Prompt, VoiceStatus } from "../../types";
 import { AppSettings } from "../../shared/sharedTypes";
 
 interface HomePageProps {
@@ -19,6 +18,11 @@ interface HomePageProps {
   settings: AppSettings | null;
   saveSettings: (s: AppSettings) => Promise<void>;
   settingsLoading: boolean;
+  voiceStatus: VoiceStatus;
+  isListening: boolean;
+  triggerListening: () => Promise<void>;
+  lastTranscript: string;
+  clearTranscript: () => void;
 }
 
 const pageVariants = {
@@ -55,21 +59,18 @@ export default function HomePage({
   settings,
   saveSettings,
   settingsLoading,
+  voiceStatus,
+  isListening,
+  triggerListening,
+  lastTranscript,
+  clearTranscript
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const quickModeEndRef = useRef<HTMLDivElement>(null); // New ref for quick mode
+  const quickModeEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [text, setText] = useState<string>("");
   const [isFocused, setIsFocused] = useState<boolean>(false);
-
-  const {
-    status,
-    isListening,
-    triggerListening,
-    lastTranscript,
-    clearTranscript,
-  } = useVoiceAssistant();
 
   const {
     images,
@@ -84,14 +85,12 @@ export default function HomePage({
     getBase64Array,
   } = useImageUpload();
 
-  // Scroll logic for standard chat
   useEffect(() => {
     if (chatMode) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMode, messages, thinkingText]);
 
-  // Scroll logic for Quick Mode (keeps latest message in view if it overflows)
   useEffect(() => {
     if (!chatMode) {
       quickModeEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -110,7 +109,6 @@ export default function HomePage({
       className="w-full h-full"
     >
       <div className="w-full h-full flex flex-col px-8 py-8">
-        {/* Toggle Switch */}
         <div className="flex items-center justify-center mb-6 shrink-0 z-20">
           <div className="relative inline-flex items-center bg-zinc-900/40 backdrop-blur-xl rounded-full p-1 border border-zinc-800/50">
             <motion.div
@@ -158,11 +156,9 @@ export default function HomePage({
           </div>
         </div>
 
-        {/* Content Area */}
         <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col min-h-0">
           <AnimatePresence mode="wait">
             {chatMode ? (
-              // --- STANDARD CHAT MODE ---
               <motion.div
                 key="chat"
                 initial={{ opacity: 0, y: 20 }}
@@ -198,7 +194,7 @@ export default function HomePage({
                     clearImages={clearImages}
                     openFilePicker={openFilePicker}
                     getBase64Array={getBase64Array}
-                    voiceStatus={status}
+                    voiceStatus={voiceStatus}
                     isListening={isListening}
                     onVoiceTrigger={triggerListening}
                     voiceTranscript={lastTranscript}
@@ -253,7 +249,7 @@ export default function HomePage({
                     clearImages={clearImages}
                     openFilePicker={openFilePicker}
                     getBase64Array={getBase64Array}
-                    voiceStatus={status}
+                    voiceStatus={voiceStatus}
                     isListening={isListening}
                     onVoiceTrigger={triggerListening}
                     voiceTranscript={lastTranscript}
