@@ -48,6 +48,6 @@ export const providerIcons: Record<string, string> = {Google:"/LLMProviderIcons/
     OpenAI:"/LLMProviderIcons/OpenAI/openAI.png",
      Anthropic:"/LLMProviderIcons/Anthropic/Anthropic.png"};
 
-     export function findLLMChoice(llmName:string){
-      return llmChoices.find((choice) => choice.name === llmName);
-     }
+export function findLLMChoice(modelId: string) {
+  return llmChoices.find((choice) => choice.modelId === modelId);
+}

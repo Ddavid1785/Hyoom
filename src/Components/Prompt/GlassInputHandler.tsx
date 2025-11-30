@@ -6,8 +6,8 @@ import {
   llmChoices,
   providerIcons,
 } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
-import LLMSelect from "../Settings/LLMSelect";
-import { useAppSettings } from "../../Hooks/useAppSettings";
+import LLMSelect from "../Settings/LLMSelectDropdown";
+import { AppSettings } from "../../shared/sharedTypes";
 
 interface GlassInputHandlerProps {
   onSendMessage: (prompt: Prompt) => void;
@@ -26,12 +26,14 @@ interface GlassInputHandlerProps {
   clearImages: () => void;
   openFilePicker: () => void;
   getBase64Array: () => string[] | null;
-  isTop: boolean;
   voiceStatus: VoiceStatus;
   isListening: boolean;
   onVoiceTrigger: () => void;
   voiceTranscript: string;
   onClearTranscript: () => void;
+  savedSettings: AppSettings | null;
+  saveSettings: (s: AppSettings) => Promise<void>;
+  loading: boolean;
 }
 
 export default function GlassInputHandler({
@@ -51,12 +53,14 @@ export default function GlassInputHandler({
   clearImages,
   openFilePicker,
   getBase64Array,
-  isTop,
   voiceStatus,
   isListening,
   onVoiceTrigger,
   voiceTranscript,
   onClearTranscript,
+   savedSettings,
+  saveSettings,
+  loading,
 }: GlassInputHandlerProps) {
   useEffect(() => {
     if (textareaRef.current) {
@@ -79,8 +83,6 @@ export default function GlassInputHandler({
       onClearTranscript();
     }
   }, [voiceTranscript, onClearTranscript]);
-
-  const { settings: savedSettings, saveSettings, loading } = useAppSettings();
 
   function handleSubmit() {
     const prompt: Prompt = { text: text, baseImages: getBase64Array() };
@@ -178,14 +180,18 @@ export default function GlassInputHandler({
                   choices={llmChoices}
                   providerIcons={providerIcons}
                   selected={
-                    llmChoices.find(
-                      (choice) => choice.name === savedSettings.llmChoice
-                    ) || null
+                    savedSettings
+                      ? llmChoices.find(
+                          (choice) =>
+                            choice.modelId === savedSettings.activeLlmId
+                        ) || null
+                      : null
                   }
                   onSelect={(value) => {
-                    saveSettings({ ...savedSettings, llmChoice: value });
+                    if (savedSettings) {
+                      saveSettings({ ...savedSettings, activeLlmId: value });
+                    }
                   }}
-                  isTop={isTop}
                 />
               )}
             </div>

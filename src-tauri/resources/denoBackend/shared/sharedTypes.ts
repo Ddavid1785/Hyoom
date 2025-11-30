@@ -1,8 +1,23 @@
+export type SearchProviderType = "brave" | "google";
+export type LLMProviderType = "openai" | "anthropic" | "gemini";
+
 export interface AppSettings {
-    llmApiKey: string;
-    //googleSearchApiKey: string;
-    //googleSearchEngineId: string;
-    llmChoice: string
+  activeLlmId: string;
+  activeSearchProvider: SearchProviderType;
+
+  llmKeys: {
+    openai?: string;
+    anthropic?: string;
+    gemini?: string;
+  };
+
+  searchKeys: {
+    brave?: string;
+    google?: {
+      apiKey: string;
+      searchEngineId: string; 
+    };
+  };
 }
 
 export interface LLMChoice{

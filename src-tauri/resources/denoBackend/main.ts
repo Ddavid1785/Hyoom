@@ -1,5 +1,5 @@
 import { findLLMChoice } from "./LLM/LLMChoices.ts";
-import { AppSettings, LLMMessage } from "./shared/sharedTypes.ts";
+import { AppSettings, LLMChoice, LLMMessage } from "./shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "./LLM/LLMtypes.ts";
 import { createProvider } from "./LLM/ProviderChooser.ts";
 import { SYSTEM_PROMPT } from "./LLM/SystemPrompt.ts";
@@ -75,7 +75,7 @@ Deno.serve({ port: 3000 }, async (req) => {
       
       if (!llmChoice) return Response.json({ error: "No LLM" }, { status: 400, headers });
 
-      const provider = createProvider(settings.llmApiKey, llmChoice!);
+      const provider = createProvider(settings, llmChoice!);
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -171,8 +171,15 @@ async function loadSettings() {
   return settings;
 }
 
-function validateSettings(settings: AppSettings) {
-  if (!settings.llmChoice || !settings.llmApiKey) return null;
-  const choice = findLLMChoice(settings.llmChoice);
-  return choice || null;
+function validateSettings(settings: AppSettings): LLMChoice | null {
+  if (!settings.activeLlmId) return null;
+  
+  const choice = findLLMChoice(settings.activeLlmId);
+  if (!choice) return null;
+
+  if (choice.provider === "OpenAI" && !settings.llmKeys.openai) return null;
+  if (choice.provider === "Anthropic" && !settings.llmKeys.anthropic) return null;
+  if (choice.provider === "Google" && !settings.llmKeys.gemini) return null;
+
+  return choice;
 }

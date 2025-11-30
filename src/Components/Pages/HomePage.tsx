@@ -7,6 +7,7 @@ import ChatView from "../Prompt/ChatView";
 import QuickModeContext from "../Prompt/QuickModeContext";
 import { Message, Prompt } from "../../types";
 import { useVoiceAssistant } from "../../Hooks/useVoiceAssistant";
+import { AppSettings } from "../../shared/sharedTypes";
 
 interface HomePageProps {
   messages: Message[];
@@ -15,6 +16,9 @@ interface HomePageProps {
   onToggleChatMode: () => void;
   direction?: number;
   thinkingText: string | null;
+  settings: AppSettings | null;
+  saveSettings: (s: AppSettings) => Promise<void>;
+  settingsLoading: boolean;
 }
 
 const pageVariants = {
@@ -48,8 +52,12 @@ export default function HomePage({
   onToggleChatMode,
   direction = 0,
   thinkingText,
+  settings,
+  saveSettings,
+  settingsLoading,
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const quickModeEndRef = useRef<HTMLDivElement>(null); // New ref for quick mode
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [text, setText] = useState<string>("");
@@ -76,11 +84,19 @@ export default function HomePage({
     getBase64Array,
   } = useImageUpload();
 
+  // Scroll logic for standard chat
   useEffect(() => {
     if (chatMode) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chatMode]);
+  }, [chatMode, messages, thinkingText]);
+
+  // Scroll logic for Quick Mode (keeps latest message in view if it overflows)
+  useEffect(() => {
+    if (!chatMode) {
+      quickModeEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMode, messages, thinkingText]);
 
   return (
     <motion.div
@@ -94,7 +110,8 @@ export default function HomePage({
       className="w-full h-full"
     >
       <div className="w-full h-full flex flex-col px-8 py-8">
-        <div className="flex items-center justify-center mb-6 shrink-0">
+        {/* Toggle Switch */}
+        <div className="flex items-center justify-center mb-6 shrink-0 z-20">
           <div className="relative inline-flex items-center bg-zinc-900/40 backdrop-blur-xl rounded-full p-1 border border-zinc-800/50">
             <motion.div
               className="absolute bg-blue-600 rounded-full shadow-lg shadow-blue-600/30"
@@ -114,7 +131,6 @@ export default function HomePage({
                 left: "4px",
               }}
             />
-
             <button
               onClick={onToggleChatMode}
               className={`
@@ -128,7 +144,6 @@ export default function HomePage({
               <Zap size={16} />
               Quick
             </button>
-
             <button
               onClick={onToggleChatMode}
               className={`
@@ -143,9 +158,11 @@ export default function HomePage({
           </div>
         </div>
 
+        {/* Content Area */}
         <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col min-h-0">
           <AnimatePresence mode="wait">
             {chatMode ? (
+              // --- STANDARD CHAT MODE ---
               <motion.div
                 key="chat"
                 initial={{ opacity: 0, y: 20 }}
@@ -158,14 +175,9 @@ export default function HomePage({
                   className="flex-1 overflow-y-auto mb-6 pr-2 
                   scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800/50 
                   hover:scrollbar-thumb-zinc-700/70 [&::-webkit-scrollbar]:w-2 
-                  [&::-webkit-scrollbar-track]:bg-transparent 
-                  [&::-webkit-scrollbar-thumb]:bg-zinc-800/50 
-                  [&::-webkit-scrollbar-thumb]:rounded-full 
-                  [&::-webkit-scrollbar-thumb]:border-2 
-                  [&::-webkit-scrollbar-thumb]:border-transparent
-                  hover:[&::-webkit-scrollbar-thumb]:bg-zinc-700/70"
+                  [&::-webkit-scrollbar-thumb]:rounded-full"
                 >
-                  <ChatView messages={messages} thinkingText={thinkingText}/>
+                  <ChatView messages={messages} thinkingText={thinkingText} />
                   <div ref={messagesEndRef} />
                 </div>
                 <div className="shrink-0">
@@ -186,12 +198,14 @@ export default function HomePage({
                     clearImages={clearImages}
                     openFilePicker={openFilePicker}
                     getBase64Array={getBase64Array}
-                    isTop={true}
                     voiceStatus={status}
                     isListening={isListening}
                     onVoiceTrigger={triggerListening}
                     voiceTranscript={lastTranscript}
                     onClearTranscript={clearTranscript}
+                    savedSettings={settings}
+                    saveSettings={saveSettings}
+                    loading={settingsLoading}
                   />
                 </div>
               </motion.div>
@@ -202,15 +216,26 @@ export default function HomePage({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex-1 flex flex-col items-center justify-center w-full h-full pb-10"
+                className="flex-1 flex flex-col items-center w-full h-full relative"
               >
-                <div className="flex-1 min-h-0" />
+                <div className="flex-1 w-full flex flex-col justify-end min-h-0 overflow-hidden custom-scrollbar">
+                  <div
+                    className="w-full overflow-y-auto px-4 
+                        scrollbar-thin scrollbar-thumb-zinc-800/30 hover:scrollbar-thumb-zinc-700/50"
+                  >
+                    <div className="min-h-5 mt-auto" />
 
-                <div className="w-full max-w-3xl px-4 mb-6">
-                  <QuickModeContext messages={messages} thinkingText={thinkingText}/>
+                    <div className="pb-6">
+                      <QuickModeContext
+                        messages={messages}
+                        thinkingText={thinkingText}
+                      />
+                      <div ref={quickModeEndRef} />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="w-full max-w-3xl shrink-0">
+                <div className="w-full max-w-3xl shrink-0 z-10 px-4">
                   <GlassInputHandler
                     onSendMessage={onSendMessage}
                     text={text}
@@ -228,16 +253,17 @@ export default function HomePage({
                     clearImages={clearImages}
                     openFilePicker={openFilePicker}
                     getBase64Array={getBase64Array}
-                    isTop={false}
                     voiceStatus={status}
                     isListening={isListening}
                     onVoiceTrigger={triggerListening}
                     voiceTranscript={lastTranscript}
                     onClearTranscript={clearTranscript}
+                    savedSettings={settings}
+                    saveSettings={saveSettings}
+                    loading={settingsLoading}
                   />
                 </div>
-
-                <div className="flex-[0.8] min-h-0" />
+                <div className="h-[25vh] shrink-0 w-full transition-all duration-300" />
               </motion.div>
             )}
           </AnimatePresence>

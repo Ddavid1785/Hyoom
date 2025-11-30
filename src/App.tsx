@@ -9,6 +9,7 @@ import HomePage from "./Components/Pages/HomePage";
 import TabNavigation from "./Components/AppUi/TabNavigation";
 import SettingsPage from "./Components/Pages/SettingsPage";
 import { useHandleSendMessage } from "./Hooks/useHandleSendMessage";
+import { useAppSettings } from "./Hooks/useAppSettings";
 
 export default function App() {
   const { messages, handleSendMessage, thinkingText } = useHandleSendMessage();
@@ -20,6 +21,7 @@ export default function App() {
     pageVariants,
     pageTransition,
   } = usePageTransition();
+  const { settings, saveSettings, loading:loadingSettings } = useAppSettings();
 
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center relative overflow-hidden">
@@ -37,6 +39,9 @@ export default function App() {
               onToggleChatMode={() => setChatMode((prev) => !prev)}
               direction={direction}
               thinkingText={thinkingText}
+              settings={settings}
+              saveSettings={saveSettings}
+              settingsLoading={loadingSettings}
             />
           )}
 
@@ -81,7 +86,11 @@ export default function App() {
               transition={pageTransition}
               className="w-full h-full"
             >
-              <SettingsPage />
+              <SettingsPage 
+              savedSettings={settings}
+              saveSettings={saveSettings}
+              loading={loadingSettings}
+              />
             </motion.div>
           )}
         </AnimatePresence>
