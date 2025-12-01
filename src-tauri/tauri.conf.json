@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "hyoom",
+  "productName": "Hyoom",
   "version": "0.1.0",
   "identifier": "com.david.hyoom",
   "build": {
@@ -50,9 +50,12 @@
             {
               "identifier": "http:allow-fetch",
               "allow": [
-                {
-                  "url": "http://localhost:3000/*"
-                }
+                { "url": "http://localhost:3000/*" },
+                { "url": "https://api.openai.com/*" },
+                { "url": "https://api.anthropic.com/*" },
+                { "url": "https://generativelanguage.googleapis.com/*" },
+                { "url": "https://api.search.brave.com/*" },
+                { "url": "https://www.googleapis.com/*" }
               ]
             }
           ]
@@ -62,7 +65,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": "nsis",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -74,6 +77,15 @@
     "resources/denoBackend/**/*",
     "resources/voice_models/*", 
     "bin/*"
-  ]
+  ],
+  "windows":{
+    "nsis":{
+      "installMode": "currentUser",
+      "installerIcon": "icons/icon.ico",
+      "headerImage": "icons/icon.ico",
+      "sidebarImage": "icons/icon.ico",
+      "displayLanguageSelector": false
+    }
+  }
   }
 }
