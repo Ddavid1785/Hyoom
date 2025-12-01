@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import "./Main.css";
 import AnimatedBackground from "./Components/AppUi/AnimatedBackground";
@@ -11,6 +11,9 @@ import SettingsPage from "./Components/Pages/SettingsPage";
 import { useHandleSendMessage } from "./Hooks/useHandleSendMessage";
 import { useAppSettings } from "./Hooks/useAppSettings";
 import { useVoiceAssistant } from "./Hooks/useVoiceAssistant";
+import { getProviderFromModel } from "./Components/Settings/LLMSelection";
+import { isValidApiKey } from "./Utils/apiKeyValidation";
+import QuickSetupModal from "./Components/Modals/QuickSetupModal";
 
 export default function App() {
   const { messages, handleSendMessage, thinkingText } = useHandleSendMessage();
@@ -39,8 +42,25 @@ export default function App() {
     }
   }, [status, activeTab, handleTabChange]);
 
+const needsSetup = useMemo(() => {
+    if (loadingSettings || !settings) return false;
+
+    if (!settings.activeLlmId) return true;
+
+    const provider = getProviderFromModel(settings.activeLlmId);
+
+    if (!provider) return true;
+
+    const key = settings.llmKeys[provider];
+
+    return !isValidApiKey(key);
+}, [settings, loadingSettings]);
+
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center relative overflow-hidden">
+      {needsSetup && settings && (
+         <QuickSetupModal settings={settings} saveSettings={saveSettings} />
+      )}
       <AnimatedBackground />
       <Titlebar />
       <div className="w-full h-full pt-10 flex flex-col items-center justify-center relative">

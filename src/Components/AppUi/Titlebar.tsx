@@ -41,7 +41,7 @@ export default function Titlebar() {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 h-10 flex items-center justify-end select-none z-50">
+    <div className="fixed top-0 left-0 right-0 h-10 flex items-center justify-end select-none z-200">
       <div data-tauri-drag-region className="absolute inset-0" />
 
       <div className="flex items-center gap-0.5 shrink-0 relative z-10 pr-2">

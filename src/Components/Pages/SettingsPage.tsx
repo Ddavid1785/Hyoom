@@ -4,6 +4,7 @@ import { AppSettings } from "../../shared/sharedTypes.ts";
 
 import LLMSection, { getProviderFromModel } from "../Settings/LLMSelection.tsx";
 import SearchSection from "../Settings/SearchSelection.tsx";
+import { isValidApiKey } from "../../Utils/apiKeyValidation.ts";
 
 interface SettingsPageProps {
   savedSettings: AppSettings | null;
@@ -43,6 +44,9 @@ export default function SettingsPage({ savedSettings, saveSettings, loading }: S
     if (!activeLLMProvider) return false;
 
     if (!localSettings.llmKeys[activeLLMProvider]) return false;
+
+const currentKey = localSettings.llmKeys[activeLLMProvider];
+    if (!isValidApiKey(currentKey)) return false;
 
     return true;
   }, [localSettings]);
