@@ -8,7 +8,8 @@ import {
 } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 import LLMSelect from "../Settings/LLMSelectDropdown";
 import { AppSettings } from "../../shared/sharedTypes";
-import { useToast } from "../../Context/ToastContext";
+import VoiceVisualizer from "../AppUi/VoiceVisualizer";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface GlassInputHandlerProps {
   onSendMessage: (prompt: Prompt) => void;
@@ -35,6 +36,7 @@ interface GlassInputHandlerProps {
   savedSettings: AppSettings | null;
   saveSettings: (s: AppSettings) => Promise<void>;
   loading: boolean;
+  partialTranscript: string;
 }
 
 export default function GlassInputHandler({
@@ -62,6 +64,7 @@ export default function GlassInputHandler({
   savedSettings,
   saveSettings,
   loading,
+  partialTranscript,
 }: GlassInputHandlerProps) {
   useEffect(() => {
     if (textareaRef.current) {
@@ -100,6 +103,33 @@ export default function GlassInputHandler({
 
   return (
     <div className="relative w-full max-w-3xl">
+      <AnimatePresence>
+        {(isListening || voiceStatus === "processing") && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex flex-col items-center justify-center w-full overflow-hidden"
+          >
+            <div className="py-2">
+              <VoiceVisualizer
+                isListening={isListening}
+                isProcessing={voiceStatus === "processing"}
+              />
+            </div>
+
+            {partialTranscript && (
+              <motion.p
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-zinc-400 text-sm font-medium font-Inter px-4 pb-2 text-center"
+              >
+                {partialTranscript}...
+              </motion.p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div
         className={`
           relative rounded-2xl overflow-visible transition-all duration-300
@@ -162,12 +192,10 @@ export default function GlassInputHandler({
               </button>
               <button
                 onClick={onVoiceTrigger}
-                className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
+                className={`p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-white hover:bg-white/10  ${
                   isListening
-                    ? "text-white bg-red-600/90 shadow-lg shadow-red-600/40 animate-pulse"
-                    : voiceStatus === "processing"
-                    ? "text-blue-400 bg-blue-500/10 animate-spin"
-                    : "text-zinc-400 hover:text-white hover:bg-white/10"
+                    ? "shadow-[0_0_30px_-5px_rgba(59,130,246,0.15)] border-blue-500/20"
+                    : ""
                 }`}
                 title="Voice input"
               >

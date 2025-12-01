@@ -23,6 +23,7 @@ interface HomePageProps {
   triggerListening: () => Promise<void>;
   lastTranscript: string;
   clearTranscript: () => void;
+  partialTranscript: string;
 }
 
 const pageVariants = {
@@ -63,7 +64,8 @@ export default function HomePage({
   isListening,
   triggerListening,
   lastTranscript,
-  clearTranscript
+  clearTranscript,
+  partialTranscript,
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const quickModeEndRef = useRef<HTMLDivElement>(null);
@@ -202,6 +204,7 @@ export default function HomePage({
                     savedSettings={settings}
                     saveSettings={saveSettings}
                     loading={settingsLoading}
+                    partialTranscript={partialTranscript}
                   />
                 </div>
               </motion.div>
@@ -257,6 +260,7 @@ export default function HomePage({
                     savedSettings={settings}
                     saveSettings={saveSettings}
                     loading={settingsLoading}
+                    partialTranscript={partialTranscript}
                   />
                 </div>
                 <div className="h-[25vh] shrink-0 w-full transition-all duration-300" />

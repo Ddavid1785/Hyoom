@@ -29,6 +29,7 @@ export default function App() {
     isListening,
     triggerListening,
     lastTranscript,
+    partialTranscript,
     clearTranscript,
   } = useVoiceAssistant();
 
@@ -62,6 +63,7 @@ export default function App() {
               triggerListening={triggerListening}
               lastTranscript={lastTranscript}
               clearTranscript={clearTranscript}
+              partialTranscript={partialTranscript}
             />
           )}
 
