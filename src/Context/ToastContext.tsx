@@ -8,6 +8,7 @@ interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  duration: number;
 }
 
 interface ToastContextType {
@@ -80,7 +81,7 @@ const ToastItem = ({
 
       <button
         onClick={() => onRemove(id)}
-        className="shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors"
+        className="shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
       >
         <X size={14} className="opacity-70" />
       </button>
@@ -98,10 +99,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const addToast = useCallback(
     (message: string, type: ToastType, duration = 4000) => {
       const id = Math.random().toString(36).substring(2, 9);
-      const newToast = { id, message, type };
+      
+      const newToast = { id, message, type, duration };
       
       setToasts((prev) => [newToast, ...prev]); 
-      
     },
     []
   );
@@ -110,14 +111,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
       
-      <div className="fixed top-14 right-4 z-100 flex flex-col gap-2 w-full max-w-sm pointer-events-none">
+      <div className="fixed top-14 right-4 z-200 flex flex-col gap-2 w-full max-w-sm pointer-events-none">
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => (
             <ToastItem
               key={toast.id}
               toast={toast}
               onRemove={removeToast}
-              duration={4000} 
+              duration={toast.duration}
             />
           ))}
         </AnimatePresence>

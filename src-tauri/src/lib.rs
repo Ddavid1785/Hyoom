@@ -9,6 +9,8 @@ use std::sync::{mpsc, Mutex};
 use tauri::{Emitter, Manager, State};
 use tokio::time::{sleep, Duration};
 use voice::{start_voice_thread, VoiceCommand};
+#[cfg(all(windows, not(debug_assertions)))]
+use std::os::windows::process::CommandExt;
 
 struct VoiceSender(Mutex<mpsc::Sender<VoiceCommand>>);
 
