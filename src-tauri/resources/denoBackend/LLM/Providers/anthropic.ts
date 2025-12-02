@@ -13,11 +13,32 @@ export class AnthropicProvider implements LLMProvider {
     const systemMessage = messages.find(m => m.role === "system");
     const conversation = messages.filter(m => m.role !== "system");
 
-    const apiMessages: LLMMessage[] = conversation.map(m => ({
-        role: m.role,
-        content: m.content,
-        images: m.images
-    }));
+    // deno-lint-ignore no-explicit-any
+    const apiMessages: any[] = conversation.map(m => {
+      if (!m.images || m.images.length === 0) {
+        return { role: m.role, content: m.content };
+      }
+
+      // deno-lint-ignore no-explicit-any
+      const contentBlocks: any[] = [];
+      
+      for (const imgBase64 of m.images) {
+        const match = imgBase64.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
+        
+        contentBlocks.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: match ? match[1] : "image/png",
+            data: match ? match[2] : imgBase64,
+          }
+        });
+      }
+
+      contentBlocks.push({ type: "text", text: m.content });
+
+      return { role: m.role, content: contentBlocks };
+    });
 
     apiMessages.push({ role: "assistant", content: "{" });
 

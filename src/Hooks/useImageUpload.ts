@@ -95,8 +95,8 @@ export function useImageUpload() {
   }
 
   function getBase64Array() {
-    if (images.length === 0) return null;
-    return images.map(img => img.preview.split(",")[1]);
+    if (images.length === 0) return undefined;
+    return images.map(img => img.preview); 
   }
 
   return {

@@ -27,7 +27,7 @@ interface GlassInputHandlerProps {
   removeImage: (id: string) => void;
   clearImages: () => void;
   openFilePicker: () => void;
-  getBase64Array: () => string[] | null;
+  getBase64Array: () => string[] | undefined;
   voiceStatus: VoiceStatus;
   isListening: boolean;
   onVoiceTrigger: () => void;

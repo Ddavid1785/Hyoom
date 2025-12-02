@@ -32,7 +32,7 @@ export default function MessageBubble({ message }: { message: Message }) {
               {message.images.map((imageData, index) => (
                 <img 
                   key={index}
-                  src={`data:image/jpeg;base64,${imageData}`}
+                  src={imageData}
                   alt={`Uploaded ${index + 1}`}
                   className={`rounded-lg object-contain bg-black/20 ${
                     message.images!.length === 1 
