@@ -15,10 +15,14 @@ function stripForLLM(msg: Message): LLMMessage {
 export function useHandleSendMessage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [thinkingText, setThinkingText] = useState<string | null>(null);
-  
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+
   const { addToast } = useToast();
   
   const handleSendMessage = async (prompt: Prompt) => {
+
+    setIsAIProcessing(true);
+
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -110,6 +114,7 @@ export function useHandleSendMessage() {
       setMessages((prev) => [...prev, errorMsg].slice(-MAX_MESSAGES));
     } finally {
       setThinkingText(null);
+      setIsAIProcessing(false);
     }
   };
 
@@ -125,5 +130,5 @@ export function useHandleSendMessage() {
     }
   };
 
-  return { messages, setMessages, handleSendMessage, clearMessages, thinkingText };
+  return { messages, setMessages, handleSendMessage, clearMessages, thinkingText, isAIProcessing };
 }

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, BrainCircuit, Search, Calendar } from "lucide-react"; // Changed Brain to BrainCircuit
+import { X, Trash2, BrainCircuit, Search, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Memory, useMemories } from "../../Hooks/useMemories";
 
@@ -12,7 +12,6 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
   const { memories, loading, fetchMemories, deleteMemory } = useMemories();
   const [search, setSearch] = useState("");
 
-  // Auto-fetch when opened
   useEffect(() => {
     if (isOpen) {
       fetchMemories();
@@ -28,7 +27,6 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -37,7 +35,6 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
 
-          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -46,10 +43,8 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div className="w-full max-w-2xl bg-zinc-900/90 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col max-h-[80vh]">
-              {/* Header */}
               <div className="p-6 border-b border-zinc-800 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
-                  {/* Updated to Cyan and BrainCircuit */}
                   <div className="p-2 bg-cyan-500/20 rounded-lg">
                     <BrainCircuit className="text-cyan-400" size={24} />
                   </div>
@@ -70,7 +65,6 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
                 </button>
               </div>
 
-              {/* Search Bar */}
               <div className="px-6 py-4 border-b border-zinc-800 shrink-0">
                 <div className="relative">
                   <Search
@@ -87,7 +81,6 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
                 </div>
               </div>
 
-              {/* List */}
               <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {loading ? (
                   <div className="flex items-center justify-center h-40 text-zinc-500 font-Inter">
@@ -99,7 +92,7 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
                     <p>No matching memories found.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="flex flex-col gap-3">
                     {filteredMemories.map((memory) => (
                       <MemoryCard
                         key={memory.id}
@@ -127,11 +120,10 @@ function MemoryCard({
 }) {
   return (
     <motion.div
-      // REMOVED 'layout' prop here to fix the jittering bug
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="group relative bg-zinc-800/20 hover:bg-zinc-800/40 border border-zinc-800 hover:border-zinc-700 rounded-xl p-4 transition-all"
+      className="group relative bg-zinc-800/20 hover:bg-zinc-800/40 border border-zinc-800 hover:border-zinc-700 rounded-xl p-4 transition-colors duration-200"
     >
       <div className="flex justify-between items-start gap-4">
         <p className="text-zinc-200 font-Inter text-sm leading-relaxed">

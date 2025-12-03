@@ -1,6 +1,6 @@
 import { ArrowUpCircle, BrainCircuit, Eraser, Image, Mic } from "lucide-react";
 import { AppSettings } from "../../shared/sharedTypes";
-import ContextStealthSlider from "./ContextStealthSlider";
+import ContextStealthSlider from "./ContextSlider";
 import {
   llmChoices,
   providerIcons,
@@ -19,6 +19,7 @@ interface InputToolbarProps {
   saveSettings: (s: AppSettings) => Promise<void>;
   text: string;
   handleSubmit: () => void;
+  isAIProcessing: boolean;
 }
 
 export default function InputToolbar({
@@ -33,6 +34,7 @@ export default function InputToolbar({
   saveSettings,
   text,
   handleSubmit,
+  isAIProcessing,
 }: InputToolbarProps) {
   return (
     <div className="relative">
@@ -45,7 +47,7 @@ export default function InputToolbar({
             className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
               hasImages
                 ? "text-white bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-600/30"
-                : "text-zinc-400 hover:text-white hover:bg-white/10"
+                : "text-zinc-400 hover:text-blue-300 hover:bg-blue-500/10"
             }`}
             title="Attach images"
           >
@@ -55,10 +57,10 @@ export default function InputToolbar({
           {/* 2. Voice Input */}
           <button
             onClick={onVoiceTrigger}
-            className={`p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-white hover:bg-white/10 ${
+            className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
               isListening
-                ? "shadow-[0_0_30px_-5px_rgba(59,130,246,0.15)] border-blue-500/20"
-                : ""
+                ? "text-blue-300 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                : "text-zinc-400 hover:text-blue-300 hover:bg-blue-500/10"
             }`}
             title="Voice input"
           >
@@ -118,14 +120,14 @@ export default function InputToolbar({
           )}
         </div>
 
-        {/* Right Side: Submit Button */}
+        {/* Submit Button */}
         <button
-          disabled={!text}
+          disabled={!text || isAIProcessing}
           onClick={handleSubmit}
           className={`p-2.5 rounded-xl transition-all ${
-            text
-              ? "text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/40 hover:scale-105 hover:cursor-pointer"
-              : "text-zinc-600 cursor-not-allowed"
+            !text || isAIProcessing
+              ? "text-zinc-600 cursor-not-allowed bg-transparent"
+              : "text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/40 hover:scale-105 hover:cursor-pointer"
           }`}
           title="Send message"
         >

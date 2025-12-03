@@ -26,6 +26,7 @@ interface HomePageProps {
   clearTranscript: () => void;
   partialTranscript: string;
   clearMessages: () => Promise<void>;
+  isAIProcessing: boolean;
 }
 
 const pageVariants = {
@@ -65,6 +66,7 @@ export default function HomePage({
   clearTranscript,
   partialTranscript,
   clearMessages,
+  isAIProcessing
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const quickModeEndRef = useRef<HTMLDivElement>(null);
@@ -123,6 +125,7 @@ export default function HomePage({
     partialTranscript,
     setMemoryModal: setIsMemoryOpen,
     onClearContext: clearMessages,
+    isAIProcessing: isAIProcessing,
   };
 
   return (

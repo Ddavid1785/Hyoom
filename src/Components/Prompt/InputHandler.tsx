@@ -34,6 +34,7 @@ interface InputHandlerProps {
   partialTranscript: string;
   setMemoryModal: (isOpen: boolean) => void;
   onClearContext: () => Promise<void>;
+  isAIProcessing: boolean;
 }
 
 export default function InputHandler({
@@ -64,6 +65,7 @@ export default function InputHandler({
   partialTranscript,
   setMemoryModal,
   onClearContext,
+  isAIProcessing,
 }: InputHandlerProps) {
   useEffect(() => {
     if (textareaRef.current) {
@@ -76,6 +78,8 @@ export default function InputHandler({
   }, [text, textareaRef]);
 
   useEffect(() => {
+    if (isAIProcessing) return;
+
     if (voiceTranscript && voiceTranscript.trim().length > 0) {
       const prompt: Prompt = { text: voiceTranscript, baseImages: null };
       onSendMessage(prompt);
@@ -84,6 +88,8 @@ export default function InputHandler({
   }, [voiceTranscript, onClearTranscript]);
 
   function handleSubmit() {
+    if (isAIProcessing) return;
+
     const prompt: Prompt = { text: text, baseImages: getBase64Array() };
     onSendMessage(prompt);
     setText("");
@@ -100,11 +106,13 @@ export default function InputHandler({
   return (
     <div className="relative w-full max-w-3xl">
       <AnimatePresence>
-        <VoiceInputOverlay
-          isListening={isListening}
-          voiceStatus={voiceStatus}
-          partialTranscript={partialTranscript}
-        />
+        {!isAIProcessing && (
+          <VoiceInputOverlay
+            isListening={isListening}
+            voiceStatus={voiceStatus}
+            partialTranscript={partialTranscript}
+          />
+        )}
       </AnimatePresence>
 
       <div
@@ -134,7 +142,11 @@ export default function InputHandler({
           ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ask me to do anything on your PC..."
+          placeholder={
+            isAIProcessing
+              ? "Waiting for response..."
+              : "Ask me to do anything on your PC..."
+          }
           onKeyDown={handleKeyDown}
           onPaste={handlePasteImage}
           onFocus={() => setIsFocused(true)}
@@ -165,6 +177,7 @@ export default function InputHandler({
           saveSettings={saveSettings}
           text={text}
           handleSubmit={handleSubmit}
+          isAIProcessing={isAIProcessing}
         />
       </div>
     </div>

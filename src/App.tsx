@@ -16,7 +16,7 @@ import HomePage from "./Components/Pages/Home/HomePage";
 import { getProviderFromModel } from "./Components/Pages/Settings/LLMSelection";
 
 export default function App() {
-  const { messages, handleSendMessage, thinkingText, clearMessages } =
+  const { messages, handleSendMessage, thinkingText, clearMessages, isAIProcessing } =
     useHandleSendMessage();
   const [chatMode, setChatMode] = useState(false);
   const {
@@ -89,6 +89,7 @@ export default function App() {
               clearTranscript={clearTranscript}
               partialTranscript={partialTranscript}
               clearMessages={clearMessages}
+              isAIProcessing={isAIProcessing}
             />
           )}
 
