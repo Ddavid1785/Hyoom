@@ -2,12 +2,12 @@ import { useRef, useEffect, useState } from "react";
 import { MessageSquare, Zap } from "lucide-react";
 import { motion, AnimatePresence, type Transition } from "framer-motion";
 import { useImageUpload } from "../../Hooks/useImageUpload";
-import GlassInputHandler from "../Prompt/GlassInputHandler";
 import ChatView from "../Prompt/ChatView";
 import QuickModeContext from "../Prompt/QuickModeContext";
 import { Message, Prompt, VoiceStatus } from "../../types";
 import { AppSettings } from "../../shared/sharedTypes";
 import MemoryModal from "../Modals/MemoryModal";
+import InputHandler from "../Prompt/InputHandler.tsx";
 
 interface HomePageProps {
   messages: Message[];
@@ -68,7 +68,7 @@ export default function HomePage({
   lastTranscript,
   clearTranscript,
   partialTranscript,
-  clearMessages
+  clearMessages,
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const quickModeEndRef = useRef<HTMLDivElement>(null);
@@ -187,7 +187,7 @@ export default function HomePage({
                   <div ref={messagesEndRef} />
                 </div>
                 <div className="shrink-0">
-                  <GlassInputHandler
+                  <InputHandler
                     onSendMessage={onSendMessage}
                     text={text}
                     setText={setText}
@@ -213,7 +213,9 @@ export default function HomePage({
                     saveSettings={saveSettings}
                     loading={settingsLoading}
                     partialTranscript={partialTranscript}
-                    setMemoryModal={(isOpen: boolean) => setIsMemoryOpen(isOpen)}
+                    setMemoryModal={(isOpen: boolean) =>
+                      setIsMemoryOpen(isOpen)
+                    }
                     onClearContext={clearMessages}
                   />
                 </div>
@@ -245,7 +247,7 @@ export default function HomePage({
                 </div>
 
                 <div className="w-full max-w-3xl shrink-0 z-10 px-4">
-                  <GlassInputHandler
+                  <InputHandler
                     onSendMessage={onSendMessage}
                     text={text}
                     setText={setText}
@@ -271,7 +273,9 @@ export default function HomePage({
                     saveSettings={saveSettings}
                     loading={settingsLoading}
                     partialTranscript={partialTranscript}
-                    setMemoryModal={(isOpen: boolean) => setIsMemoryOpen(isOpen)}
+                    setMemoryModal={(isOpen: boolean) =>
+                      setIsMemoryOpen(isOpen)
+                    }
                     onClearContext={clearMessages}
                   />
                 </div>

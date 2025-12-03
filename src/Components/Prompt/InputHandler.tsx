@@ -1,5 +1,5 @@
 import { useEffect, RefObject } from "react";
-import { ArrowUpCircle, Brain, Eraser, Image, Mic } from "lucide-react";
+import { ArrowUpCircle, BrainCircuit, Eraser, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
 import { ImageData, Prompt, VoiceStatus } from "../../types";
 import {
@@ -10,8 +10,9 @@ import LLMSelect from "../Settings/LLMSelectDropdown";
 import { AppSettings } from "../../shared/sharedTypes";
 import VoiceVisualizer from "../AppUi/VoiceVisualizer";
 import { AnimatePresence, motion } from "framer-motion";
+import ContextStealthSlider from "./ContextStealthSlider"; // Import the new slider
 
-interface GlassInputHandlerProps {
+interface InputHandlerProps {
   onSendMessage: (prompt: Prompt) => void;
   text: string;
   setText: React.Dispatch<React.SetStateAction<string>>;
@@ -41,7 +42,7 @@ interface GlassInputHandlerProps {
   onClearContext: () => Promise<void>;
 }
 
-export default function GlassInputHandler({
+export default function InputHandler({
   onSendMessage,
   text,
   setText,
@@ -68,8 +69,8 @@ export default function GlassInputHandler({
   loading,
   partialTranscript,
   setMemoryModal,
-  onClearContext
-}: GlassInputHandlerProps) {
+  onClearContext,
+}: InputHandlerProps) {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -82,11 +83,8 @@ export default function GlassInputHandler({
 
   useEffect(() => {
     if (voiceTranscript && voiceTranscript.trim().length > 0) {
-      console.log("🚀 Auto-submitting voice command:", voiceTranscript);
-
       const prompt: Prompt = { text: voiceTranscript, baseImages: null };
       onSendMessage(prompt);
-
       onClearTranscript();
     }
   }, [voiceTranscript, onClearTranscript]);
@@ -121,7 +119,6 @@ export default function GlassInputHandler({
                 isProcessing={voiceStatus === "processing"}
               />
             </div>
-
             {partialTranscript && (
               <motion.p
                 initial={{ opacity: 0, y: 5 }}
@@ -182,6 +179,7 @@ export default function GlassInputHandler({
         />
         <div className="relative">
           <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/20 overflow-visible">
+            {/* Left Side: Core Inputs */}
             <div className="flex items-center gap-2">
               <button
                 onClick={openFilePicker}
@@ -206,41 +204,58 @@ export default function GlassInputHandler({
                 <Mic size={20} />
               </button>
               <button
-            onClick={() => setMemoryModal(true)}
-            className="p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-purple-300 hover:bg-purple-500/10"
-            title="Memory Bank"
-         >
-            <Brain size={20} />
-         </button>
-         <button
+                onClick={() => setMemoryModal(true)}
+                className="p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-cyan-300 hover:bg-cyan-500/10"
+                title="Memory Bank"
+              >
+                <BrainCircuit size={20} />
+              </button>
+              <button
                 onClick={onClearContext}
                 className="p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-red-300 hover:bg-red-500/10"
                 title="Clear Chat Context"
               >
                 <Eraser size={20} />
               </button>
+
+              {/* Separator */}
+              <div className="w-px h-6 bg-zinc-800 mx-1" />
+
+              {/* LLM Select */}
               {loading || !savedSettings ? (
-                <div>Loading model</div>
+                <div className="text-xs text-zinc-500 animate-pulse">
+                  Loading...
+                </div>
               ) : (
-                <LLMSelect
-                  choices={llmChoices}
-                  providerIcons={providerIcons}
-                  selected={
-                    savedSettings
-                      ? llmChoices.find(
-                          (choice) =>
-                            choice.modelId === savedSettings.activeLlmId
-                        ) || null
-                      : null
-                  }
-                  onSelect={(value) => {
-                    if (savedSettings) {
-                      saveSettings({ ...savedSettings, activeLlmId: value });
+                <div className="flex items-center">
+                  <LLMSelect
+                    choices={llmChoices}
+                    providerIcons={providerIcons}
+                    selected={
+                      savedSettings
+                        ? llmChoices.find(
+                            (choice) =>
+                              choice.modelId === savedSettings.activeLlmId
+                          ) || null
+                        : null
                     }
-                  }}
-                />
+                    onSelect={(value) => {
+                      if (savedSettings) {
+                        saveSettings({ ...savedSettings, activeLlmId: value });
+                      }
+                    }}
+                  />
+
+                  {/* New Stealth Slider on the Right */}
+                  <ContextStealthSlider
+                    settings={savedSettings}
+                    saveSettings={saveSettings}
+                  />
+                </div>
               )}
             </div>
+
+            {/* Right Side: Send Button */}
             <button
               disabled={!text}
               onClick={handleSubmit}

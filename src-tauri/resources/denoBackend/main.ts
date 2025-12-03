@@ -42,16 +42,16 @@ type StreamUpdate =
 })();
 
 const SETTINGS_PATH = getFilePath();
-const MAX_MESSAGES = 20;
 
 const messages: LLMMessage[] = [
   { role: "system", content: SYSTEM_PROMPT, images: undefined }
 ];
 
-function addMessage(msg: LLMMessage) {
+function addMessage(msg: LLMMessage, limit: number) {
   const nonSystem = messages.filter(m => m.role !== "system");
   nonSystem.push(msg);
-  const recent = nonSystem.slice(-MAX_MESSAGES);
+  
+  const recent = nonSystem.slice(-limit);
 
   messages.length = 0;
   messages.push({ role: "system", content: SYSTEM_PROMPT, images: undefined });
@@ -89,11 +89,17 @@ Deno.serve({ port: 3000 }, async (req) => {
   if (url.pathname === "/chat" && req.method === "POST") {
     try {
       const body = await req.json();
-      console.log("user message: ", body.message);
-      addMessage(body.message);
       const settings = await loadSettings();
+
+const contextLimit = Math.max(10, settings.contextLimit || 20);
+
+      addMessage(body.message,contextLimit );
+
+      console.log("user message: ", body.message);
+
       const llmChoice = validateSettings(settings);
-      
+
+
     if (!llmChoice) {
         return Response.json(
             { error: "No active LLM model selected or keys are missing." }, 
@@ -112,7 +118,7 @@ Deno.serve({ port: 3000 }, async (req) => {
           };
 
           try {
-            await agentLoop(provider, messages, send);
+            await agentLoop(provider, messages, send, contextLimit);
           // deno-lint-ignore no-explicit-any
           } catch (error: any) {
             send({ type: "error", error: error.message });
@@ -139,7 +145,8 @@ Deno.serve({ port: 3000 }, async (req) => {
 async function agentLoop(
   provider: LLMProvider, 
   messages: LLMMessage[], 
-  send: (update: StreamUpdate) => void
+  send: (update: StreamUpdate) => void,
+  contextLimit: number
 ) {
   let maxIterations = 10;
   
@@ -158,8 +165,8 @@ await sleep(800);
 
       const results = await executeMetaTools(response.metaToolCalls);
       
-      addMessage({ role: "assistant", content: JSON.stringify({ metaToolCalls: response.metaToolCalls }), images: undefined });
-      addMessage({ role: "user", content: `[TOOL SEARCH RESULTS]:\n${JSON.stringify(results)}`, images: undefined });
+      addMessage({ role: "assistant", content: JSON.stringify({ metaToolCalls: response.metaToolCalls }), images: undefined }, contextLimit);
+      addMessage({ role: "user", content: `[TOOL SEARCH RESULTS]:\n${JSON.stringify(results)}`, images: undefined }, contextLimit);
       continue;
     }
     
@@ -170,8 +177,8 @@ await sleep(1000);
 
       const executionResult = await executeAICode(response.code);
 
-      addMessage({ role: "assistant", content: JSON.stringify({ content: response.content, code: response.code }), images: undefined });
-      addMessage({ role: "user", content: `[CODE EXECUTION OUTPUT]:\n${executionResult}`, images: undefined });
+      addMessage({ role: "assistant", content: JSON.stringify({ content: response.content, code: response.code }), images: undefined }, contextLimit);
+      addMessage({ role: "user", content: `[CODE EXECUTION OUTPUT]:\n${executionResult}`, images: undefined }, contextLimit);
       continue;
     }
     

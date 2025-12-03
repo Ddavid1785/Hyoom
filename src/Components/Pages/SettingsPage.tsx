@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { Save, Check, X } from "lucide-react";
 import { AppSettings } from "../../shared/sharedTypes.ts";
+import { motion } from "framer-motion";
 
 import LLMSection, { getProviderFromModel } from "../Settings/LLMSelection.tsx";
 import SearchSection from "../Settings/SearchSelection.tsx";
+import ContextMemorySection from "../Settings/ContextMemorySection.tsx"; 
+import MemoryBankSection from "../Settings/MemoryBankSection.tsx"; 
 import { isValidApiKey } from "../../Utils/apiKeyValidation.ts";
 import MemoryModal from "../Modals/MemoryModal.tsx";
 
@@ -42,13 +45,10 @@ export default function SettingsPage({
 
   const isValid = useMemo(() => {
     if (!localSettings) return false;
-
     if (!localSettings.activeLlmId) return false;
 
     const activeLLMProvider = getProviderFromModel(localSettings.activeLlmId);
-
     if (!activeLLMProvider) return false;
-
     if (!localSettings.llmKeys[activeLLMProvider]) return false;
 
     const currentKey = localSettings.llmKeys[activeLLMProvider];
@@ -75,68 +75,81 @@ export default function SettingsPage({
   if (loading || !localSettings) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <div className="text-zinc-400 font-Inter">Loading settings...</div>
+        <div className="text-zinc-400 font-Inter animate-pulse">Loading settings...</div>
       </div>
     );
   }
 
   return (
     <div className="w-full h-full overflow-y-auto custom-scrollbar">
-      <div className="max-w-4xl mx-auto px-12 py-16">
+      <div className="max-w-4xl mx-auto px-6 md:px-12 py-16">
         <div className="mb-12">
           <MemoryModal
             isOpen={isMemoryOpen}
             onClose={() => setIsMemoryOpen(false)}
           />
-          <h1 className="text-4xl font-bold text-white font-Inter mb-3">
+          <motion.h1 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-bold text-white font-Inter mb-3"
+          >
             Settings
-          </h1>
-          <p className="text-zinc-400 text-lg font-Inter">
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-zinc-400 text-lg font-Inter"
+          >
             Manage your API keys and application preferences
-          </p>
+          </motion.p>
         </div>
 
-        <div className="space-y-8 max-w-2xl bg-zinc-900/30 p-8 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-8 max-w-2xl bg-zinc-900/30 p-8 rounded-2xl border border-zinc-800/50 backdrop-blur-sm shadow-xl"
+        >
+          {/* Main Sections */}
           <LLMSection settings={localSettings} onChange={setLocalSettings} />
+          
           <SearchSection settings={localSettings} onChange={setLocalSettings} />
-          <div className="pt-6 border-t border-zinc-800/50">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-medium text-white font-Inter">
-                  Memory Bank
-                </h3>
-                <p className="text-sm text-zinc-400 font-Inter">
-                  View and manage what Hyoom remembers about you.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsMemoryOpen(true)}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-lg font-medium font-Inter transition-colors"
-              >
-                Manage Memories
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-4 pt-6 mt-8 max-w-2xl">
+
+          <ContextMemorySection settings={localSettings} onChange={setLocalSettings} />
+
+          <MemoryBankSection onOpen={() => setIsMemoryOpen(true)} />
+          
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex items-center gap-4 pt-6 mt-8 max-w-2xl"
+        >
           <button
             onClick={handleSave}
             disabled={isSaving || !hasChanges || !isValid}
             className={`px-8 py-3 rounded-xl font-medium flex items-center gap-2 transition-all font-Inter ${
               isSaving || !hasChanges || !isValid
                 ? "bg-zinc-800/40 text-zinc-600 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/40 hover:scale-105 hover:cursor-pointer"
+                : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 hover:scale-105 hover:cursor-pointer active:scale-95"
             }`}
           >
             {justSaved ? (
-              <>
+              <motion.div 
+                initial={{ scale: 0.5 }} 
+                animate={{ scale: 1 }} 
+                className="flex items-center gap-2"
+              >
                 <Check size={18} />
-                Saved!
-              </>
+                <span>Saved!</span>
+              </motion.div>
             ) : (
               <>
                 <Save size={18} />
-                {isSaving ? "Saving..." : "Save Changes"}
+                <span>{isSaving ? "Saving..." : "Save Changes"}</span>
               </>
             )}
           </button>
@@ -144,16 +157,16 @@ export default function SettingsPage({
           <button
             onClick={() => setLocalSettings(savedSettings)}
             disabled={!hasChanges || isSaving}
-            className={`px-6 py-3 rounded-xl font-medium transition-all font-Inter flex items-center gap-2 hover:cursor-pointer ${
+            className={`px-6 py-3 rounded-xl font-medium transition-all font-Inter flex items-center gap-2 hover:cursor-pointer active:scale-95 ${
               !hasChanges || isSaving
                 ? "bg-zinc-900/40 text-zinc-600 cursor-not-allowed"
-                : "bg-zinc-700 hover:bg-zinc-600 text-white shadow-md hover:scale-105"
+                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white shadow-md hover:scale-105"
             }`}
           >
             <X size={18} />
             Reset
           </button>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

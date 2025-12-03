@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, Brain, Search, Calendar } from "lucide-react";
+import { X, Trash2, BrainCircuit, Search, Calendar } from "lucide-react"; // Changed Brain to BrainCircuit
 import { useState, useEffect } from "react";
 import { Memory, useMemories } from "../../Hooks/useMemories";
 
@@ -42,14 +42,16 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div className="w-full max-w-2xl bg-zinc-900/90 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col max-h-[80vh]">
               {/* Header */}
               <div className="p-6 border-b border-zinc-800 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-500/20 rounded-lg">
-                    <Brain className="text-purple-400" size={24} />
+                  {/* Updated to Cyan and BrainCircuit */}
+                  <div className="p-2 bg-cyan-500/20 rounded-lg">
+                    <BrainCircuit className="text-cyan-400" size={24} />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white font-Inter">
@@ -80,7 +82,7 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search memories..."
-                    className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50 transition-colors font-Inter text-sm"
+                    className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors font-Inter text-sm"
                   />
                 </div>
               </div>
@@ -93,7 +95,7 @@ export default function MemoryModal({ isOpen, onClose }: MemoryModalProps) {
                   </div>
                 ) : filteredMemories.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-40 text-zinc-500 font-Inter gap-2">
-                    <Brain size={32} className="opacity-20" />
+                    <BrainCircuit size={32} className="opacity-20" />
                     <p>No matching memories found.</p>
                   </div>
                 ) : (
@@ -125,7 +127,7 @@ function MemoryCard({
 }) {
   return (
     <motion.div
-      layout
+      // REMOVED 'layout' prop here to fix the jittering bug
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
