@@ -17,3 +17,7 @@ try {
 }
   return cachedTools;
 }
+
+export function resetToolCache() {
+    cachedTools = null;
+}

@@ -5,7 +5,7 @@ import { createProvider } from "./LLM/ProviderChooser.ts";
 import { SYSTEM_PROMPT } from "./LLM/SystemPrompt.ts";
 import { executeMetaTools } from "./MetaTools/metaToolExecutor.ts";
 import { getFilePath } from "./filePath.ts";
-import { loadTools } from "./Semantic/loadTools.ts";
+import { loadTools, resetToolCache } from "./Semantic/loadTools.ts";
 import { createToolValues } from "./Semantic/createToolValues.ts";
 import { executeAICode } from "./LLM/LLMCodeExecutor.ts";
 import { getToolsInfo } from "./Semantic/getToolsInfo.ts";
@@ -19,17 +19,25 @@ type StreamUpdate =
   | { type: "error"; error: string };
 
 (async () => {
-  const tools = await loadTools();
+  console.log("🚀 Starting Hyoom...");
 
-  if (!tools || tools.length === 0) {
-    console.log("Tool embeddings missing, generating...");
+  const liveTools = await getToolsInfo();
+  const liveCount = liveTools.length;
 
-    const toolsInfo = await getToolsInfo();
-    console.log("TOOLS INFO:", toolsInfo);
-    await createToolValues(toolsInfo);
-    console.log("Tool embeddings generated ✅");
+  const cachedTools = await loadTools();
+  const cachedCount = cachedTools ? cachedTools.length : 0;
+
+  if (!cachedTools || liveCount !== cachedCount) {
+    console.log(`⚠️ Change detected! Disk: ${liveCount} tools, Cache: ${cachedCount} tools.`);
+    console.log("♻️ Regenerating embeddings...");
+
+    await createToolValues(liveTools);
+    
+    resetToolCache();
+    
+    console.log(`✅ Tool embeddings generated (${liveCount} tools).`);
   } else {
-    console.log("Tool embeddings loaded ✅");
+    console.log(`✅ Tool embeddings loaded and match disk (${cachedCount} tools).`);
   }
 })();
 
