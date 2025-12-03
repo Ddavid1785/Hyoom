@@ -1,17 +1,35 @@
 import { MetaToolCall } from "../LLM/LLMtypes.ts";
 import { toolSearch } from "./toolSearch.ts";
+import { searchMemories } from "../Memory/searchMemories.ts";
 import { join } from "std/path/mod.ts";
+import { addMemory } from "./addMemory.ts";
+import { TokenEmbedding } from "../Semantic/types.ts";
+import { getEmbedder } from "../Semantic/embedder.ts";
 
 export async function executeMetaTools(tools: MetaToolCall[]): Promise<string[]> {
   const results: string[] = [];
   
   for (const tool of tools) {
+    
     if (tool.name === "tool_search") {
-      console.log(`🔎 Searching for: ${tool.args.query}`);
+      const query = tool.args.query;
+      console.log(`🔎 Searching Tools & Memory for: "${query}"`);
       
-      const foundTools = await toolSearch(tool.args.query);
+    const embedder = await getEmbedder();
+    const queryEmbedding: TokenEmbedding = new Float32Array(await embedder.embed(query));
 
-      const enrichedResults = [];
+      const [foundTools, foundMemories] = await Promise.all([
+        toolSearch(queryEmbedding),
+        searchMemories(queryEmbedding, 3) 
+      ]);
+
+      console.log(`results for ${query}\n tools: ${foundTools}\n memories:${foundMemories}`)
+
+      // deno-lint-ignore no-explicit-any
+      const outputObj: any = {
+        tools: [],
+        relevant_memories: []
+      };
 
       for (const t of foundTools) {
         try {
@@ -20,10 +38,9 @@ export async function executeMetaTools(tools: MetaToolCall[]): Promise<string[]>
             .replace(/\\/g, "/");
 
           const absolutePath = join(Deno.cwd(), "Tools", cleanInternalPath);
-          
           const content = await Deno.readTextFile(absolutePath);
           
-          enrichedResults.push({
+          outputObj.tools.push({
             name: t.name,
             description: t.description,
             path: t.relativePath,
@@ -31,17 +48,27 @@ export async function executeMetaTools(tools: MetaToolCall[]): Promise<string[]>
           });
         // deno-lint-ignore no-explicit-any
         } catch (err: any) {
-          console.error(`Failed to auto-read ${t.name}:`, err);
-          enrichedResults.push({
-            ...t,
-            sourceCode: `Error reading file: ${err.message}`
-          }); 
+          console.error(`Failed to read ${t.name}:`, err);
         }
       }
 
-      results.push(JSON.stringify(enrichedResults));
-    }
+      if (foundMemories.length > 0) {
+        outputObj.relevant_memories = foundMemories;
       }
+
+      results.push(JSON.stringify(outputObj, null, 2));
+    }
+    
+    else if (tool.name === "add_memory") {
+       try {
+            const result = await addMemory(tool.args.content);
+            results.push(result);
+        // deno-lint-ignore no-explicit-any
+        } catch (err: any) {
+            results.push(`Error: ${err.message}`);
+        }
+    }
+  }
   
   return results;
 }

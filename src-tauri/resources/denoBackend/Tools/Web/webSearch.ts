@@ -18,14 +18,16 @@ export interface WebSearchResult {
   error?: string;
 }
 
-export async function webSearch(params: WebSearchParams): Promise<WebSearchResult> {
+export async function webSearch(params: WebSearchParams | string): Promise<WebSearchResult> {
   try {
     // We need to read the settings to know which provider and key to use
     const settingsPath = getFilePath(); 
     const raw = await Deno.readTextFile(`${settingsPath}/settings.json`);
     const settings: AppSettings = JSON.parse(raw);
+    const query = typeof params === "string" ? params : params?.query;
 
-    const results = await performWebSearch(params.query, settings);
+
+    const results = await performWebSearch(query, settings);
 
     return {
       success: true,

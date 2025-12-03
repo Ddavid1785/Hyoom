@@ -9,3 +9,17 @@ export interface ToolInfo{
 export interface Tool extends ToolInfo{
     embedding: TokenEmbedding,
 }
+
+export interface Memory {
+  id: string;
+  content: string;
+  embedding: TokenEmbedding; 
+  timestamp: string;
+}
+
+export interface StoredMemory {
+  id: string;
+  content: string;
+  embedding: number[]; 
+  timestamp: string;
+}

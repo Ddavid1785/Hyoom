@@ -1,9 +1,8 @@
 import { TokenEmbedding, Tool } from "../Semantic/types.ts";
 import { semanticSearch } from "../Semantic/semanticSearch.ts";
-import { getEmbedder } from "../Semantic/embedder.ts";
 import { loadTools } from "../Semantic/loadTools.ts";
 
-export async function toolSearch(query:string) {
+export async function toolSearch(queryEmbedding:TokenEmbedding) {
 
     const toolEmbeddings = await loadTools();
 
@@ -11,11 +10,7 @@ export async function toolSearch(query:string) {
         return [];
     }
 
-    const embedder = await getEmbedder();
-    const queryEmbedding: TokenEmbedding = new Float32Array(await embedder.embed(query));
-
 const results = topMatches(queryEmbedding, toolEmbeddings, 3);
-console.log("results for", query, results)
 return results;
 
 }
