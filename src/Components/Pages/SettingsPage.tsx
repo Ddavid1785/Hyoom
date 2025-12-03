@@ -5,6 +5,7 @@ import { AppSettings } from "../../shared/sharedTypes.ts";
 import LLMSection, { getProviderFromModel } from "../Settings/LLMSelection.tsx";
 import SearchSection from "../Settings/SearchSelection.tsx";
 import { isValidApiKey } from "../../Utils/apiKeyValidation.ts";
+import MemoryModal from "../Modals/MemoryModal.tsx";
 
 interface SettingsPageProps {
   savedSettings: AppSettings | null;
@@ -12,10 +13,15 @@ interface SettingsPageProps {
   loading: boolean;
 }
 
-export default function SettingsPage({ savedSettings, saveSettings, loading }: SettingsPageProps) {
+export default function SettingsPage({
+  savedSettings,
+  saveSettings,
+  loading,
+}: SettingsPageProps) {
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [isMemoryOpen, setIsMemoryOpen] = useState(false);
 
   useEffect(() => {
     if (savedSettings) {
@@ -45,7 +51,7 @@ export default function SettingsPage({ savedSettings, saveSettings, loading }: S
 
     if (!localSettings.llmKeys[activeLLMProvider]) return false;
 
-const currentKey = localSettings.llmKeys[activeLLMProvider];
+    const currentKey = localSettings.llmKeys[activeLLMProvider];
     if (!isValidApiKey(currentKey)) return false;
 
     return true;
@@ -78,6 +84,10 @@ const currentKey = localSettings.llmKeys[activeLLMProvider];
     <div className="w-full h-full overflow-y-auto custom-scrollbar">
       <div className="max-w-4xl mx-auto px-12 py-16">
         <div className="mb-12">
+          <MemoryModal
+            isOpen={isMemoryOpen}
+            onClose={() => setIsMemoryOpen(false)}
+          />
           <h1 className="text-4xl font-bold text-white font-Inter mb-3">
             Settings
           </h1>
@@ -89,8 +99,25 @@ const currentKey = localSettings.llmKeys[activeLLMProvider];
         <div className="space-y-8 max-w-2xl bg-zinc-900/30 p-8 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
           <LLMSection settings={localSettings} onChange={setLocalSettings} />
           <SearchSection settings={localSettings} onChange={setLocalSettings} />
+          <div className="pt-6 border-t border-zinc-800/50">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-medium text-white font-Inter">
+                  Memory Bank
+                </h3>
+                <p className="text-sm text-zinc-400 font-Inter">
+                  View and manage what Hyoom remembers about you.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMemoryOpen(true)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-lg font-medium font-Inter transition-colors"
+              >
+                Manage Memories
+              </button>
+            </div>
+          </div>
         </div>
-
         <div className="flex items-center gap-4 pt-6 mt-8 max-w-2xl">
           <button
             onClick={handleSave}

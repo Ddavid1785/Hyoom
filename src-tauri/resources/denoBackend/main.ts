@@ -58,6 +58,14 @@ function addMessage(msg: LLMMessage) {
   messages.push(...recent);
 }
 
+function clearMessages() {
+  if (messages.length > 0){
+  messages.length = 0;
+  messages.push({ role: "system", content: SYSTEM_PROMPT, images: undefined });
+  console.log("🧹 Context cleared by user");
+}
+}
+
 Deno.serve({ port: 3000 }, async (req) => {
   const url = new URL(req.url);
 
@@ -71,6 +79,11 @@ Deno.serve({ port: 3000 }, async (req) => {
 
   if (url.pathname === "/health") {
     return Response.json({ status: "OK" }, { status: 200, headers });
+  }
+
+ if (url.pathname === "/clear" && req.method === "POST") {
+    clearMessages();
+    return Response.json({ status: "cleared" }, { status: 200, headers });
   }
 
   if (url.pathname === "/chat" && req.method === "POST") {

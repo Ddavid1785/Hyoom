@@ -16,10 +16,3 @@ export interface Memory {
   embedding: TokenEmbedding; 
   timestamp: string;
 }
-
-export interface StoredMemory {
-  id: string;
-  content: string;
-  embedding: number[]; 
-  timestamp: string;
-}

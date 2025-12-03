@@ -7,6 +7,7 @@ import ChatView from "../Prompt/ChatView";
 import QuickModeContext from "../Prompt/QuickModeContext";
 import { Message, Prompt, VoiceStatus } from "../../types";
 import { AppSettings } from "../../shared/sharedTypes";
+import MemoryModal from "../Modals/MemoryModal";
 
 interface HomePageProps {
   messages: Message[];
@@ -24,6 +25,7 @@ interface HomePageProps {
   lastTranscript: string;
   clearTranscript: () => void;
   partialTranscript: string;
+  clearMessages: () => Promise<void>;
 }
 
 const pageVariants = {
@@ -66,6 +68,7 @@ export default function HomePage({
   lastTranscript,
   clearTranscript,
   partialTranscript,
+  clearMessages
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const quickModeEndRef = useRef<HTMLDivElement>(null);
@@ -73,6 +76,7 @@ export default function HomePage({
 
   const [text, setText] = useState<string>("");
   const [isFocused, setIsFocused] = useState<boolean>(false);
+  const [isMemoryOpen, setIsMemoryOpen] = useState(false);
 
   const {
     images,
@@ -111,6 +115,10 @@ export default function HomePage({
       className="w-full h-full"
     >
       <div className="w-full h-full flex flex-col px-8 py-8">
+        <MemoryModal
+          isOpen={isMemoryOpen}
+          onClose={() => setIsMemoryOpen(false)}
+        />
         <div className="flex items-center justify-center mb-6 shrink-0 z-20">
           <div className="relative inline-flex items-center bg-zinc-900/40 backdrop-blur-xl rounded-full p-1 border border-zinc-800/50">
             <motion.div
@@ -205,6 +213,8 @@ export default function HomePage({
                     saveSettings={saveSettings}
                     loading={settingsLoading}
                     partialTranscript={partialTranscript}
+                    setMemoryModal={(isOpen: boolean) => setIsMemoryOpen(isOpen)}
+                    onClearContext={clearMessages}
                   />
                 </div>
               </motion.div>
@@ -261,6 +271,8 @@ export default function HomePage({
                     saveSettings={saveSettings}
                     loading={settingsLoading}
                     partialTranscript={partialTranscript}
+                    setMemoryModal={(isOpen: boolean) => setIsMemoryOpen(isOpen)}
+                    onClearContext={clearMessages}
                   />
                 </div>
                 <div className="h-[25vh] shrink-0 w-full transition-all duration-300" />

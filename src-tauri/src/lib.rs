@@ -1,16 +1,17 @@
+mod memory_manager;
 mod settings;
 mod types;
 mod voice;
 
 use crate::types::DenoProcess;
+#[cfg(all(windows, not(debug_assertions)))]
+use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::sync::{mpsc, Mutex};
 use tauri::{Emitter, Manager, State};
 use tokio::time::{sleep, Duration};
 use voice::{start_voice_thread, VoiceCommand};
-#[cfg(all(windows, not(debug_assertions)))]
-use std::os::windows::process::CommandExt;
 
 struct VoiceSender(Mutex<mpsc::Sender<VoiceCommand>>);
 
@@ -89,7 +90,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             settings::load_settings,
             settings::save_settings,
-            trigger_voice_listening
+            trigger_voice_listening,
+            memory_manager::load_memories,
+            memory_manager::delete_memory
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

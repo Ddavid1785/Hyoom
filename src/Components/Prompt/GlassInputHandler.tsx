@@ -1,5 +1,5 @@
 import { useEffect, RefObject } from "react";
-import { ArrowUpCircle, Image, Mic } from "lucide-react";
+import { ArrowUpCircle, Brain, Eraser, Image, Mic } from "lucide-react";
 import ImagePreview from "./ImagePreview";
 import { ImageData, Prompt, VoiceStatus } from "../../types";
 import {
@@ -37,6 +37,8 @@ interface GlassInputHandlerProps {
   saveSettings: (s: AppSettings) => Promise<void>;
   loading: boolean;
   partialTranscript: string;
+  setMemoryModal: (isOpen: boolean) => void;
+  onClearContext: () => Promise<void>;
 }
 
 export default function GlassInputHandler({
@@ -65,6 +67,8 @@ export default function GlassInputHandler({
   saveSettings,
   loading,
   partialTranscript,
+  setMemoryModal,
+  onClearContext
 }: GlassInputHandlerProps) {
   useEffect(() => {
     if (textareaRef.current) {
@@ -200,6 +204,20 @@ export default function GlassInputHandler({
                 title="Voice input"
               >
                 <Mic size={20} />
+              </button>
+              <button
+            onClick={() => setMemoryModal(true)}
+            className="p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-purple-300 hover:bg-purple-500/10"
+            title="Memory Bank"
+         >
+            <Brain size={20} />
+         </button>
+         <button
+                onClick={onClearContext}
+                className="p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-red-300 hover:bg-red-500/10"
+                title="Clear Chat Context"
+              >
+                <Eraser size={20} />
               </button>
               {loading || !savedSettings ? (
                 <div>Loading model</div>

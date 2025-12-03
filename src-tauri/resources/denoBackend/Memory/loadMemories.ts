@@ -1,5 +1,6 @@
 import { getFilePath } from "../filePath.ts";
-import { Memory, StoredMemory } from "../Semantic/types.ts"; 
+import { Memory } from "../Semantic/types.ts"; 
+import { StoredMemory } from "../shared/sharedTypes.ts";
 
 const FILE_PATH = getFilePath();
 const MEMORY_FILE = `${FILE_PATH}/memories.json`;

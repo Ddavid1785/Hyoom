@@ -16,7 +16,7 @@ import { isValidApiKey } from "./Utils/apiKeyValidation";
 import QuickSetupModal from "./Components/Modals/QuickSetupModal";
 
 export default function App() {
-  const { messages, handleSendMessage, thinkingText } = useHandleSendMessage();
+  const { messages, handleSendMessage, thinkingText, clearMessages } = useHandleSendMessage();
   const [chatMode, setChatMode] = useState(false);
   const {
     activeTab,
@@ -84,6 +84,7 @@ const needsSetup = useMemo(() => {
               lastTranscript={lastTranscript}
               clearTranscript={clearTranscript}
               partialTranscript={partialTranscript}
+              clearMessages={clearMessages}
             />
           )}
 

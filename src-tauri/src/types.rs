@@ -35,5 +35,13 @@ pub struct AppSettings {
     pub search_keys: SearchKeys,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct StoredMemory {
+    pub id: String,
+    pub content: String,
+    pub embedding: Vec<f32>,
+    pub timestamp: String,
+}
 
 pub struct DenoProcess(pub Mutex<Option<Child>>);

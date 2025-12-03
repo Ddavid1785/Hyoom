@@ -113,7 +113,17 @@ export function useHandleSendMessage() {
     }
   };
 
-  const clearMessages = () => setMessages([]);
+  const clearMessages = async () => {
+    setMessages([]);
+    
+    try {
+      await fetch('http://localhost:3000/clear', { method: 'POST' });
+      addToast("Context cleared", "success");
+    } catch (e) {
+      console.error("Failed to clear backend context", e);
+      addToast("Failed to clear backend memory", "error");
+    }
+  };
 
   return { messages, setMessages, handleSendMessage, clearMessages, thinkingText };
 }

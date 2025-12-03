@@ -18,6 +18,8 @@ export interface AppSettings {
       searchEngineId: string; 
     };
   };
+
+  contextLimit?: number;
 }
 
 export interface LLMChoice{
@@ -32,4 +34,11 @@ export interface LLMMessage {
   content: string;
   images?: string[];
   thought?: string;
+}
+
+export interface StoredMemory {
+  id: string;
+  content: string;
+  embedding: number[]; 
+  timestamp: string;
 }
