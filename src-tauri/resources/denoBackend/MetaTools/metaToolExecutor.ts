@@ -67,6 +67,22 @@ export async function executeMetaTools(tools: MetaToolCall[]): Promise<string[]>
         } catch (err: any) {
             results.push(`Error: ${err.message}`);
         }
+    }else if (tool.name === "search_memory") {
+      const query = tool.args.query;
+      console.log(`🧠 Explicit Memory Search for: "${query}"`);
+
+      try {
+        const embedder = await getEmbedder();
+        const queryEmbedding: TokenEmbedding = new Float32Array(await embedder.embed(query));
+        
+        const foundMemories = await searchMemories(queryEmbedding, 5);
+        
+        results.push(JSON.stringify({ found_memories: foundMemories }, null, 2));
+      // deno-lint-ignore no-explicit-any
+      } catch (err: any) {
+        console.error("Memory search failed:", err);
+        results.push(`Error searching memory: ${err.message}`);
+      }
     }
   }
   
