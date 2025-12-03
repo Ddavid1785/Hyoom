@@ -1,7 +1,7 @@
 import { Message } from "../../types";
 import { AnimatePresence } from "framer-motion";
-import ThinkingBubble from "./ThinkingBubble";
-import MessageBubble from "./MessageBubble";
+import ThinkingBubble from "../ChatBubbles/ThinkingBubble";
+import MessageBubble from "../ChatBubbles/MessageBubble";
 
 interface QuickModeContextProps {
   messages: Message[];

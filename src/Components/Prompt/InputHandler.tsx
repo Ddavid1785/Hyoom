@@ -1,16 +1,10 @@
 import { useEffect, RefObject } from "react";
-import { ArrowUpCircle, BrainCircuit, Eraser, Image, Mic } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import ImagePreview from "./ImagePreview";
 import { ImageData, Prompt, VoiceStatus } from "../../types";
-import {
-  llmChoices,
-  providerIcons,
-} from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
-import LLMSelect from "../Settings/LLMSelectDropdown";
 import { AppSettings } from "../../shared/sharedTypes";
-import VoiceVisualizer from "../AppUi/VoiceVisualizer";
-import { AnimatePresence, motion } from "framer-motion";
-import ContextStealthSlider from "./ContextStealthSlider"; // Import the new slider
+import VoiceInputOverlay from "./VoiceOverlay";
+import InputToolbar from "./InputToolbar";
 
 interface InputHandlerProps {
   onSendMessage: (prompt: Prompt) => void;
@@ -106,31 +100,13 @@ export default function InputHandler({
   return (
     <div className="relative w-full max-w-3xl">
       <AnimatePresence>
-        {(isListening || voiceStatus === "processing") && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex flex-col items-center justify-center w-full overflow-hidden"
-          >
-            <div className="py-2">
-              <VoiceVisualizer
-                isListening={isListening}
-                isProcessing={voiceStatus === "processing"}
-              />
-            </div>
-            {partialTranscript && (
-              <motion.p
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-zinc-400 text-sm font-medium font-Inter px-4 pb-2 text-center"
-              >
-                {partialTranscript}...
-              </motion.p>
-            )}
-          </motion.div>
-        )}
+        <VoiceInputOverlay
+          isListening={isListening}
+          voiceStatus={voiceStatus}
+          partialTranscript={partialTranscript}
+        />
       </AnimatePresence>
+
       <div
         className={`
           relative rounded-2xl overflow-visible transition-all duration-300
@@ -153,6 +129,7 @@ export default function InputHandler({
             <ImagePreview images={images} onRemove={removeImage} />
           </div>
         )}
+
         <textarea
           ref={textareaRef}
           value={text}
@@ -163,12 +140,10 @@ export default function InputHandler({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           className="w-full px-6 py-4 bg-transparent font-Inter text-white text-lg placeholder-zinc-400 focus:outline-none resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
-          style={{
-            minHeight: "60px",
-            maxHeight: "300px",
-          }}
+          style={{ minHeight: "60px", maxHeight: "300px" }}
           rows={1}
         />
+
         <input
           type="file"
           ref={fileInputRef}
@@ -177,99 +152,20 @@ export default function InputHandler({
           multiple
           className="hidden"
         />
-        <div className="relative">
-          <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/20 overflow-visible">
-            {/* Left Side: Core Inputs */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={openFilePicker}
-                className={`p-2 rounded-xl transition-all hover:cursor-pointer ${
-                  hasImages
-                    ? "text-white bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-600/30"
-                    : "text-zinc-400 hover:text-white hover:bg-white/10"
-                }`}
-                title="Attach images"
-              >
-                <Image size={20} />
-              </button>
-              <button
-                onClick={onVoiceTrigger}
-                className={`p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-white hover:bg-white/10  ${
-                  isListening
-                    ? "shadow-[0_0_30px_-5px_rgba(59,130,246,0.15)] border-blue-500/20"
-                    : ""
-                }`}
-                title="Voice input"
-              >
-                <Mic size={20} />
-              </button>
-              <button
-                onClick={() => setMemoryModal(true)}
-                className="p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-cyan-300 hover:bg-cyan-500/10"
-                title="Memory Bank"
-              >
-                <BrainCircuit size={20} />
-              </button>
-              <button
-                onClick={onClearContext}
-                className="p-2 rounded-xl transition-all hover:cursor-pointer text-zinc-400 hover:text-red-300 hover:bg-red-500/10"
-                title="Clear Chat Context"
-              >
-                <Eraser size={20} />
-              </button>
 
-              {/* Separator */}
-              <div className="w-px h-6 bg-zinc-800 mx-1" />
-
-              {/* LLM Select */}
-              {loading || !savedSettings ? (
-                <div className="text-xs text-zinc-500 animate-pulse">
-                  Loading...
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <LLMSelect
-                    choices={llmChoices}
-                    providerIcons={providerIcons}
-                    selected={
-                      savedSettings
-                        ? llmChoices.find(
-                            (choice) =>
-                              choice.modelId === savedSettings.activeLlmId
-                          ) || null
-                        : null
-                    }
-                    onSelect={(value) => {
-                      if (savedSettings) {
-                        saveSettings({ ...savedSettings, activeLlmId: value });
-                      }
-                    }}
-                  />
-
-                  {/* New Stealth Slider on the Right */}
-                  <ContextStealthSlider
-                    settings={savedSettings}
-                    saveSettings={saveSettings}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Right Side: Send Button */}
-            <button
-              disabled={!text}
-              onClick={handleSubmit}
-              className={`p-2.5 rounded-xl transition-all ${
-                text
-                  ? "text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/40 hover:scale-105 hover:cursor-pointer"
-                  : "text-zinc-600 cursor-not-allowed"
-              }`}
-              title="Send message"
-            >
-              <ArrowUpCircle size={24} />
-            </button>
-          </div>
-        </div>
+        <InputToolbar
+          hasImages={hasImages}
+          openFilePicker={openFilePicker}
+          isListening={isListening}
+          onVoiceTrigger={onVoiceTrigger}
+          setMemoryModal={setMemoryModal}
+          onClearContext={onClearContext}
+          savedSettings={savedSettings}
+          loading={loading}
+          saveSettings={saveSettings}
+          text={text}
+          handleSubmit={handleSubmit}
+        />
       </div>
     </div>
   );
