@@ -1,5 +1,5 @@
 import { Cpu, ChevronDown } from "lucide-react";
-import { LLMChoice } from "../../shared/sharedTypes";
+import { LLMChoice } from "../../../shared/sharedTypes";
 
 interface LLMSelectTriggerProps {
   selected: LLMChoice | null;

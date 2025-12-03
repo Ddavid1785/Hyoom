@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Cpu } from "lucide-react";
-import { AppSettings } from "../../shared/sharedTypes.ts";
+import { AppSettings } from "../../../shared/sharedTypes";
 
 interface ContextMemorySectionProps {
   settings: AppSettings;

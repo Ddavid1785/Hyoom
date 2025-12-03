@@ -24,12 +24,13 @@ pub struct SearchKeys {
     pub google: Option<GoogleSearchConfig>,
 }
 
-
-#[derive(Serialize, Deserialize, Debug, Clone,Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub active_llm_id: String,
     pub active_search_provider: String,
+
+    pub context_limit: Option<u32>,
 
     pub llm_keys: LlmKeys,
     pub search_keys: SearchKeys,

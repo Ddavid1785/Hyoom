@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { LLMChoice } from "../../shared/sharedTypes";
-import { useAutoFlip } from "../../Hooks/useAutoFlip"; 
-
 import LLMSelectTrigger from "./LLMSelectTrigger";
 import LLMCompactList from "./LLMCompactList";
 import LLMExpandedGrid from "./LLMExpandedGrid";
+import { LLMChoice } from "../../../shared/sharedTypes";
+import { useAutoFlip } from "../../../Hooks/useAutoFlip";
 
 interface Props {
   choices: LLMChoice[];

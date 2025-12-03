@@ -1,6 +1,6 @@
 import { Globe } from "lucide-react";
 import SettingsInputField from "./SettingsInputField";
-import { AppSettings, SearchProviderType } from "../../shared/sharedTypes";
+import { AppSettings, SearchProviderType } from "../../../shared/sharedTypes";
 
 interface SearchSectionProps {
   settings: AppSettings;

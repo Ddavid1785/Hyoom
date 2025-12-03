@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { LLMChoice } from "../../shared/sharedTypes";
+import { LLMChoice } from "../../../shared/sharedTypes";
 
 interface LLMExpandedGridProps {
   groupedChoices: Record<string, LLMChoice[]>;

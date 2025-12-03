@@ -4,9 +4,9 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { AppSettings } from "../../shared/sharedTypes";
 import { llmChoices, providerIcons } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 import { isValidApiKey } from "../../Utils/apiKeyValidation";
-import LLMSelect from "../Settings/LLMSelectDropdown";
-import { getProviderFromModel } from "../Settings/LLMSelection";
-import SettingsInputField from "../Settings/SettingsInputField";
+import { getProviderFromModel } from "../Pages/Settings/LLMSelection";
+import LLMSelect from "../Pages/Settings/LLMSelectDropdown";
+import SettingsInputField from "../Pages/Settings/SettingsInputField";
 
 interface QuickSetupModalProps {
   settings: AppSettings;

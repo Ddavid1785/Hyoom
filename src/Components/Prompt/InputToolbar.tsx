@@ -1,11 +1,11 @@
 import { ArrowUpCircle, BrainCircuit, Eraser, Image, Mic } from "lucide-react";
 import { AppSettings } from "../../shared/sharedTypes";
-import LLMSelect from "../Settings/LLMSelectDropdown";
 import ContextStealthSlider from "./ContextStealthSlider";
 import {
   llmChoices,
   providerIcons,
 } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
+import LLMSelect from "../Pages/Settings/LLMSelectDropdown";
 
 interface InputToolbarProps {
   hasImages: boolean;

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { VoiceStatus } from "../../types";
-import VoiceVisualizer from "../AppUi/VoiceVisualizer";
+import VoiceVisualizer from "./VoiceVisualizer";
 
 interface VoiceInputOverlayProps {
   isListening: boolean;

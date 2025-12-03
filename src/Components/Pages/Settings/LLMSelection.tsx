@@ -1,11 +1,8 @@
 import { Bot } from "lucide-react";
 import SettingsInputField from "./SettingsInputField.tsx";
 import LLMSelect from "./LLMSelectDropdown.tsx";
-import {
-  llmChoices,
-  providerIcons,
-} from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices.ts";
-import { AppSettings, LLMProviderType } from "../../shared/sharedTypes.ts";
+import { llmChoices, providerIcons } from "../../../../src-tauri/resources/denoBackend/LLM/LLMChoices.ts";
+import { AppSettings, LLMProviderType } from "../../../shared/sharedTypes.ts";
 
 interface LLMSectionProps {
   settings: AppSettings;
