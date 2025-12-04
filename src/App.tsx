@@ -73,6 +73,7 @@ export default function App() {
         <AnimatePresence mode="wait" custom={direction}>
           {activeTab === "chat" && (
             <HomePage
+            key="homepage"
               messages={messages}
               onSendMessage={handleSendMessage}
               chatMode={chatMode}
@@ -123,23 +124,14 @@ export default function App() {
             </motion.div>
           )}
 
-          {activeTab === "settings" && (
-            <motion.div
+             {activeTab === "settings" && (
+            <SettingsPage
               key="settings"
-              custom={direction}
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={pageTransition}
-              className="w-full h-full"
-            >
-              <SettingsPage
-                savedSettings={settings}
-                saveSettings={saveSettings}
-                loading={loadingSettings}
-              />
-            </motion.div>
+              savedSettings={settings}
+              saveSettings={saveSettings}
+              loading={loadingSettings}
+              direction={direction}
+            />
           )}
         </AnimatePresence>
       </div>
