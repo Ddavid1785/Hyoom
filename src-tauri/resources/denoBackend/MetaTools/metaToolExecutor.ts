@@ -18,12 +18,18 @@ export async function executeMetaTools(tools: MetaToolCall[]): Promise<string[]>
     const embedder = await getEmbedder();
     const queryEmbedding: TokenEmbedding = new Float32Array(await embedder.embed(query));
 
+console.log(`🔎 Searching Tools & Memory for: "${query}"`);
       const [foundTools, foundMemories] = await Promise.all([
+
         toolSearch(queryEmbedding),
         searchMemories(queryEmbedding, 3) 
       ]);
 
-      console.log(`results for ${query}\n tools: ${foundTools}\n memories:${foundMemories}`)
+ const toolsLog = foundTools
+        .map(t => `${t.name} (${t.score.toFixed(2)})`)
+        .join(", ");
+        
+      console.log(`results for "${query}"\n tools: [${toolsLog}]\n memories: [${foundMemories}]`);
 
       // deno-lint-ignore no-explicit-any
       const outputObj: any = {

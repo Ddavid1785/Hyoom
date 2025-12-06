@@ -9,12 +9,6 @@ export async function searchMemories(queryEmbedding: TokenEmbedding, topN = 3): 
       return [];
   }
 
-  if (memories.length <= 15) {
-      return memories
-        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-        .map(r => `${r.content} (Recorded: ${r.timestamp.split("T")[0]})`);
-  }
-
   const results = topMatches(queryEmbedding, memories, topN);
   
   return results.map(r => `${r.content} (Recorded: ${r.timestamp.split("T")[0]})`);

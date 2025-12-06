@@ -19,6 +19,8 @@ export interface SearchFilesResult {
 export async function searchFiles(params: SearchFilesParams): Promise<SearchFilesResult> {
   const matches: string[] = [];
   
+  const lowerQuery = params.query.toLowerCase();
+  
   async function walk(currentPath: string) {
     try {
       for await (const entry of Deno.readDir(currentPath)) {
@@ -27,7 +29,10 @@ export async function searchFiles(params: SearchFilesParams): Promise<SearchFile
         if (entry.isDirectory) {
           await walk(fullPath);
         } else if (entry.isFile && entry.name.includes(params.query)) {
-          matches.push(fullPath);
+          const lowerName = entry.name.toLowerCase();
+          if (lowerName.includes(lowerQuery)) {
+                matches.push(fullPath);
+            }
         }
       }
     } catch (_err) {
