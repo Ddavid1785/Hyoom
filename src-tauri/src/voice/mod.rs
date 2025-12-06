@@ -14,6 +14,7 @@ use crate::voice::wakeword::WakeWordDetector;
 #[derive(Debug, Clone)]
 pub enum VoiceEvent {
     WakeWordDetected,
+    Transcribing,
     CommandTranscribed(String),
     Error(String),
     BackToListening,
@@ -108,10 +109,10 @@ pub fn start_voice_thread(
 
                     if is_recording_command {
                         // === MODE 1: RECORDING COMMAND (VAD + Whisper) ===
-                        
+
                         // Check for speech (to detect silence)
                         let is_speech = vad.is_speech(&frame_i16).unwrap_or(false);
-                        
+
                         speech_buffer.extend_from_slice(&frame);
 
                         if is_speech {
@@ -123,37 +124,44 @@ pub fn start_voice_thread(
                         // Silence detected -> Stop and Transcribe
                         if silence_counter >= SILENCE_THRESHOLD_FRAMES {
                             println!("🛑 Command Complete. Transcribing...");
-                            
-                            // Call transcribe_base (matches your transcribe.rs)
+
+                            let _ = event_tx.send(VoiceEvent::Transcribing);
+
                             match transcriber.transcribe_base(&speech_buffer) {
                                 Ok(full_text) => {
                                     let final_command = clean_command(&full_text);
-                                    println!("📝 Result: '{}'", final_command);
-                                    
-                                    if !final_command.trim().is_empty() {
-                                        let _ = event_tx.send(VoiceEvent::CommandTranscribed(final_command));
+
+                                    if final_command.contains("[BLANK_AUDIO]")
+                                        || final_command.trim().is_empty()
+                                        || final_command.to_lowercase().trim() == "you"
+                                    {
+                                        println!("🗑️ Discarding empty/blank audio");
+                                        let _ = event_tx.send(VoiceEvent::BackToListening);
+                                    } else {
+                                        println!("📝 Result: '{}'", final_command);
+                                        let _ = event_tx
+                                            .send(VoiceEvent::CommandTranscribed(final_command));
+                                        let _ = event_tx.send(VoiceEvent::BackToListening);
                                     }
                                 }
-                                Err(e) => eprintln!("Transcribe Error: {}", e),
+                                Err(e) => {
+                                    eprintln!("Transcribe Error: {}", e);
+                                    let _ = event_tx.send(VoiceEvent::BackToListening);
+                                }
                             }
 
                             // Reset state
                             is_recording_command = false;
                             speech_buffer.clear();
-                            
-                            // Important: Tell UI to go back to Idle
-                            let _ = event_tx.send(VoiceEvent::BackToListening);
-                            println!("👂 Listening...");
                         }
-
                     } else {
                         // === MODE 2: WAITING FOR WAKE WORD (Vosk) ===
-                        
+
                         // We run Vosk on every chunk
                         if wakeword_detector.process_chunk(&frame_i16) {
                             println!("🎯 Wake Word Detected!");
                             let _ = event_tx.send(VoiceEvent::WakeWordDetected);
-                            
+
                             is_recording_command = true;
                             silence_counter = 0;
                             speech_buffer.clear();

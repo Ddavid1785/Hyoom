@@ -53,7 +53,6 @@ pub fn run() {
                         }
                         voice::VoiceEvent::CommandTranscribed(text) => {
                             let _ = app_handle_clone.emit("voice-data", text);
-                            let _ = app_handle_clone.emit("voice-status", "processing");
                         }
 
                         voice::VoiceEvent::BackToListening => {
@@ -63,6 +62,9 @@ pub fn run() {
                         voice::VoiceEvent::Error(e) => {
                             eprintln!("Voice Error: {}", e);
                             let _ = app_handle_clone.emit("voice-status", "error");
+                        }
+                        voice::VoiceEvent::Transcribing => {
+                             let _ = app_handle_clone.emit("voice-status", "transcribing");
                         }
                     }
                 }

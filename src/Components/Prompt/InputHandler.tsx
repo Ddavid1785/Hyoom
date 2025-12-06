@@ -5,6 +5,7 @@ import { ImageData, Prompt, VoiceStatus } from "../../types";
 import { AppSettings } from "../../shared/sharedTypes";
 import VoiceInputOverlay from "./VoiceOverlay";
 import InputToolbar from "./InputToolbar";
+import { useToast } from "../../Context/ToastContext";
 
 interface InputHandlerProps {
   onSendMessage: (prompt: Prompt) => void;
@@ -65,6 +66,9 @@ export default function InputHandler({
   onClearContext,
   isAIProcessing,
 }: InputHandlerProps) {
+
+  const { addToast } = useToast();
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -75,15 +79,21 @@ export default function InputHandler({
     }
   }, [text, textareaRef]);
 
-  useEffect(() => {
+useEffect(() => {
     if (isAIProcessing) return;
 
     if (voiceTranscript && voiceTranscript.trim().length > 0) {
+      if (voiceTranscript.includes("[BLANK_AUDIO]")) {
+        addToast("Received blank audio token, ignoring.", "warning");
+        onClearTranscript();
+        return;
+      }
+
       const prompt: Prompt = { text: voiceTranscript, baseImages: null };
       onSendMessage(prompt);
       onClearTranscript();
     }
-  }, [voiceTranscript, onClearTranscript]);
+  }, [voiceTranscript, onClearTranscript, isAIProcessing, onSendMessage]);
 
   function handleSubmit() {
     if (isAIProcessing) return;

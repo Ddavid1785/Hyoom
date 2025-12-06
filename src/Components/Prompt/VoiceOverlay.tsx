@@ -11,7 +11,8 @@ export default function VoiceInputOverlay({
   isListening,
   voiceStatus,
 }: VoiceInputOverlayProps) {
-  const isActive = isListening || voiceStatus === "processing";
+  
+  const isActive = isListening || voiceStatus === "transcribing";
 
   return (
     <AnimatePresence>
@@ -24,7 +25,11 @@ export default function VoiceInputOverlay({
           className="flex flex-col items-center justify-center w-full py-4"
         >
           <div className="relative group">
-            <div className="absolute -inset-1 bg-linear-to-r from-blue-600/20 to-cyan-500/20 rounded-2xl blur-xl opacity-70 group-hover:opacity-100 transition duration-1000"></div>
+            <div className={`absolute -inset-1 rounded-2xl blur-xl opacity-70 transition duration-1000
+              ${voiceStatus === "transcribing" 
+                ? "bg-linear-to-r from-purple-600/30 to-pink-500/30" 
+                : "bg-linear-to-r from-blue-600/20 to-cyan-500/20"}`}
+            ></div>
 
             <div className="relative flex flex-col items-center px-8 py-4 overflow-hidden
                           bg-zinc-950/60 backdrop-blur-xl 
@@ -34,7 +39,7 @@ export default function VoiceInputOverlay({
               <div className="h-12 flex items-center justify-center w-full">
                 <VoiceVisualizer
                   isListening={isListening}
-                  isProcessing={voiceStatus === "processing"}
+                  isProcessing={voiceStatus === "transcribing"}
                 />
               </div>
 
@@ -45,23 +50,23 @@ export default function VoiceInputOverlay({
                 <span className="relative flex h-2.5 w-2.5">
                   <motion.span 
                     animate={
-                      voiceStatus === "processing" 
+                      voiceStatus === "transcribing" 
                         ? { scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] } 
                         : { scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }
                     }
-                    transition={{ repeat: Infinity, duration: voiceStatus === "processing" ? 1 : 2 }}
+                    transition={{ repeat: Infinity, duration: voiceStatus === "transcribing" ? 1 : 2 }}
                     className={`absolute inline-flex h-full w-full rounded-full opacity-75 
-                      ${voiceStatus === "processing" ? "bg-purple-400" : "bg-cyan-400"}`}
+                      ${voiceStatus === "transcribing" ? "bg-purple-400" : "bg-cyan-400"}`}
                   />
                   <span className={`relative inline-flex rounded-full h-2.5 w-2.5 
-                    ${voiceStatus === "processing" ? "bg-purple-500" : "bg-cyan-500"}`} 
+                    ${voiceStatus === "transcribing" ? "bg-purple-500" : "bg-cyan-500"}`} 
                   />
                 </span>
 
                 <p className={`text-xs font-medium tracking-wide transition-colors duration-300
-                  ${voiceStatus === "processing" ? "text-purple-300 drop-shadow-sm" : "text-cyan-100/80"}`}>
-                  {voiceStatus === "processing" 
-                    ? "Thinking..." 
+                  ${voiceStatus === "transcribing" ? "text-purple-300 drop-shadow-sm" : "text-cyan-100/80"}`}>
+                  {voiceStatus === "transcribing" 
+                    ? "Transcribing..." 
                     : "Listening..."}
                 </p>
               </motion.div>

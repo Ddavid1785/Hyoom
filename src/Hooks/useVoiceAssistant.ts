@@ -48,7 +48,7 @@ export function useVoiceAssistant() {
   return {
     status,
     isListening: status === "listening",
-    isProcessing: status === "processing",
+    isTranscribing: status === "transcribing", 
     lastTranscript,
     triggerListening,
     clearTranscript,

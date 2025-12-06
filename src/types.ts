@@ -19,4 +19,4 @@ export interface Message {
   images?: string[];
 }
 
-export type VoiceStatus = "idle" | "listening" | "processing" | "error";
+export type VoiceStatus = "idle" | "listening" | "transcribing" | "error";
