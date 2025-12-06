@@ -62,6 +62,7 @@ pub fn run() {
                         voice::VoiceEvent::Error(e) => {
                             eprintln!("Voice Error: {}", e);
                             let _ = app_handle_clone.emit("voice-status", "error");
+                             let _ = app_handle_clone.emit("voice-error", e); 
                         }
                         voice::VoiceEvent::Transcribing => {
                              let _ = app_handle_clone.emit("voice-status", "transcribing");

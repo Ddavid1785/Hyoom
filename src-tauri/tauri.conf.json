@@ -75,7 +75,8 @@
     ],
   "resources": [
      "resources/**/*",
-    "bin/*"
+    "bin/*",
+    "resources/vosk_dlls/*" 
   ],
   "windows":{
     "nsis":{
@@ -83,7 +84,8 @@
       "installerIcon": "icons/icon.ico",
       "headerImage": "icons/icon.ico",
       "sidebarImage": "icons/icon.ico",
-      "displayLanguageSelector": false
+      "displayLanguageSelector": false,
+      "installerHooks": "nsis/install_vosk.nsh"
     }
   }
   }

@@ -38,7 +38,7 @@ export default function App() {
 
   useEffect(() => {
     if (
-      (status === "listening" || status === "processing") &&
+      (status === "listening" || status === "transcribing") &&
       activeTab !== "chat"
     ) {
       handleTabChange("chat");

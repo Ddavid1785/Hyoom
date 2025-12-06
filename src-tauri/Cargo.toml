@@ -31,5 +31,12 @@ webrtc-vad = "0.4.0"
 hound = "3.5.1"
 dasp = { version = "0.11.0", features = ["signal", "interpolate", "interpolate-linear"] }
 uuid = { version = "1.4", features = ["v4"] }
-whisper-rs = "0.15.1"
+whisper-rs =  "0.15.1"
 vosk = "0.3.1"
+
+[profile.release]
+lto = false           # Link Time Optimization: mashes C++ and Rust code together better
+codegen-units = 1      # Slower build, but faster execution
+panic = "abort"        # Removes stack unwinding (lighter binary)
+strip = "debuginfo"
+opt-level = 3          # Maximum optimization

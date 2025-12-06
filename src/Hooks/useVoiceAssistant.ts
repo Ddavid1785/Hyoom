@@ -28,9 +28,13 @@ export function useVoiceAssistant() {
       setStatus(newStatus);
       
       if (newStatus === "error") {
-        addToast("Voice Assistant error", "error");
         setTimeout(() => setStatus("idle"), 2500);
       }
+    });
+
+    const unlistenError = listen<string>("voice-error", (event) => {
+      console.error("Rust Voice Error:", event.payload);
+      addToast(`Voice Error: ${event.payload}`, "error");
     });
 
     const unlistenData = listen<string>("voice-data", (event) => {
@@ -42,6 +46,7 @@ export function useVoiceAssistant() {
     return () => {
       unlistenStatus.then((fn) => fn());
       unlistenData.then((fn) => fn());
+       unlistenError.then((fn) => fn());
     };
   }, [addToast]);
 

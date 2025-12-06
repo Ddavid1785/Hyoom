@@ -1,0 +1,12 @@
+[env]
+# 1. Parallel Build Level (Speeds up compilation)
+CMAKE_BUILD_PARALLEL_LEVEL = "6"
+
+# 2. The Magic Flags for MSVC
+#    We set "CL" specifically because that is the env var MSVC reads automatically.
+#    /arch:AVX2 = Force AVX2 instructions
+#    /O2        = Optimize for speed
+#    /Ob2       = Aggressive inlining
+#    /Ot        = Favor fast code
+#    /GL-       = DISABLE Link Time Code Generation (Critical: Prevents stripping AVX symbols)
+CL = "/arch:AVX2 /O2 /Ob2 /Ot /GL-"

@@ -21,7 +21,20 @@ impl WhisperTranscriber {
             set_log_callback(Some(log_callback), ptr::null_mut());
         }
 
-        let base_model_path = resource_dir.join("resources/voice_models/ggml-base.en.bin");
+        let dev_path = resource_dir.join("resources/voice_models/ggml-base.en.bin");
+        let prod_path = resource_dir.join("voice_models/ggml-base.en.bin");
+
+        let base_model_path = if dev_path.exists() {
+            dev_path
+        } else if prod_path.exists() {
+            prod_path
+        } else {
+            return Err(format!(
+                "Whisper model not found! Checked: \n1. {:?}\n2. {:?}",
+                dev_path, prod_path
+            )
+            .into());
+        };
 
         println!("🧠 Loading Whisper Base model...");
 
@@ -29,6 +42,8 @@ impl WhisperTranscriber {
         let params = WhisperContextParameters::default();
         let ctx_base = WhisperContext::new_with_params(&base_model_path.to_string_lossy(), params)
             .map_err(|e| format!("Failed to load Base model: {}", e))?;
+
+        whisper_rs::print_system_info();
 
         println!("✅ Models loaded successfully!");
 
