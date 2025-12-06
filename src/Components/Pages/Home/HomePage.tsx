@@ -24,7 +24,6 @@ interface HomePageProps {
   triggerListening: () => Promise<void>;
   lastTranscript: string;
   clearTranscript: () => void;
-  partialTranscript: string;
   clearMessages: () => Promise<void>;
   isAIProcessing: boolean;
 }
@@ -64,7 +63,6 @@ export default function HomePage({
   triggerListening,
   lastTranscript,
   clearTranscript,
-  partialTranscript,
   clearMessages,
   isAIProcessing
 }: HomePageProps) {
@@ -122,7 +120,6 @@ export default function HomePage({
     savedSettings: settings,
     saveSettings,
     loading: settingsLoading,
-    partialTranscript,
     setMemoryModal: setIsMemoryOpen,
     onClearContext: clearMessages,
     isAIProcessing: isAIProcessing,

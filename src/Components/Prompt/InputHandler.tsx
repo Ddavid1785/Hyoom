@@ -31,7 +31,6 @@ interface InputHandlerProps {
   savedSettings: AppSettings | null;
   saveSettings: (s: AppSettings) => Promise<void>;
   loading: boolean;
-  partialTranscript: string;
   setMemoryModal: (isOpen: boolean) => void;
   onClearContext: () => Promise<void>;
   isAIProcessing: boolean;
@@ -62,7 +61,6 @@ export default function InputHandler({
   savedSettings,
   saveSettings,
   loading,
-  partialTranscript,
   setMemoryModal,
   onClearContext,
   isAIProcessing,
@@ -110,7 +108,6 @@ export default function InputHandler({
           <VoiceInputOverlay
             isListening={isListening}
             voiceStatus={voiceStatus}
-            partialTranscript={partialTranscript}
           />
         )}
       </AnimatePresence>

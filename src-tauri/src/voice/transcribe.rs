@@ -5,35 +5,25 @@ use whisper_rs::{
 };
 
 pub struct WhisperTranscriber {
-    ctx_tiny: WhisperContext,
     ctx_base: WhisperContext,
 }
 
 impl WhisperTranscriber {
     pub fn new(resource_dir: PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
-    unsafe {
-        unsafe extern "C" fn log_callback(
-            _level: i32,
-            _msg: *const i8,
-            _user_data: *mut std::ffi::c_void,
-        ) {
+        unsafe {
+            unsafe extern "C" fn log_callback(
+                _level: i32,
+                _msg: *const i8,
+                _user_data: *mut std::ffi::c_void,
+            ) {
+            }
+
+            set_log_callback(Some(log_callback), ptr::null_mut());
         }
 
-        set_log_callback(
-            Some(log_callback),
-            ptr::null_mut(),
-        );
-    }
-
-        let tiny_model_path = resource_dir.join("resources/voice_models/ggml-tiny.en.bin");
         let base_model_path = resource_dir.join("resources/voice_models/ggml-base.en.bin");
 
-        println!("🧠 Loading Whisper models into RAM");
-
-        // Load Tiny
-        let params = WhisperContextParameters::default();
-        let ctx_tiny = WhisperContext::new_with_params(&tiny_model_path.to_string_lossy(), params)
-            .map_err(|e| format!("Failed to load Tiny model: {}", e))?;
+        println!("🧠 Loading Whisper Base model...");
 
         // Load Base
         let params = WhisperContextParameters::default();
@@ -42,11 +32,7 @@ impl WhisperTranscriber {
 
         println!("✅ Models loaded successfully!");
 
-        Ok(Self { ctx_tiny, ctx_base })
-    }
-
-    pub fn transcribe_tiny(&self, audio: &[f32]) -> Result<String, Box<dyn std::error::Error>> {
-        self.run_inference(&self.ctx_tiny, audio)
+        Ok(Self { ctx_base })
     }
 
     pub fn transcribe_base(&self, audio: &[f32]) -> Result<String, Box<dyn std::error::Error>> {

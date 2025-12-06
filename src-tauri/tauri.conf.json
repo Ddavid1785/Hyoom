@@ -74,8 +74,7 @@
       "icons/icon.ico"
     ],
   "resources": [
-    "resources/denoBackend/**/*",
-    "resources/voice_models/*", 
+     "resources/**/*",
     "bin/*"
   ],
   "windows":{

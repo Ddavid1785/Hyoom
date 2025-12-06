@@ -7,7 +7,7 @@ import { VoiceStatus } from "../types";
 export function useVoiceAssistant() {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [lastTranscript, setLastTranscript] = useState("");
-  const [partialTranscript, setPartialTranscript] = useState(""); 
+  
   const { addToast } = useToast();
 
   const triggerListening = useCallback(async () => {
@@ -20,7 +20,6 @@ export function useVoiceAssistant() {
 
   const clearTranscript = useCallback(() => {
     setLastTranscript("");
-    setPartialTranscript("");
   }, []);
 
   useEffect(() => {
@@ -37,22 +36,12 @@ export function useVoiceAssistant() {
     const unlistenData = listen<string>("voice-data", (event) => {
       if (event.payload) {
         setLastTranscript(event.payload);
-        setPartialTranscript(""); 
       }
-    });
-
-       const unlistenPartial = listen<string>("voice-partial", (event) => {
-       if (event.payload) {
-         let cleanText = event.payload;
-         cleanText = cleanText.replace(/\b(hume|whom|who|hum|human)\b/gi, "Hyoom");
-         setPartialTranscript(cleanText);
-       }
     });
 
     return () => {
       unlistenStatus.then((fn) => fn());
       unlistenData.then((fn) => fn());
-      unlistenPartial.then((fn) => fn());
     };
   }, [addToast]);
 
@@ -61,7 +50,6 @@ export function useVoiceAssistant() {
     isListening: status === "listening",
     isProcessing: status === "processing",
     lastTranscript,
-    partialTranscript,
     triggerListening,
     clearTranscript,
   };

@@ -29,10 +29,13 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             let app_handle_clone = app.handle().clone();
-            let resource_dir = app.path().resource_dir()?;
+            let resource_dir = if cfg!(debug_assertions) {
+                PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            } else {
+                app.path().resource_dir()?
+            };
 
-            let (cmd_tx, voice_event_rx) =
-                start_voice_thread(resource_dir.clone(), app_handle_clone.clone());
+            let (cmd_tx, voice_event_rx) = start_voice_thread(resource_dir.clone());
 
             app.manage(VoiceSender(Mutex::new(cmd_tx)));
 
@@ -41,9 +44,12 @@ pub fn run() {
                     match event {
                         voice::VoiceEvent::WakeWordDetected => {
                             let _ = app_handle_clone.emit("voice-status", "listening");
-                        }
-                        voice::VoiceEvent::PartialTranscription(text) => {
-                            let _ = app_handle_clone.emit("voice-partial", text);
+
+                            if let Some(window) = app_handle_clone.get_webview_window("main") {
+                                let _ = window.unminimize();
+
+                                let _ = window.set_focus();
+                            }
                         }
                         voice::VoiceEvent::CommandTranscribed(text) => {
                             let _ = app_handle_clone.emit("voice-data", text);
