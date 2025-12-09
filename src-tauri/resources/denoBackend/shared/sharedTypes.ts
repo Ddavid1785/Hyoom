@@ -22,11 +22,18 @@ export interface AppSettings {
   contextLimit?: number;
 }
 
+export interface LLMCapabilities {
+  vision: boolean;
+  imageGeneration: boolean; 
+  functionCalling: boolean;
+}
+
 export interface LLMChoice{
   name: string,
   pathToIcon: string,
   provider: string; 
   modelId: string;
+  capabilities: LLMCapabilities;
 }
 
 export interface LLMMessage {

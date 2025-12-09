@@ -1,52 +1,57 @@
 import { LLMChoice } from "../shared/sharedTypes.ts";
 
 export const llmChoices: LLMChoice[] = [
-  // OpenAI
-  { 
-    name: "GPT 5", 
+  //OpenAI
+  {
+    name: "GPT 5",
     provider: "OpenAI",
     pathToIcon: "/LLMProviderIcons/OpenAI/openAI.png",
-    modelId: "gpt-5" 
+    modelId: "gpt-5",
+    capabilities: { vision: true, imageGeneration: true, functionCalling: true }
   },
   {
     name: "GPT 4.1",
     provider: "OpenAI",
     pathToIcon: "/LLMProviderIcons/OpenAI/openAI.png",
-    modelId: "gpt-4.1"
+    modelId: "gpt-4.1",
+    capabilities: { vision: true, imageGeneration: true, functionCalling: true }
   },
-
   // Anthropic
   {
     name: "Sonnet 4.0",
     provider: "Anthropic",
     pathToIcon: "/LLMProviderIcons/Anthropic/claude.png",
-    modelId: "claude-3.7-sonnet"
+    modelId: "claude-4.0-sonnet",
+    capabilities: { vision: true, imageGeneration: false, functionCalling: true }
   },
   {
     name: "Sonnet 4.5",
     provider: "Anthropic",
     pathToIcon: "/LLMProviderIcons/Anthropic/claude.png",
-    modelId: "claude-3.5-sonnet"
+    modelId: "claude-4.5-sonnet",
+    capabilities: { vision: true, imageGeneration: false, functionCalling: true }
   },
-
   // Google
   {
     name: "Gemini 2.5 Pro",
     provider: "Google",
     pathToIcon: "/LLMProviderIcons/Google/gemini.png",
-    modelId: "gemini-2.5-pro"
+    modelId: "gemini-2.5-pro",
+    capabilities: { vision: true, imageGeneration: false, functionCalling: true }
   },
   {
     name: "Gemini 2.5 Flash",
     provider: "Google",
     pathToIcon: "/LLMProviderIcons/Google/gemini.png",
-    modelId: "gemini-2.5-flash"
+    modelId: "gemini-2.5-flash",
+    capabilities: {vision:true, imageGeneration: false, functionCalling: true}
   }
 ];
 
-export const providerIcons: Record<string, string> = {Google:"/LLMProviderIcons/Google/Google.png",
-    OpenAI:"/LLMProviderIcons/OpenAI/openAI.png",
-     Anthropic:"/LLMProviderIcons/Anthropic/Anthropic.png"};
+export const providerIcons: Record<string, string> = {
+  Google:"/LLMProviderIcons/Google/Google.png",
+  OpenAI:"/LLMProviderIcons/OpenAI/openAI.png",
+  Anthropic:"/LLMProviderIcons/Anthropic/Anthropic.png"};
 
 export function findLLMChoice(modelId: string) {
   return llmChoices.find((choice) => choice.modelId === modelId);
