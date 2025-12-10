@@ -99,7 +99,7 @@ const contextLimit = Math.max(10, settings.contextLimit || 20);
 
       const llmChoice = validateSettings(settings);
 
-
+      
     if (!llmChoice) {
         return Response.json(
             { error: "No active LLM model selected or keys are missing." }, 
@@ -212,7 +212,7 @@ function validateSettings(settings: AppSettings): LLMChoice | null {
 
   if (choice.provider === "OpenAI" && !settings.llmKeys.openai) return null;
   if (choice.provider === "Anthropic" && !settings.llmKeys.anthropic) return null;
-  if (choice.provider === "Google" && !settings.llmKeys.gemini) return null;
+  if (choice.provider === "Google" && !settings.llmKeys.google) return null;
 
   return choice;
 }

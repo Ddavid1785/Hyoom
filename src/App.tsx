@@ -55,7 +55,7 @@ export default function App() {
     if (!provider) return true;
 
     const key = settings.llmKeys[provider];
-
+console.log("key is ", key)
     return !isValidApiKey(key);
   }, [settings, loadingSettings]);
 

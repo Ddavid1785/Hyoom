@@ -2,7 +2,7 @@ import { LLMMessage } from "../../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "../LLMtypes.ts";
 import { parseLLMResponse } from "../responseParser.ts";
 
-export class GeminiProvider implements LLMProvider {
+export class GoogleProvider implements LLMProvider {
   constructor(private apiKey: string, private modelId: string) {}
 
   async call(messages: LLMMessage[]): Promise<LLMResponse> {

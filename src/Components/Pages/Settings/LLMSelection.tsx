@@ -14,7 +14,7 @@ export function getProviderFromModel(modelId: string): LLMProviderType | "" {
 
   if (modelId.startsWith("gpt") || modelId.startsWith("o1")) return "openai";
   if (modelId.startsWith("claude")) return "anthropic";
-  if (modelId.startsWith("gemini")) return "gemini";
+  if (modelId.startsWith("gemini")) return "google";
 
   return "";
 }

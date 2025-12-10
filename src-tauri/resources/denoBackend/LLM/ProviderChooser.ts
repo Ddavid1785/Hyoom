@@ -1,4 +1,4 @@
-import { GeminiProvider } from "./Providers/google.ts";
+import { GoogleProvider } from "./Providers/google.ts";
 import { OpenAIProvider } from "./Providers/openai.ts";
 import { AnthropicProvider } from "./Providers/anthropic.ts";
 import { AppSettings, LLMChoice } from "../shared/sharedTypes.ts";
@@ -22,9 +22,9 @@ export function createProvider(settings: AppSettings, choice: LLMChoice) {
       return new AnthropicProvider(apiKey, choice.modelId);
 
     case "Google":
-      apiKey = settings.llmKeys.gemini;
+      apiKey = settings.llmKeys.google;
       if (!apiKey) throw new Error("Gemini API key is missing. Please add it in Settings.");
-      return new GeminiProvider(apiKey, choice.modelId);
+      return new GoogleProvider(apiKey, choice.modelId);
 
     default:
       throw new Error(`Unknown provider: ${choice.provider}`);

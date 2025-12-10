@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct LlmKeys {
     pub openai: Option<String>,
     pub anthropic: Option<String>,
-    pub gemini: Option<String>,
+    pub google: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
