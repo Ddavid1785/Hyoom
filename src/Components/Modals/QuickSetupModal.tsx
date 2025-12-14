@@ -1,30 +1,55 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
-import { AppSettings } from "../../shared/sharedTypes";
-import { llmChoices, providerIcons } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
+import { ArrowRight, Sparkles, X } from "lucide-react";
+import { AppSettings, InferenceProviderType } from "../../shared/sharedTypes";
+import {
+  models,
+  providerDefinitions,
+  getProvidersForModel,
+  findModel,
+} from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 import { isValidApiKey } from "../../Utils/apiKeyValidation";
-import { getProviderFromModel } from "../Pages/Settings/LLMSelection";
 import LLMSelect from "../Pages/Settings/LLMSelectDropdown";
+import ProviderSelect from "../Pages/Settings/ProviderSelect";
 import SettingsInputField from "../Pages/Settings/SettingsInputField";
 
 interface QuickSetupModalProps {
   settings: AppSettings;
   saveSettings: (s: AppSettings) => Promise<void>;
+  onSkip: () => void;
 }
 
-export default function QuickSetupModal({ settings, saveSettings }: QuickSetupModalProps) {
+export default function QuickSetupModal({
+  settings,
+  saveSettings,
+  onSkip,
+}: QuickSetupModalProps) {
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [isSaving, setIsSaving] = useState(false);
 
-  const currentModelId = localSettings.activeLlmId;
-  const activeProvider = getProviderFromModel(currentModelId);
-  const currentKey = activeProvider ? (localSettings.llmKeys[activeProvider] || "") : "";
+  const selectedModel = findModel(localSettings.activeModelId);
+  const availableProviders = selectedModel
+    ? getProvidersForModel(localSettings.activeModelId)
+    : [];
+  const currentProvider =
+    localSettings.activeProviderId as InferenceProviderType;
+  const providerConfig = localSettings.inferenceProviders[currentProvider];
+  const currentKey = providerConfig?.apiKey || "";
+  const providerDef = currentProvider
+    ? providerDefinitions[currentProvider]
+    : null;
 
   const isValid = useMemo(() => {
-    if (!activeProvider) return false;
-    return isValidApiKey(currentKey);
-  }, [currentKey, activeProvider]);
+    if (!localSettings.activeModelId || !localSettings.activeProviderId)
+      return false;
+    if (!providerDef) return false;
+
+    if (providerDef.requiresApiKey) {
+      return isValidApiKey(currentKey);
+    }
+
+    return true;
+  }, [localSettings, currentKey, providerDef]);
 
   const handleSave = async () => {
     if (!isValid) return;
@@ -33,23 +58,56 @@ export default function QuickSetupModal({ settings, saveSettings }: QuickSetupMo
     setIsSaving(false);
   };
 
-  const handleKeyChange = (val: string) => {
-    if (!activeProvider) return;
+  const handleModelChange = (modelId: string) => {
+    const newModel = findModel(modelId);
+    if (!newModel) return;
+
+    const supportedProviders = getProvidersForModel(modelId);
+    const newProvider = supportedProviders.includes(
+      currentProvider as InferenceProviderType
+    )
+      ? currentProvider
+      : supportedProviders[0];
+
     setLocalSettings({
       ...localSettings,
-      llmKeys: {
-        ...localSettings.llmKeys,
-        [activeProvider]: val,
+      activeModelId: modelId,
+      activeProviderId: newProvider,
+    });
+  };
+
+  const handleProviderChange = (providerId: InferenceProviderType) => {
+    setLocalSettings({
+      ...localSettings,
+      activeProviderId: providerId,
+    });
+  };
+
+  const handleKeyChange = (val: string) => {
+    if (!currentProvider) return;
+    setLocalSettings({
+      ...localSettings,
+      inferenceProviders: {
+        ...localSettings.inferenceProviders,
+        [currentProvider]: {
+          ...providerConfig,
+          apiKey: val,
+        },
       },
     });
   };
 
+  const creatorIcons: Record<string, string> = {};
+  models.forEach((model) => {
+    if (!creatorIcons[model.creator]) {
+      creatorIcons[model.creator] = model.iconPath;
+    }
+  });
+
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/90 backdrop-blur-lg" />
 
-      {/* Card */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -60,6 +118,14 @@ export default function QuickSetupModal({ settings, saveSettings }: QuickSetupMo
           flex flex-col
         "
       >
+        <button
+          onClick={onSkip}
+          className="absolute top-4 right-4 p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-all z-10"
+          title="Skip setup"
+        >
+          <X size={20} />
+        </button>
+
         <div className="h-1 w-full bg-linear-to-r from-blue-500 via-purple-500 to-blue-500 rounded-t-2xl" />
 
         <div className="p-10">
@@ -71,61 +137,81 @@ export default function QuickSetupModal({ settings, saveSettings }: QuickSetupMo
               Welcome to Hyoom
             </h2>
             <p className="text-zinc-400 font-Inter text-base leading-relaxed max-w-md mx-auto">
-              To get started, please select your preferred AI model and enter your API key. 
-              Your key is stored locally on your device.
+              Get started by selecting a model and provider. You can always
+              change these later in Settings.
             </p>
           </div>
 
-          <div className="space-y-8 max-w-lg mx-auto">
-            <div className="space-y-2 relative z-20"> 
+          <div className="space-y-6 max-w-lg mx-auto">
+            <div className="space-y-2 relative z-20">
               <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider pl-1">
                 Choose Model
               </label>
               <LLMSelect
-                choices={llmChoices}
-                providerIcons={providerIcons}
-                selected={
-                  llmChoices.find((c) => c.modelId === currentModelId) || null
-                }
-                onSelect={(val) =>
-                  setLocalSettings({ ...localSettings, activeLlmId: val })
-                }
+                models={models}
+                creatorIcons={creatorIcons}
+                selected={selectedModel || null}
+                onSelect={handleModelChange}
               />
             </div>
 
+            {selectedModel && availableProviders.length > 1 && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300 relative z-10">
+                <ProviderSelect
+                  providers={availableProviders}
+                  selected={currentProvider}
+                  onSelect={handleProviderChange}
+                />
+              </div>
+            )}
+
             <div className="space-y-2 relative z-10 min-h-[110px]">
-              {activeProvider ? (
+              {providerDef && providerDef.requiresApiKey ? (
                 <div className="animate-in fade-in slide-in-from-top-1 duration-300 space-y-2">
                   <SettingsInputField
-                    label={`${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API Key`}
+                    label={`${providerDef.name} API Key`}
                     value={currentKey}
                     onChange={handleKeyChange}
-                    placeholder={`sk-...`}
+                    placeholder={`Enter your ${providerDef.name} API key`}
                     type="password"
                     required={true}
                   />
                   <p className="text-xs text-zinc-500 px-1">
-                    {currentKey && !isValid ? (
+                    {currentKey && !isValidApiKey(currentKey) ? (
                       <span className="text-red-400">Key looks too short</span>
                     ) : (
-                      "Enter a valid API key to continue."
+                      "Your API key is stored locally and never shared."
                     )}
                   </p>
                 </div>
+              ) : providerDef && !providerDef.requiresApiKey ? (
+                <div className="h-[88px] flex items-center justify-center border border-green-500/20 rounded-xl bg-green-500/5 text-green-400 text-sm font-Inter">
+                  No API key required for {providerDef.name}
+                </div>
               ) : (
                 <div className="h-[88px] flex items-center justify-center border border-zinc-800/50 rounded-xl bg-zinc-900/50 text-zinc-600 text-sm font-Inter italic">
-                  Select a model above to enter API key
+                  Select a model and provider above
                 </div>
               )}
             </div>
           </div>
 
-          <div className="mt-10 max-w-lg mx-auto">
+          <div className="mt-10 max-w-lg mx-auto flex gap-3">
+            <button
+              onClick={onSkip}
+              className="
+                flex-1 py-4 rounded-xl font-medium font-Inter text-base
+                bg-zinc-800 hover:bg-zinc-700 text-zinc-300
+                transition-all duration-200 cursor-pointer
+              "
+            >
+              Skip for Now
+            </button>
             <button
               onClick={handleSave}
               disabled={!isValid || isSaving}
               className={`
-                w-full py-4 rounded-xl font-medium font-Inter text-lg
+                flex-1 py-4 rounded-xl font-medium font-Inter text-base
                 flex items-center justify-center gap-2
                 transition-all duration-200
                 ${

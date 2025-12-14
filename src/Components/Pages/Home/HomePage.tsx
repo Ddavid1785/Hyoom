@@ -3,7 +3,7 @@ import { motion, AnimatePresence, type Transition } from "framer-motion";
 import ModeToggle from "./ModeToggle";
 import ChatModeArea from "./ChatModeArea";
 import QuickModeArea from "./QuickModeArea";
-import { Message, Prompt, VoiceStatus } from "../../../types";
+import { Message, Prompt, Tab, VoiceStatus } from "../../../types";
 import { AppSettings } from "../../../shared/sharedTypes";
 import { useImageUpload } from "../../../Hooks/useImageUpload";
 import MemoryModal from "../../Modals/MemoryModal";
@@ -26,6 +26,7 @@ interface HomePageProps {
   clearTranscript: () => void;
   clearMessages: () => Promise<void>;
   isAIProcessing: boolean;
+  handleTabChange: (newTab: Tab) => void;
 }
 
 const pageVariants = {
@@ -64,7 +65,8 @@ export default function HomePage({
   lastTranscript,
   clearTranscript,
   clearMessages,
-  isAIProcessing
+  isAIProcessing,
+  handleTabChange
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const quickModeEndRef = useRef<HTMLDivElement>(null);
@@ -123,6 +125,7 @@ export default function HomePage({
     setMemoryModal: setIsMemoryOpen,
     onClearContext: clearMessages,
     isAIProcessing: isAIProcessing,
+    handleTabChange: handleTabChange
   };
 
   return (

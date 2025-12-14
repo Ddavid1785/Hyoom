@@ -1,43 +1,83 @@
 import { Bot } from "lucide-react";
 import SettingsInputField from "./SettingsInputField.tsx";
 import LLMSelect from "./LLMSelectDropdown.tsx";
-import { llmChoices, providerIcons } from "../../../../src-tauri/resources/denoBackend/LLM/LLMChoices.ts";
-import { AppSettings, LLMProviderType } from "../../../shared/sharedTypes.ts";
+import ProviderSelect from "./ProviderSelect.tsx"; 
+import { AppSettings, InferenceProviderType } from "../../../shared/sharedTypes.ts";
+import { findModel, getProvidersForModel, models, providerDefinitions } from "../../../../src-tauri/resources/denoBackend/LLM/LLMChoices.ts";
 
 interface LLMSectionProps {
   settings: AppSettings;
   onChange: (settings: AppSettings) => void;
 }
 
-export function getProviderFromModel(modelId: string): LLMProviderType | "" {
-  if (!modelId) return "";
-
-  if (modelId.startsWith("gpt") || modelId.startsWith("o1")) return "openai";
-  if (modelId.startsWith("claude")) return "anthropic";
-  if (modelId.startsWith("gemini")) return "google";
-
-  return "";
-}
-
 export default function LLMSection({ settings, onChange }: LLMSectionProps) {
-  const currentModel = settings.activeLlmId || llmChoices[0].name;
-  const activeProvider = getProviderFromModel(currentModel);
-  const currentKey = activeProvider
-    ? settings.llmKeys[activeProvider] || ""
-    : "";
+  const selectedModel = findModel(settings.activeModelId);
+  const availableProviders = selectedModel ? getProvidersForModel(settings.activeModelId) : [];
+  const currentProvider = settings.activeProviderId as InferenceProviderType;
+  const providerConfig = settings.inferenceProviders[currentProvider];
+  const currentKey = providerConfig?.apiKey || "";
+  const providerDef = currentProvider ? providerDefinitions[currentProvider] : null;
 
-  const handleKeyChange = (val: string) => {
-    if (!activeProvider) return;
+  const handleModelChange = (modelId: string) => {
+    const newModel = findModel(modelId);
+    if (!newModel) return;
+
+    const supportedProviders = getProvidersForModel(modelId);
+    
+    const newProvider = supportedProviders.includes(currentProvider as InferenceProviderType)
+      ? currentProvider
+      : supportedProviders[0];
+
     onChange({
       ...settings,
-      llmKeys: {
-        ...settings.llmKeys,
-        [activeProvider]: val,
+      activeModelId: modelId,
+      activeProviderId: newProvider,
+    });
+  };
+
+  const handleProviderChange = (providerId: InferenceProviderType) => {
+    onChange({
+      ...settings,
+      activeProviderId: providerId,
+    });
+  };
+
+  const handleKeyChange = (val: string) => {
+    if (!currentProvider) return;
+    onChange({
+      ...settings,
+      inferenceProviders: {
+        ...settings.inferenceProviders,
+        [currentProvider]: {
+          ...providerConfig,
+          apiKey: val,
+        },
       },
     });
   };
 
-    return (
+  const handleBaseUrlChange = (val: string) => {
+    if (!currentProvider) return;
+    onChange({
+      ...settings,
+      inferenceProviders: {
+        ...settings.inferenceProviders,
+        [currentProvider]: {
+          ...providerConfig,
+          customBaseUrl: val || undefined,
+        },
+      },
+    });
+  };
+
+  const creatorIcons: Record<string, string> = {};
+  models.forEach(model => {
+    if (!creatorIcons[model.creator]) {
+      creatorIcons[model.creator] = model.iconPath;
+    }
+  });
+
+  return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <Bot className="text-blue-400" size={20} />
@@ -46,32 +86,58 @@ export default function LLMSection({ settings, onChange }: LLMSectionProps) {
         </h3>
       </div>
 
-     <LLMSelect
-        choices={llmChoices}
-        providerIcons={providerIcons}
-        selected={
-          llmChoices.find((choice) => choice.modelId === settings.activeLlmId) || null
-        }
-        onSelect={(value) => onChange({ ...settings, activeLlmId: value })}
+      {/* Model Selection */}
+      <LLMSelect
+        models={models}
+        creatorIcons={creatorIcons}
+        selected={selectedModel || null}
+        onSelect={handleModelChange}
       />
 
-      {activeProvider && (
+      {/* Provider Selection (if multiple providers support this model) */}
+      {selectedModel && availableProviders.length > 1 && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+          <ProviderSelect
+            providers={availableProviders}
+            selected={currentProvider}
+            onSelect={handleProviderChange}
+          />
+        </div>
+      )}
+
+      {/* API Key Input */}
+      {providerDef && providerDef.requiresApiKey && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
           <SettingsInputField
-            label={`${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API Key`}
+            label={`${providerDef.name} API Key`}
             value={currentKey}
             onChange={handleKeyChange}
-            placeholder={`sk-... (Enter your ${activeProvider} key)`}
+            placeholder={`Enter your ${providerDef.name} API key`}
             type="password"
             required={true}
-            helpText={`This key is saved specifically for ${activeProvider} models.`}
+            helpText={`This key is used when accessing ${selectedModel?.displayName || 'models'} via ${providerDef.name}.`}
+          />
+        </div>
+      )}
+
+      {/* Custom Base URL (if provider supports it) */}
+      {providerDef && providerDef.supportsCustomBaseUrl && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+          <SettingsInputField
+            label={`${providerDef.name} Base URL (Optional)`}
+            value={providerConfig?.customBaseUrl || ""}
+            onChange={handleBaseUrlChange}
+            placeholder={providerDef.defaultBaseUrl ?? "no default base url for this provider"}
+            type="text"
+            required={false}
+            helpText="Leave empty to use the default endpoint."
           />
         </div>
       )}
       
-      {!activeProvider && (
+      {!selectedModel && (
         <p className="text-sm text-zinc-500 italic font-Inter">
-          Select a model above to configure its API key.
+          Select a model above to configure its provider settings.
         </p>
       )}
     </div>

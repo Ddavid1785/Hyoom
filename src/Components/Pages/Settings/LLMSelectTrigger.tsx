@@ -1,8 +1,8 @@
 import { Cpu, ChevronDown } from "lucide-react";
-import { LLMChoice } from "../../../shared/sharedTypes";
+import { Model } from "../../../shared/sharedTypes";
 
 interface LLMSelectTriggerProps {
-  selected: LLMChoice | null;
+  selected: Model | null;
   isOpen: boolean;
   onClick: () => void;
 }
@@ -33,11 +33,11 @@ export default function LLMSelectTrigger({
       {selected && (
         <>
           <img
-            src={selected.pathToIcon}
+            src={selected.iconPath}
             alt=""
             className="w-5 h-5 rounded-sm object-cover"
           />
-          <span className="text-sm font-medium">{selected.name}</span>
+          <span className="text-sm font-medium">{selected.displayName}</span>
         </>
       )}
       <ChevronDown

@@ -67,6 +67,47 @@ function createModel(
   }
 }
 
+function parseLLMResponse(rawText: string): LLMResponse {
+  let cleaned = rawText.trim();
+  cleaned = cleaned.replace(/```json/g, "").replace(/```/g, "");
+
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+
+  // deno-lint-ignore no-explicit-any
+  let finalParsed: any = null;
+
+  try {
+    finalParsed = JSON.parse(cleaned);
+  } catch (_e) {
+    try {
+      const fixed = cleaned.replace(
+        /("code":\s*")([\s\S]*?)("(?:\s*,\s*"|\s*}))/g, 
+        (_match, start, code, end) => {
+          const escapedCode = code.replace(/\n/g, "\\n").replace(/\r/g, "");
+          return `${start}${escapedCode}${end}`;
+        }
+      );
+      finalParsed = JSON.parse(fixed);
+    } catch (_e2) {
+      console.log("ℹ️ Response was plain text (not JSON). Treating as conversation.");
+      return { content: rawText };
+    }
+  }
+
+  console.log("✅ PARSED RESPONSE:", finalParsed);
+  
+  return {
+    content: finalParsed.content,
+    code: finalParsed.code,
+    metaToolCalls: finalParsed.metaToolCalls,
+  };
+}
+
 export function createProvider(settings: AppSettings): LLMProvider {
   const { activeModelId, activeProviderId } = settings;
   
@@ -91,22 +132,12 @@ export function createProvider(settings: AppSettings): LLMProvider {
       const result = await generateText({
         model,
         messages: messages.map(msg => ({
-          role: msg.role==="assistant" ? "assistant" : "user",
+          role: msg.role === "assistant" ? "assistant" : "user",
           content: msg.content
         }))
       });
       
-      const response: LLMResponse = {
-        content: result.text
-      };
-      
-      const codeMatch = result.text.match(/```(?:typescript|javascript|ts|js)\n([\s\S]*?)```/);
-      if (codeMatch) {
-        response.code = codeMatch[1];
-        response.content = result.text.replace(/```(?:typescript|javascript|ts|js)\n[\s\S]*?```/, '').trim();
-      }
-      
-      return response;
+      return parseLLMResponse(result.text);
     }
   };
 }

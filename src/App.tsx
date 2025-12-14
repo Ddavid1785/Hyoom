@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import "./Main.css";
 import AnimatedBackground from "./Components/AppUi/AnimatedBackground";
@@ -10,10 +10,9 @@ import SettingsPage from "./Components/Pages/Settings/SettingsPage";
 import { useHandleSendMessage } from "./Hooks/useHandleSendMessage";
 import { useAppSettings } from "./Hooks/useAppSettings";
 import { useVoiceAssistant } from "./Hooks/useVoiceAssistant";
-import { isValidApiKey } from "./Utils/apiKeyValidation";
 import QuickSetupModal from "./Components/Modals/QuickSetupModal";
 import HomePage from "./Components/Pages/Home/HomePage";
-import { getProviderFromModel } from "./Components/Pages/Settings/LLMSelection";
+import { AppSettings } from "./shared/sharedTypes";
 
 export default function App() {
   const { messages, handleSendMessage, thinkingText, clearMessages, isAIProcessing } =
@@ -36,6 +35,10 @@ export default function App() {
     clearTranscript,
   } = useVoiceAssistant();
 
+ const [hasSeenSetup, setHasSeenSetup] = useState(() => {
+    return localStorage.getItem("hyoom_setup_seen") === "true";
+  });
+
   useEffect(() => {
     if (
       (status === "listening" || status === "transcribing") &&
@@ -45,24 +48,27 @@ export default function App() {
     }
   }, [status, activeTab, handleTabChange]);
 
-  const needsSetup = useMemo(() => {
-    if (loadingSettings || !settings) return false;
+const showSetup = !loadingSettings && settings && !hasSeenSetup;
 
-    if (!settings.activeLlmId) return true;
+const handleSkipSetup = () => {
+    localStorage.setItem("hyoom_setup_seen", "true");
+    setHasSeenSetup(true);
+  };
 
-    const provider = getProviderFromModel(settings.activeLlmId);
-
-    if (!provider) return true;
-
-    const key = settings.llmKeys[provider];
-console.log("key is ", key)
-    return !isValidApiKey(key);
-  }, [settings, loadingSettings]);
+  const handleCompleteSetup = async (s: AppSettings) => {
+    await saveSettings(s);
+    localStorage.setItem("hyoom_setup_seen", "true");
+    setHasSeenSetup(true);
+  };
 
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center relative overflow-hidden">
-      {needsSetup && settings && (
-        <QuickSetupModal settings={settings} saveSettings={saveSettings} />
+     {showSetup && (
+        <QuickSetupModal 
+          settings={settings} 
+          saveSettings={handleCompleteSetup}
+          onSkip={handleSkipSetup}
+        />
       )}
       <AnimatedBackground />
       <Titlebar />
@@ -89,6 +95,7 @@ console.log("key is ", key)
               clearTranscript={clearTranscript}
               clearMessages={clearMessages}
               isAIProcessing={isAIProcessing}
+              handleTabChange={handleTabChange}
             />
           )}
 

@@ -57,7 +57,7 @@ export const models: Model[] = [
     id: "gpt-5",
     displayName: "GPT-5",
     creator: "OpenAI",
-    iconPath: "/LLMProviderIcons/OpenAI/openAI.png",
+    iconPath: "/LLMProviderIcons/OpenAI/Openai.png",
     capabilities: { vision: true, imageGeneration: true, functionCalling: true },
     providerModelIds: {
       openai: "gpt-5",
@@ -72,7 +72,7 @@ export const models: Model[] = [
     id: "gpt-4.1",
     displayName: "GPT-4.1",
     creator: "OpenAI",
-    iconPath: "/LLMProviderIcons/OpenAI/openAI.png",
+    iconPath: "/LLMProviderIcons/OpenAI/Openai.png",
     capabilities: { vision: true, imageGeneration: true, functionCalling: true },
     providerModelIds: {
       openai: "gpt-4.1",
@@ -146,7 +146,26 @@ export const models: Model[] = [
       groq: null,
       ollama: null
     }
+  },
+  {
+  id: "chatgpt-oss-120b",
+  displayName: "ChatGPT OSS 120B",
+  creator: "OpenAI",
+  iconPath: "/LLMProviderIcons/OpenAI/Openai.png",
+  capabilities: {
+    vision: false,
+    imageGeneration: false,
+    functionCalling: true
+  },
+  providerModelIds: {
+    groq: "openai/gpt-oss-120b",
+    openrouter: null,
+    openai: null,
+    anthropic: null,
+    google: null,
+    ollama: null
   }
+},
 ];
 
 export function findModel(modelId: string): Model | undefined {

@@ -4,22 +4,22 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import LLMSelectTrigger from "./LLMSelectTrigger";
 import LLMCompactList from "./LLMCompactList";
 import LLMExpandedGrid from "./LLMExpandedGrid";
-import { LLMChoice } from "../../../shared/sharedTypes";
+import { Model } from "../../../shared/sharedTypes";
 import { useAutoFlip } from "../../../Hooks/useAutoFlip";
 
 interface Props {
-  choices: LLMChoice[];
-  selected: LLMChoice | null;
+  models: Model[];
+  selected: Model | null;
   onSelect: (modelId: string) => void;
-  providerIcons?: Record<string, string>;
+  creatorIcons?: Record<string, string>;
   maxQuickOptions?: number;
 }
 
 export default function LLMSelect({
-  choices,
+  models,
   selected,
   onSelect,
-  providerIcons = {},
+  creatorIcons = {},
   maxQuickOptions = 4,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -40,14 +40,14 @@ export default function LLMSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const groupedChoices: Record<string, LLMChoice[]> = {};
-  choices.forEach((c) => {
-    if (!groupedChoices[c.provider]) groupedChoices[c.provider] = [];
-    groupedChoices[c.provider].push(c);
+  const groupedChoices: Record<string, Model[]> = {};
+  models.forEach((model) => {
+    if (!groupedChoices[model.creator]) groupedChoices[model.creator] = [];
+    groupedChoices[model.creator].push(model);
   });
 
-  const quickOptions = choices.slice(0, maxQuickOptions);
-  const hasMore = choices.length > maxQuickOptions;
+  const quickOptions = models.slice(0, maxQuickOptions);
+  const hasMore = models.length > maxQuickOptions;
 
   const handleSelect = (id: string) => {
     onSelect(id);
@@ -93,7 +93,7 @@ export default function LLMSelect({
               origin-${isFlipped ? "bottom-left" : "top-left"}
             `}
             style={{
-                minWidth: "320px" 
+              minWidth: "320px" 
             }}
           >
             <div className="flex justify-between items-center px-4 py-3 border-b border-blue-500/10">
@@ -137,14 +137,14 @@ export default function LLMSelect({
                 {!expanded ? (
                   <LLMCompactList 
                     options={quickOptions} 
-                    selectedId={selected?.modelId} 
+                    selectedId={selected?.id} 
                     onSelect={handleSelect} 
                   />
                 ) : (
                   <LLMExpandedGrid 
                     groupedChoices={groupedChoices}
-                    providerIcons={providerIcons}
-                    selectedId={selected?.modelId}
+                    creatorIcons={creatorIcons}
+                    selectedId={selected?.id}
                     onSelect={handleSelect}
                   />
                 )}

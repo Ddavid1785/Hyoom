@@ -1,11 +1,9 @@
-import { ArrowUpCircle, BrainCircuit, Eraser, Image, Mic } from "lucide-react";
-import { AppSettings } from "../../shared/sharedTypes";
+import { ArrowUpCircle, BrainCircuit, Eraser, Image, Mic, Settings2, Sparkles } from "lucide-react";
+import { AppSettings, InferenceProviderType } from "../../shared/sharedTypes";
 import ContextStealthSlider from "./ContextSlider";
-import {
-  llmChoices,
-  providerIcons,
-} from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
+import { findModel, getModelsForProvider } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 import LLMSelect from "../Pages/Settings/LLMSelectDropdown";
+import { Tab } from "../../types";
 
 interface InputToolbarProps {
   hasImages: boolean;
@@ -20,6 +18,7 @@ interface InputToolbarProps {
   text: string;
   handleSubmit: () => void;
   isAIProcessing: boolean;
+  handleTabChange: (newTab: Tab) => void;
 }
 
 export default function InputToolbar({
@@ -35,7 +34,35 @@ export default function InputToolbar({
   text,
   handleSubmit,
   isAIProcessing,
+  handleTabChange
 }: InputToolbarProps) {
+
+  const hasProvider = savedSettings?.activeProviderId;
+  
+  const availableModels = hasProvider
+    ? getModelsForProvider(savedSettings.activeProviderId as InferenceProviderType)
+    : [];
+
+  const selectedModel = savedSettings && hasProvider
+    ? findModel(savedSettings.activeModelId)
+    : null;
+
+  const creatorIcons: Record<string, string> = {};
+  availableModels.forEach(model => {
+    if (!creatorIcons[model.creator]) {
+      creatorIcons[model.creator] = model.iconPath;
+    }
+  });
+
+  const handleModelSelect = async (modelId: string) => {
+    if (savedSettings) {
+      await saveSettings({ 
+        ...savedSettings, 
+        activeModelId: modelId 
+      });
+    }
+  };
+
   return (
     <div className="relative">
       <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/20 overflow-visible">
@@ -86,30 +113,40 @@ export default function InputToolbar({
           </button>
 
           {/* Divider */}
-          <div className="w-px h-6 bg-zinc-800 mx-1" />
+           <div className="w-px h-6 bg-zinc-800 mx-1" />
 
-          {/* 5. LLM Selection & Context Slider */}
+          {/* 5. Model Selection & Context Slider */}
           {loading || !savedSettings ? (
-            <div className="text-xs text-zinc-500 animate-pulse">
-              Loading...
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 animate-pulse min-w-[180px]">
+              <div className="w-4 h-4 rounded-full bg-white/10" />
+              <div className="h-3 w-20 rounded bg-white/10" />
             </div>
+          ) : !hasProvider ? (
+            <button
+              onClick={() => handleTabChange("settings")} 
+              className="
+                flex items-center gap-2.5 px-4 py-3 rounded-xl
+                bg-amber-500/5 backdrop-blur-xl 
+                border border-dashed border-amber-500/30
+                hover:bg-amber-500/10 hover:border-amber-500/50 hover:border-solid
+                transition-all duration-200 group
+                text-amber-200/80 hover:text-amber-100 shadow-lg shadow-black/20 
+                hover:cursor-pointer hover:shadow-amber-900/10
+              "
+            >
+              <div className="p-0.5 rounded-md bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+                 <Settings2 size={16} className="text-amber-400" />
+              </div>
+              <span className="text-sm font-medium">Configure Provider</span>
+              <Sparkles size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-300 ml-1" />
+            </button>
           ) : (
             <div className="flex items-center">
               <LLMSelect
-                choices={llmChoices}
-                providerIcons={providerIcons}
-                selected={
-                  savedSettings
-                    ? llmChoices.find(
-                        (choice) => choice.modelId === savedSettings.activeLlmId
-                      ) || null
-                    : null
-                }
-                onSelect={(value) => {
-                  if (savedSettings) {
-                    saveSettings({ ...savedSettings, activeLlmId: value });
-                  }
-                }}
+                models={availableModels}
+                creatorIcons={creatorIcons}
+                selected={selectedModel ?? null}
+                onSelect={handleModelSelect}
               />
 
               <ContextStealthSlider

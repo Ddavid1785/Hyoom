@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { AppSettings } from "../shared/sharedTypes";
-import { getProviderFromModel } from "../Components/Pages/Settings/LLMSelection";
+import { AppSettings, InferenceProviderType } from "../shared/sharedTypes";
 import { isValidApiKey } from "../Utils/apiKeyValidation";
+import { findModel, providerDefinitions } from "../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 
 export function useSettingsLogic(
   savedSettings: AppSettings | null,
@@ -30,14 +30,28 @@ export function useSettingsLogic(
 
   const isValid = useMemo(() => {
     if (!localSettings) return false;
-    if (!localSettings.activeLlmId) return false;
+    
+    // Check if model and provider are selected
+    if (!localSettings.activeModelId || !localSettings.activeProviderId) return false;
 
-    const activeLLMProvider = getProviderFromModel(localSettings.activeLlmId);
-    if (!activeLLMProvider) return false;
-    if (!localSettings.llmKeys[activeLLMProvider]) return false;
+    // Check if model exists
+    const model = findModel(localSettings.activeModelId);
+    if (!model) return false;
 
-    const currentKey = localSettings.llmKeys[activeLLMProvider];
-    return isValidApiKey(currentKey);
+    // Get provider definition
+    const providerDef = providerDefinitions[localSettings.activeProviderId as InferenceProviderType];
+    if (!providerDef) return false;
+
+    // Check if provider requires API key
+    if (providerDef.requiresApiKey) {
+      const providerConfig = localSettings.inferenceProviders[localSettings.activeProviderId];
+      if (!providerConfig?.apiKey) return false;
+      
+      // Validate API key format
+      if (!isValidApiKey(providerConfig.apiKey)) return false;
+    }
+
+    return true;
   }, [localSettings]);
 
   const handleSave = async () => {
