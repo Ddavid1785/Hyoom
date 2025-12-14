@@ -1,14 +1,30 @@
 export type SearchProviderType = "brave" | "google";
-export type LLMProviderType = "openai" | "anthropic" | "google";
+export type InferenceProviderType = "openai" | "anthropic" | "google" | "groq" | "openrouter" | "ollama";
+
+export interface InferenceProviderDefinition {
+  id: InferenceProviderType;
+  name: string;
+  iconPath: string;
+  requiresApiKey: boolean;
+  supportsCustomBaseUrl: boolean;
+  defaultBaseUrl?: string;
+}
+
+export interface InferenceProviderRuntime {
+  definition: InferenceProviderDefinition;
+  sdk: any;
+}
 
 export interface AppSettings {
-  activeLlmId: string;
+ activeModelId: string;
+  activeProviderId: InferenceProviderType;
   activeSearchProvider: SearchProviderType;
 
-  llmKeys: {
-    openai?: string;
-    anthropic?: string;
-    google?: string;
+ inferenceProviders: {
+    [providerId: string]: {
+      apiKey?: string;
+      customBaseUrl?: string;
+    };
   };
 
   searchKeys: {
@@ -28,12 +44,16 @@ export interface LLMCapabilities {
   functionCalling: boolean;
 }
 
-export interface LLMChoice{
-  name: string,
-  pathToIcon: string,
-  provider: string; 
-  modelId: string;
+export interface Model {
+  id: string;              
+  displayName: string;      
+  creator: string;             
+  iconPath: string;
   capabilities: LLMCapabilities;
+
+  providerModelIds: {
+    [providerId: string]: string | null;
+  };
 }
 
 export interface LLMMessage {

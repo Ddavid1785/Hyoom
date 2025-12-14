@@ -1,7 +1,5 @@
-import { findLLMChoice } from "./LLM/LLMChoices.ts";
-import { AppSettings, LLMChoice, LLMMessage } from "./shared/sharedTypes.ts";
+import { AppSettings, LLMMessage } from "./shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "./LLM/LLMtypes.ts";
-import { createProvider } from "./LLM/ProviderChooser.ts";
 import { SYSTEM_PROMPT } from "./LLM/SystemPrompt.ts";
 import { executeMetaTools } from "./MetaTools/metaToolExecutor.ts";
 import { getFilePath } from "./filePath.ts";
@@ -9,6 +7,7 @@ import { loadTools, resetToolCache } from "./Semantic/loadTools.ts";
 import { createToolValues } from "./Semantic/createToolValues.ts";
 import { executeAICode } from "./LLM/LLMCodeExecutor.ts";
 import { getToolsInfo } from "./Semantic/getToolsInfo.ts";
+import { createProvider } from "./LLM/ProviderChooser.ts";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -97,17 +96,7 @@ const contextLimit = Math.max(10, settings.contextLimit || 20);
 
       console.log("user message: ", body.message);
 
-      const llmChoice = validateSettings(settings);
-
-      
-    if (!llmChoice) {
-        return Response.json(
-            { error: "No active LLM model selected or keys are missing." }, 
-            { status: 400, headers }
-        );
-      }
-
-      const provider = createProvider(settings, llmChoice!);
+      const provider = createProvider(settings);
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -202,17 +191,4 @@ async function loadSettings() {
     return {} as AppSettings;
   }
   return settings;
-}
-
-function validateSettings(settings: AppSettings): LLMChoice | null {
-  if (!settings.activeLlmId) return null;
-  
-  const choice = findLLMChoice(settings.activeLlmId);
-  if (!choice) return null;
-
-  if (choice.provider === "OpenAI" && !settings.llmKeys.openai) return null;
-  if (choice.provider === "Anthropic" && !settings.llmKeys.anthropic) return null;
-  if (choice.provider === "Google" && !settings.llmKeys.google) return null;
-
-  return choice;
 }

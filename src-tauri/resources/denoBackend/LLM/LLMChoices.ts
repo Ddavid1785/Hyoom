@@ -1,58 +1,174 @@
-import { LLMChoice } from "../shared/sharedTypes.ts";
+import { Model, InferenceProviderType, InferenceProviderDefinition } from "../shared/sharedTypes.ts"
 
-export const llmChoices: LLMChoice[] = [
-  //OpenAI
+export const providerDefinitions: Record<InferenceProviderType, InferenceProviderDefinition> = {
+  openai: {
+    id: "openai",
+    name: "OpenAI",
+    iconPath: "/LLMProviderIcons/OpenAI/Openai.png",
+    requiresApiKey: true,
+    supportsCustomBaseUrl: true,
+    defaultBaseUrl: "https://api.openai.com/v1"
+  },
+  anthropic: {
+    id: "anthropic",
+    name: "Anthropic",
+    iconPath: "/LLMProviderIcons/Anthropic/Anthropic.png",
+    requiresApiKey: true,
+    supportsCustomBaseUrl: true,
+    defaultBaseUrl: "https://api.anthropic.com/v1"
+  },
+  google: {
+    id: "google",
+    name: "Google AI",
+    iconPath: "/LLMProviderIcons/Google/Google.png",
+    requiresApiKey: true,
+    supportsCustomBaseUrl: true,
+    defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta"
+  },
+  groq: {
+    id: "groq",
+    name: "Groq",
+    iconPath: "/LLMProviderIcons/Groq/groq.png",
+    requiresApiKey: true,
+    supportsCustomBaseUrl: true,
+    defaultBaseUrl: "https://api.groq.com/openai/v1"
+  },
+  openrouter: {
+    id: "openrouter",
+    name: "OpenRouter",
+    iconPath: "/LLMProviderIcons/OpenRouter/openrouter.png",
+    requiresApiKey: true,
+    supportsCustomBaseUrl: false,
+    defaultBaseUrl: "https://openrouter.ai/api/v1"
+  },
+  ollama: {
+    id: "ollama",
+    name: "Ollama",
+    iconPath: "/LLMProviderIcons/Ollama/ollama.png",
+    requiresApiKey: false,
+    supportsCustomBaseUrl: true,
+    defaultBaseUrl: "http://localhost:11434"
+  }
+};
+
+export const models: Model[] = [
+  // OpenAI Models
   {
-    name: "GPT 5",
-    provider: "OpenAI",
-    pathToIcon: "/LLMProviderIcons/OpenAI/openAI.png",
-    modelId: "gpt-5",
-    capabilities: { vision: true, imageGeneration: true, functionCalling: true }
+    id: "gpt-5",
+    displayName: "GPT-5",
+    creator: "OpenAI",
+    iconPath: "/LLMProviderIcons/OpenAI/openAI.png",
+    capabilities: { vision: true, imageGeneration: true, functionCalling: true },
+    providerModelIds: {
+      openai: "gpt-5",
+      openrouter: "openai/gpt-5", // TODO: Verify OpenRouter model ID
+      groq: null, // Groq likely won't have GPT-5
+      anthropic: null,
+      google: null,
+      ollama: null
+    }
   },
   {
-    name: "GPT 4.1",
-    provider: "OpenAI",
-    pathToIcon: "/LLMProviderIcons/OpenAI/openAI.png",
-    modelId: "gpt-4.1",
-    capabilities: { vision: true, imageGeneration: true, functionCalling: true }
+    id: "gpt-4.1",
+    displayName: "GPT-4.1",
+    creator: "OpenAI",
+    iconPath: "/LLMProviderIcons/OpenAI/openAI.png",
+    capabilities: { vision: true, imageGeneration: true, functionCalling: true },
+    providerModelIds: {
+      openai: "gpt-4.1",
+      openrouter: "openai/gpt-4.1", // TODO: Verify OpenRouter model ID
+      groq: null,
+      anthropic: null,
+      google: null,
+      ollama: null
+    }
   },
-  // Anthropic
+  
+  // Anthropic Models
   {
-    name: "Sonnet 4.0",
-    provider: "Anthropic",
-    pathToIcon: "/LLMProviderIcons/Anthropic/claude.png",
-    modelId: "claude-4.0-sonnet",
-    capabilities: { vision: true, imageGeneration: false, functionCalling: true }
+    id: "claude-4.0-sonnet",
+    displayName: "Sonnet 4.0",
+    creator: "Anthropic",
+    iconPath: "/LLMProviderIcons/Anthropic/claude.png",
+    capabilities: { vision: true, imageGeneration: false, functionCalling: true },
+    providerModelIds: {
+      anthropic: "claude-sonnet-4-0", // TODO: Verify exact model string
+      openrouter: "anthropic/claude-sonnet-4", // TODO: Verify OpenRouter model ID
+      openai: null,
+      groq: null,
+      google: null,
+      ollama: null
+    }
   },
   {
-    name: "Sonnet 4.5",
-    provider: "Anthropic",
-    pathToIcon: "/LLMProviderIcons/Anthropic/claude.png",
-    modelId: "claude-4.5-sonnet",
-    capabilities: { vision: true, imageGeneration: false, functionCalling: true }
+    id: "claude-4.5-sonnet",
+    displayName: "Sonnet 4.5",
+    creator: "Anthropic",
+    iconPath: "/LLMProviderIcons/Anthropic/claude.png",
+    capabilities: { vision: true, imageGeneration: false, functionCalling: true },
+    providerModelIds: {
+      anthropic: "claude-sonnet-4-5", // Based on the product info you provided earlier
+      openrouter: "anthropic/claude-sonnet-4.5", // TODO: Verify OpenRouter model ID
+      openai: null,
+      groq: null,
+      google: null,
+      ollama: null
+    }
   },
-  // Google
+  
+  // Google Models
   {
-    name: "Gemini 2.5 Pro",
-    provider: "Google",
-    pathToIcon: "/LLMProviderIcons/Google/gemini.png",
-    modelId: "gemini-2.5-pro",
-    capabilities: { vision: true, imageGeneration: false, functionCalling: true }
+    id: "gemini-2.5-pro",
+    displayName: "Gemini 2.5 Pro",
+    creator: "Google",
+    iconPath: "/LLMProviderIcons/Google/gemini.png",
+    capabilities: { vision: true, imageGeneration: false, functionCalling: true },
+    providerModelIds: {
+      google: "gemini-2.5-pro", // TODO: Verify exact model string
+      openrouter: "google/gemini-2.5-pro", // TODO: Verify OpenRouter model ID
+      openai: null,
+      anthropic: null,
+      groq: null,
+      ollama: null
+    }
   },
   {
-    name: "Gemini 2.5 Flash",
-    provider: "Google",
-    pathToIcon: "/LLMProviderIcons/Google/gemini.png",
-    modelId: "gemini-2.5-flash",
-    capabilities: {vision:true, imageGeneration: false, functionCalling: true}
+    id: "gemini-2.5-flash",
+    displayName: "Gemini 2.5 Flash",
+    creator: "Google",
+    iconPath: "/LLMProviderIcons/Google/gemini.png",
+    capabilities: { vision: true, imageGeneration: false, functionCalling: true },
+    providerModelIds: {
+      google: "gemini-2.5-flash", // TODO: Verify exact model string
+      openrouter: "google/gemini-2.5-flash", // TODO: Verify OpenRouter model ID
+      openai: null,
+      anthropic: null,
+      groq: null,
+      ollama: null
+    }
   }
 ];
 
-export const providerIcons: Record<string, string> = {
-  Google:"/LLMProviderIcons/Google/Google.png",
-  OpenAI:"/LLMProviderIcons/OpenAI/openAI.png",
-  Anthropic:"/LLMProviderIcons/Anthropic/Anthropic.png"};
+export function findModel(modelId: string): Model | undefined {
+  return models.find((m) => m.id === modelId);
+}
 
-export function findLLMChoice(modelId: string) {
-  return llmChoices.find((choice) => choice.modelId === modelId);
+export function getModelIdForProvider(modelId: string, providerId: InferenceProviderType): string | null {
+  const model = findModel(modelId);
+  if (!model) return null;
+  
+  return model.providerModelIds[providerId] ?? null;
+}
+
+export function getModelsForProvider(providerId: InferenceProviderType): Model[] {
+  return models.filter((m) => m.providerModelIds[providerId] !== null);
+}
+
+export function getProvidersForModel(modelId: string): InferenceProviderType[] {
+  const model = findModel(modelId);
+  if (!model) return [];
+  
+  return Object.entries(model.providerModelIds)
+    .filter(([_, id]) => id !== null)
+    .map(([providerId]) => providerId as InferenceProviderType);
 }

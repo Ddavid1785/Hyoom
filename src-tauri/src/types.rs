@@ -1,13 +1,12 @@
-use std::{process::Child, sync::Mutex};
+use std::{collections::HashMap, process::Child, sync::Mutex};
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct LlmKeys {
-    pub openai: Option<String>,
-    pub anthropic: Option<String>,
-    pub google: Option<String>,
+pub struct InferenceProviderConfig {
+    pub api_key: Option<String>,
+    pub custom_base_url: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -27,12 +26,13 @@ pub struct SearchKeys {
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
-    pub active_llm_id: String,
+    pub active_model_id: String,
+    pub active_provider_id: String,
     pub active_search_provider: String,
 
     pub context_limit: Option<u32>,
 
-    pub llm_keys: LlmKeys,
+    pub inference_providers: HashMap<String, InferenceProviderConfig>,
     pub search_keys: SearchKeys,
 }
 

@@ -1,32 +1,112 @@
-import { GoogleProvider } from "./Providers/google.ts";
-import { OpenAIProvider } from "./Providers/openai.ts";
-import { AnthropicProvider } from "./Providers/anthropic.ts";
-import { AppSettings, LLMChoice } from "../shared/sharedTypes.ts";
+import { generateText } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import type { LanguageModel } from "ai";
+import { AppSettings, InferenceProviderType, LLMMessage } from "../shared/sharedTypes.ts";
+import { LLMProvider, LLMResponse } from "./LLMtypes.ts";
+import { getModelIdForProvider, providerDefinitions } from "./LLMChoices.ts";
 
-export function createProvider(settings: AppSettings, choice: LLMChoice) {
-  if (!choice) {
-    throw new Error("LLM Choice is undefined");
-  }
-
-  let apiKey: string | undefined;
-
-  switch (choice.provider) {
-    case "OpenAI":
-      apiKey = settings.llmKeys.openai;
-      if (!apiKey) throw new Error("OpenAI API key is missing. Please add it in Settings.");
-      return new OpenAIProvider(apiKey, choice.modelId);
-
-    case "Anthropic":
-      apiKey = settings.llmKeys.anthropic;
-      if (!apiKey) throw new Error("Anthropic API key is missing. Please add it in Settings.");
-      return new AnthropicProvider(apiKey, choice.modelId);
-
-    case "Google":
-      apiKey = settings.llmKeys.google;
-      if (!apiKey) throw new Error("Gemini API key is missing. Please add it in Settings.");
-      return new GoogleProvider(apiKey, choice.modelId);
-
+function createModel(
+  providerId: InferenceProviderType,
+  modelId: string,
+  config: { apiKey?: string; customBaseUrl?: string }
+): LanguageModel {
+  const definition = providerDefinitions[providerId];
+  
+  switch (providerId) {
+    case "openai": {
+      const provider = createOpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.customBaseUrl
+      });
+      return provider(modelId);
+    }
+      
+    case "anthropic": {
+      const provider = createAnthropic({
+        apiKey: config.apiKey,
+        baseURL: config.customBaseUrl
+      });
+      return provider(modelId);
+    }
+      
+    case "google": {
+      const provider = createGoogleGenerativeAI({
+        apiKey: config.apiKey,
+        baseURL: config.customBaseUrl
+      });
+      return provider(modelId);
+    }
+      
+    case "groq": {
+      const provider = createOpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.customBaseUrl || definition.defaultBaseUrl
+      });
+      return provider(modelId);
+    }
+      
+    case "openrouter": {
+      const provider = createOpenAI({
+        apiKey: config.apiKey,
+        baseURL: definition.defaultBaseUrl
+      });
+      return provider(modelId);
+    }
+      
+    case "ollama": {
+      const provider = createOpenAI({
+        baseURL: config.customBaseUrl || definition.defaultBaseUrl
+      });
+      return provider(modelId);
+    }
+      
     default:
-      throw new Error(`Unknown provider: ${choice.provider}`);
+      throw new Error(`Unsupported provider: ${providerId}`);
   }
+}
+
+export function createProvider(settings: AppSettings): LLMProvider {
+  const { activeModelId, activeProviderId } = settings;
+  
+  const providerModelId = getModelIdForProvider(activeModelId, activeProviderId as InferenceProviderType);
+  if (!providerModelId) {
+    throw new Error(`Provider ${activeProviderId} doesn't support model ${activeModelId}`);
+  }
+  
+  const providerConfig = settings.inferenceProviders[activeProviderId];
+  if (!providerConfig) {
+    throw new Error(`No configuration found for provider: ${activeProviderId}`);
+  }
+  
+  const model = createModel(
+    activeProviderId as InferenceProviderType,
+    providerModelId,
+    providerConfig
+  );
+  
+  return {
+    call: async (messages: LLMMessage[]): Promise<LLMResponse> => {
+      const result = await generateText({
+        model,
+        messages: messages.map(msg => ({
+          role: msg.role==="assistant" ? "assistant" : "user",
+          content: msg.content
+        }))
+      });
+      
+      const response: LLMResponse = {
+        content: result.text
+      };
+      
+      const codeMatch = result.text.match(/```(?:typescript|javascript|ts|js)\n([\s\S]*?)```/);
+      if (codeMatch) {
+        response.code = codeMatch[1];
+        response.content = result.text.replace(/```(?:typescript|javascript|ts|js)\n[\s\S]*?```/, '').trim();
+      }
+      
+      return response;
+    }
+  };
 }
