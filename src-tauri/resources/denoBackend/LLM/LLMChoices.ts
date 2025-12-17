@@ -19,7 +19,7 @@ export const providerDefinitions: Record<InferenceProviderType, InferenceProvide
   },
   google: {
     id: "google",
-    name: "Google AI",
+    name: "Google Generative AI",
     iconPath: "/LLMProviderIcons/Google/Google.png",
     requiresApiKey: true,
     supportsCustomBaseUrl: true,
@@ -49,6 +49,14 @@ export const providerDefinitions: Record<InferenceProviderType, InferenceProvide
     supportsCustomBaseUrl: true,
     defaultBaseUrl: "http://localhost:11434/api"
   },
+  lmstudio: {
+  id: "lmstudio",
+  name: "LM Studio",
+  iconPath: "/LLMProviderIcons/LMStudio/lmstudio.png",
+  requiresApiKey: false,
+  supportsCustomBaseUrl: true,
+  defaultBaseUrl: "http://localhost:1234/v1"
+},
     moonshot: {
     id: "moonshot",
     name: "Moonshot",
@@ -74,6 +82,7 @@ export const models: Model[] = [
       anthropic: null,
       google: null,
       ollama: null,
+      lmstudio: null,
       moonshot: null
     }
   },
@@ -90,6 +99,7 @@ export const models: Model[] = [
       anthropic: null,
       google: null,
       ollama: null,
+      lmstudio: null,
       moonshot: null
     }
   },
@@ -108,6 +118,7 @@ export const models: Model[] = [
       groq: null,
       google: null,
       ollama: null,
+      lmstudio: null,
       moonshot: null
     }
   },
@@ -124,6 +135,7 @@ export const models: Model[] = [
       groq: null,
       google: null,
       ollama: null,
+      lmstudio: null,
       moonshot: null
     }
   },
@@ -142,6 +154,7 @@ export const models: Model[] = [
       anthropic: null,
       groq: null,
       ollama: null,
+      lmstudio: null,
       moonshot: null
     }
   },
@@ -158,6 +171,7 @@ export const models: Model[] = [
       anthropic: null,
       groq: null,
       ollama: null,
+      lmstudio: null,
       moonshot: null
     }
   },
@@ -178,6 +192,7 @@ export const models: Model[] = [
     anthropic: null,
     google: null,
     ollama: null,
+    lmstudio: null,
     moonshot: null
   }
 },
@@ -198,6 +213,7 @@ export const models: Model[] = [
     anthropic: null,
     google: null,
     ollama: null,
+    lmstudio: null,
     moonshot: null
   }
 },
@@ -213,6 +229,7 @@ export const models: Model[] = [
   },
   providerModelIds: {
     ollama: "gemma3-4b-it:latest",
+    lmstudio: "hermes-3-llama-3.1-8b",
     openrouter: null,
     openai: null,
     anthropic: null,

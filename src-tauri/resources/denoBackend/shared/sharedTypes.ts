@@ -1,5 +1,5 @@
 export type SearchProviderType = "brave" | "google";
-export type InferenceProviderType = "openai" | "anthropic" | "google" | "groq" | "openrouter" | "ollama" | "moonshot";
+export type InferenceProviderType = "openai" | "anthropic" | "google" | "groq" | "openrouter" | "ollama" | "lmstudio" | "moonshot";
 
 export interface InferenceProviderDefinition {
   id: InferenceProviderType;

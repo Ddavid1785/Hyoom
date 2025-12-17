@@ -4,6 +4,8 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
 import { createOllama } from "ollama-ai-provider-v2";
+import { createOpenAICompatible  } from "@ai-sdk/openai-compatible"
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import type { LanguageModel } from "ai";
 import { AppSettings, InferenceProviderType, LLMMessage } from "../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "./LLMtypes.ts";
@@ -67,9 +69,8 @@ function createModel(
     }
       
     case "openrouter": {
-      const provider = createOpenAI({
+      const provider = createOpenRouter({
         apiKey: config.apiKey,
-        baseURL: definition.defaultBaseUrl
       });
       return provider(modelId);
     }
@@ -82,7 +83,15 @@ case "ollama": {
 
   return provider(modelId);
 }
-      
+      case "lmstudio": {
+  const provider = createOpenAICompatible({
+    name:"lmstudio",
+    baseURL: config.customBaseUrl || providerDefinitions.lmstudio.defaultBaseUrl || ""
+  });
+
+  return provider(modelId);
+}
+
     default:
       throw new Error(`Unsupported provider: ${providerId}`);
   }
@@ -134,7 +143,7 @@ export function createProvider(settings: AppSettings): LLMProvider {
   }
   
   const providerConfig = settings.inferenceProviders[activeProviderId] ?? {};
-  if (!providerConfig && activeProviderId!=="ollama") {
+  if (!providerConfig && (activeProviderId!=="ollama" && activeProviderId!=="lmstudio")) {
     throw new Error(`No configuration found for provider: ${activeProviderId}`);
   }
   
