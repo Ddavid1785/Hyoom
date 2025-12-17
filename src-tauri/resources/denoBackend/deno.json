@@ -12,6 +12,8 @@
   "ai": "npm:ai@^5.0.0",
   "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.0",
   "@ai-sdk/anthropic": "npm:@ai-sdk/anthropic@^2.0.0",
-  "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.0"
+  "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.0",
+  "@ai-sdk/groq": "npm:@ai-sdk/groq@2.0.10",
+  "zod": "npm:zod@^4.2.1"
   }
 }

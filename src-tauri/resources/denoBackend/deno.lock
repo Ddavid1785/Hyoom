@@ -6,10 +6,12 @@
     "jsr:@std/path@^1.1.3": "1.1.3",
     "npm:@ai-sdk/anthropic@2": "2.0.56_zod@4.1.13",
     "npm:@ai-sdk/google@2": "2.0.46_zod@4.1.13",
+    "npm:@ai-sdk/groq@2.0.10": "2.0.10_zod@4.2.1",
     "npm:@ai-sdk/openai@2": "2.0.86_zod@4.1.13",
     "npm:ai@5": "5.0.113_zod@4.1.13",
     "npm:onnxruntime-node@*": "1.23.2",
-    "npm:onnxruntime-node@^1.23.2": "1.23.2"
+    "npm:onnxruntime-node@^1.23.2": "1.23.2",
+    "npm:zod@^4.2.1": "4.2.1"
   },
   "jsr": {
     "@std/internal@1.0.12": {
@@ -27,33 +29,41 @@
       "integrity": "sha512-XHJKu0Yvfu9SPzRfsAFESa+9T7f2YJY6TxykKMfRsAwpeWAiX/Gbx5J5uM15AzYC3Rw8tVP3oH+j7jEivENirQ==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
-        "zod"
+        "@ai-sdk/provider-utils@3.0.19_zod@4.1.13",
+        "zod@4.1.13"
       ]
     },
     "@ai-sdk/gateway@2.0.21_zod@4.1.13": {
       "integrity": "sha512-BwV7DU/lAm3Xn6iyyvZdWgVxgLu3SNXzl5y57gMvkW4nGhAOV5269IrJzQwGt03bb107sa6H6uJwWxc77zXoGA==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.19_zod@4.1.13",
         "@vercel/oidc",
-        "zod"
+        "zod@4.1.13"
       ]
     },
     "@ai-sdk/google@2.0.46_zod@4.1.13": {
       "integrity": "sha512-8PK6u4sGE/kXebd7ZkTp+0aya4kNqzoqpS5m7cHY2NfTK6fhPc6GNvE+MZIZIoHQTp5ed86wGBdeBPpFaaUtyg==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
-        "zod"
+        "@ai-sdk/provider-utils@3.0.19_zod@4.1.13",
+        "zod@4.1.13"
+      ]
+    },
+    "@ai-sdk/groq@2.0.10_zod@4.2.1": {
+      "integrity": "sha512-y74lbQn2c251TdjF85g1XrjBO/U6ryaq4YVolh2HoqVQf6GimSt8RnPzvTnoAq/2Y/8lFjyWiCmdMSZbEngwqQ==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@ai-sdk/provider-utils@3.0.3_zod@4.2.1",
+        "zod@4.2.1"
       ]
     },
     "@ai-sdk/openai@2.0.86_zod@4.1.13": {
       "integrity": "sha512-obsLIOyA93lbQiSt1rvBItoVQp1U2RDPs0bNG0JYhm6Gku8Dg/0Cm8e4NUWT5p5PN10/doKSb3SMSKCixwIAKA==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
-        "zod"
+        "@ai-sdk/provider-utils@3.0.19_zod@4.1.13",
+        "zod@4.1.13"
       ]
     },
     "@ai-sdk/provider-utils@3.0.19_zod@4.1.13": {
@@ -62,7 +72,17 @@
         "@ai-sdk/provider",
         "@standard-schema/spec",
         "eventsource-parser",
-        "zod"
+        "zod@4.1.13"
+      ]
+    },
+    "@ai-sdk/provider-utils@3.0.3_zod@4.2.1": {
+      "integrity": "sha512-kAxIw1nYmFW1g5TvE54ZB3eNtgZna0RnLjPUp1ltz1+t9xkXJIuDT4atrwfau9IbS0BOef38wqrI8CjFfQrxhw==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@standard-schema/spec",
+        "eventsource-parser",
+        "zod@4.2.1",
+        "zod-to-json-schema"
       ]
     },
     "@ai-sdk/provider@2.0.0": {
@@ -88,9 +108,9 @@
       "dependencies": [
         "@ai-sdk/gateway",
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.19_zod@4.1.13",
         "@opentelemetry/api",
-        "zod"
+        "zod@4.1.13"
       ]
     },
     "boolean@3.2.0": {
@@ -216,8 +236,17 @@
     "type-fest@0.13.1": {
       "integrity": "sha512-34R7HTnG0XIJcBSn5XhDd7nNFPRcXYRZrBB2O2jdKqYODldSzBAqzsWoZYYvduky73toYS/ESqxPvkDf/F0XMg=="
     },
+    "zod-to-json-schema@3.25.0_zod@4.2.1": {
+      "integrity": "sha512-HvWtU2UG41LALjajJrML6uQejQhNJx+JBO9IflpSja4R03iNWfKXrj6W2h7ljuLyc1nKS+9yDyL/9tD1U/yBnQ==",
+      "dependencies": [
+        "zod@4.2.1"
+      ]
+    },
     "zod@4.1.13": {
       "integrity": "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="
+    },
+    "zod@4.2.1": {
+      "integrity": "sha512-0wZ1IRqGGhMP76gLqz8EyfBXKk0J2qo2+H3fi4mcUP/KtTocoX08nmIAHl1Z2kJIZbZee8KOpBCSNPRgauucjw=="
     }
   },
   "remote": {
@@ -266,9 +295,11 @@
       "jsr:@std/path@^1.1.3",
       "npm:@ai-sdk/anthropic@2",
       "npm:@ai-sdk/google@2",
+      "npm:@ai-sdk/groq@2.0.10",
       "npm:@ai-sdk/openai@2",
       "npm:ai@5",
-      "npm:onnxruntime-node@^1.23.2"
+      "npm:onnxruntime-node@^1.23.2",
+      "npm:zod@^4.2.1"
     ]
   }
 }

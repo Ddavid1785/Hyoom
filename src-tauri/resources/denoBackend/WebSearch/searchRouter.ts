@@ -10,8 +10,6 @@ export async function performWebSearch(query: string, settings: AppSettings): Pr
     throw new Error("No search provider selected in settings.");
   }
 
-  console.log(`🔎 Performing web search via [${provider}] for: "${query}"`);
-
   if (provider === "brave") {
     const key = settings.searchKeys.brave;
     if (!key) throw new Error("CONFIGURATION ERROR: Brave API Key is missing in App Settings.");

@@ -3,6 +3,26 @@ import { AppSettings, InferenceProviderType } from "../shared/sharedTypes";
 import { isValidApiKey } from "../Utils/apiKeyValidation";
 import { findModel, providerDefinitions } from "../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 
+function areSettingsEqual(original: AppSettings | null, current: AppSettings | null): boolean {
+  if (!original || !current) return original === current;
+
+  const obj1: any = { ...original };
+  const obj2: any = { ...current };
+
+  if (obj1.contextLimit === undefined || obj1.contextLimit === null) obj1.contextLimit = 20;
+  if (obj2.contextLimit === undefined || obj2.contextLimit === null) obj2.contextLimit = 20;
+
+  const sortKeys = (o: any) => {
+    if (typeof o !== 'object' || o === null) return o;
+    return Object.keys(o).sort().reduce((acc, key) => {
+      acc[key] = o[key];
+      return acc;
+    }, {} as any);
+  };
+
+  return JSON.stringify(sortKeys(obj1)) === JSON.stringify(sortKeys(obj2));
+}
+
 export function useSettingsLogic(
   savedSettings: AppSettings | null,
   saveSettingsFn: (s: AppSettings) => Promise<void>
@@ -18,8 +38,11 @@ export function useSettingsLogic(
   }, [savedSettings]);
 
   const hasChanges = useMemo(() => {
-    if (!localSettings || !savedSettings) return false;
-    return JSON.stringify(localSettings) !== JSON.stringify(savedSettings);
+    if (savedSettings && localSettings)
+    return !areSettingsEqual(savedSettings, localSettings);
+  
+return false
+
   }, [localSettings, savedSettings]);
 
   useEffect(() => {

@@ -47,8 +47,10 @@ export async function executeAICode(code: string): Promise<string> {
       console.log("⚠️ Code had stderr output");
       return `${outStr}\n[Error Log]: ${errStr}`;
     }
-
-    const finalResult = outStr.trim() || "Code executed successfully (no output).";
+  if (!outStr.trim()) {
+    return "⚠️ Tool returned data but nothing was printed.";
+  }
+    const finalResult = outStr.trim();
     console.log("✅ Result:", finalResult);
     return finalResult;
 

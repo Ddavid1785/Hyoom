@@ -48,6 +48,14 @@ export const providerDefinitions: Record<InferenceProviderType, InferenceProvide
     requiresApiKey: false,
     supportsCustomBaseUrl: true,
     defaultBaseUrl: "http://localhost:11434"
+  },
+    moonshot: {
+    id: "moonshot",
+    name: "Moonshot",
+    iconPath: "/LLMProviderIcons/Moonshot/moonshot.png",
+    requiresApiKey: true,
+    supportsCustomBaseUrl: false,
+    defaultBaseUrl: ""
   }
 };
 
@@ -61,11 +69,12 @@ export const models: Model[] = [
     capabilities: { vision: true, imageGeneration: true, functionCalling: true },
     providerModelIds: {
       openai: "gpt-5",
-      openrouter: "openai/gpt-5", // TODO: Verify OpenRouter model ID
-      groq: null, // Groq likely won't have GPT-5
+      openrouter: "openai/gpt-5",
+      groq: null, 
       anthropic: null,
       google: null,
-      ollama: null
+      ollama: null,
+      moonshot: null
     }
   },
   {
@@ -76,11 +85,12 @@ export const models: Model[] = [
     capabilities: { vision: true, imageGeneration: true, functionCalling: true },
     providerModelIds: {
       openai: "gpt-4.1",
-      openrouter: "openai/gpt-4.1", // TODO: Verify OpenRouter model ID
-      groq: null,
+      openrouter: "openai/gpt-4.1", 
+      groq: null, 
       anthropic: null,
       google: null,
-      ollama: null
+      ollama: null,
+      moonshot: null
     }
   },
   
@@ -92,12 +102,13 @@ export const models: Model[] = [
     iconPath: "/LLMProviderIcons/Anthropic/claude.png",
     capabilities: { vision: true, imageGeneration: false, functionCalling: true },
     providerModelIds: {
-      anthropic: "claude-sonnet-4-0", // TODO: Verify exact model string
-      openrouter: "anthropic/claude-sonnet-4", // TODO: Verify OpenRouter model ID
+      anthropic: "claude-sonnet-4-0",
+      openrouter: "anthropic/claude-sonnet-4",
       openai: null,
       groq: null,
       google: null,
-      ollama: null
+      ollama: null,
+      moonshot: null
     }
   },
   {
@@ -107,12 +118,13 @@ export const models: Model[] = [
     iconPath: "/LLMProviderIcons/Anthropic/claude.png",
     capabilities: { vision: true, imageGeneration: false, functionCalling: true },
     providerModelIds: {
-      anthropic: "claude-sonnet-4-5", // Based on the product info you provided earlier
-      openrouter: "anthropic/claude-sonnet-4.5", // TODO: Verify OpenRouter model ID
+      anthropic: "claude-sonnet-4-5",
+      openrouter: "anthropic/claude-sonnet-4.5", 
       openai: null,
       groq: null,
       google: null,
-      ollama: null
+      ollama: null,
+      moonshot: null
     }
   },
   
@@ -124,12 +136,13 @@ export const models: Model[] = [
     iconPath: "/LLMProviderIcons/Google/gemini.png",
     capabilities: { vision: true, imageGeneration: false, functionCalling: true },
     providerModelIds: {
-      google: "gemini-2.5-pro", // TODO: Verify exact model string
-      openrouter: "google/gemini-2.5-pro", // TODO: Verify OpenRouter model ID
+      google: "gemini-2.5-pro",
+      openrouter: "google/gemini-2.5-pro",
       openai: null,
       anthropic: null,
       groq: null,
-      ollama: null
+      ollama: null,
+      moonshot: null
     }
   },
   {
@@ -139,12 +152,13 @@ export const models: Model[] = [
     iconPath: "/LLMProviderIcons/Google/gemini.png",
     capabilities: { vision: true, imageGeneration: false, functionCalling: true },
     providerModelIds: {
-      google: "gemini-2.5-flash", // TODO: Verify exact model string
-      openrouter: "google/gemini-2.5-flash", // TODO: Verify OpenRouter model ID
+      google: "gemini-2.5-flash",
+      openrouter: "google/gemini-2.5-flash",
       openai: null,
       anthropic: null,
       groq: null,
-      ollama: null
+      ollama: null,
+      moonshot: null
     }
   },
   {
@@ -163,7 +177,28 @@ export const models: Model[] = [
     openai: null,
     anthropic: null,
     google: null,
-    ollama: null
+    ollama: null,
+    moonshot: null
+  }
+},
+  {
+  id: "kimi-k2",
+  displayName: "Kimi K2",
+  creator: "Moonshot",
+  iconPath: "/LLMProviderIcons/Moonshot/moonshot.png",
+  capabilities: {
+    vision: false,
+    imageGeneration: false,
+    functionCalling: true
+  },
+  providerModelIds: {
+    groq: "moonshotai/kimi-k2-instruct-0905",
+    openrouter: null,
+    openai: null,
+    anthropic: null,
+    google: null,
+    ollama: null,
+    moonshot: null
   }
 },
 ];

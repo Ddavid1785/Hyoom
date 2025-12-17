@@ -2,10 +2,28 @@ import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGroq } from "@ai-sdk/groq";
 import type { LanguageModel } from "ai";
 import { AppSettings, InferenceProviderType, LLMMessage } from "../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "./LLMtypes.ts";
 import { getModelIdForProvider, providerDefinitions } from "./LLMChoices.ts";
+import { z } from "zod"
+
+const metaToolCallsSchema = z.array(
+  z.discriminatedUnion("name", [
+    z.object({ name: z.literal("tool_search"), args: z.object({ query: z.string() }) }),
+    z.object({ name: z.literal("add_memory"), args: z.object({ content: z.string() }) }),
+    z.object({ name: z.literal("search_memory"), args: z.object({ query: z.string() }) }),
+  ])
+).optional();
+
+const responseSchema = z.object({
+  thought: z.string().optional(),
+  content: z.string().optional(),
+  code: z.string().optional(),
+  metaToolCalls: metaToolCallsSchema,
+  done: z.boolean().optional()
+});
 
 function createModel(
   providerId: InferenceProviderType,
@@ -40,7 +58,7 @@ function createModel(
     }
       
     case "groq": {
-      const provider = createOpenAI({
+      const provider = createGroq({
         apiKey: config.apiKey,
         baseURL: config.customBaseUrl || definition.defaultBaseUrl
       });
@@ -73,24 +91,18 @@ function parseLLMResponse(rawText: string): LLMResponse {
 
   const firstBrace = cleaned.indexOf("{");
   const lastBrace = cleaned.lastIndexOf("}");
-
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     cleaned = cleaned.substring(firstBrace, lastBrace + 1);
   }
 
-  // deno-lint-ignore no-explicit-any
-  let finalParsed: any = null;
-
+  let finalParsed: unknown;
   try {
     finalParsed = JSON.parse(cleaned);
   } catch (_e) {
     try {
       const fixed = cleaned.replace(
         /("code":\s*")([\s\S]*?)("(?:\s*,\s*"|\s*}))/g, 
-        (_match, start, code, end) => {
-          const escapedCode = code.replace(/\n/g, "\\n").replace(/\r/g, "");
-          return `${start}${escapedCode}${end}`;
-        }
+        (_match, start, code, end) => `${start}${code.replace(/\n/g, "\\n").replace(/\r/g, "")}${end}`
       );
       finalParsed = JSON.parse(fixed);
     } catch (_e2) {
@@ -99,13 +111,15 @@ function parseLLMResponse(rawText: string): LLMResponse {
     }
   }
 
-  console.log("✅ PARSED RESPONSE:", finalParsed);
-  
-  return {
-    content: finalParsed.content,
-    code: finalParsed.code,
-    metaToolCalls: finalParsed.metaToolCalls,
-  };
+  try {
+    const parsed = responseSchema.parse(finalParsed);
+    console.log("✅ STRUCTURED RESPONSE:", parsed);
+    return parsed;
+  } catch (err) {
+    console.warn("⚠️ LLM output failed Zod validation, returning plain content", err);
+    console.log(rawText)
+    return { content: rawText };
+  }
 }
 
 export function createProvider(settings: AppSettings): LLMProvider {

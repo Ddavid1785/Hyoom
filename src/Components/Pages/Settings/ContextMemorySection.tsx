@@ -42,18 +42,11 @@ export default function ContextMemorySection({
           </p>
           
           <div className="flex flex-col items-end">
-            {/* 
-               FIX: Removed key={value} to prevent unmounting. 
-               Added a unique key only to the TIER color to flash it, 
-               but kept the number stable.
-            */}
             <motion.span 
-              // We use key={value} ONLY for a tiny scale bump, 
-              // but we ensure opacity is always 1 so it never disappears.
               key={value}
               initial={{ scale: 1.1 }}
               animate={{ scale: 1 }}
-              transition={{ duration: 0.1 }} // Lightning fast transition
+              transition={{ duration: 0.1 }}
               className="text-2xl font-bold text-white font-mono leading-none"
             >
               {value}
@@ -62,7 +55,6 @@ export default function ContextMemorySection({
           </div>
         </div>
 
-        {/* Custom Range Slider Container */}
         <div className="relative w-full h-8 flex items-center group">
           <input
             type="range"
@@ -80,17 +72,15 @@ export default function ContextMemorySection({
           />
         </div>
 
-        {/* Dynamic Labels */}
         <div className="flex justify-between mt-2 font-Inter text-xs font-medium relative">
-            {/* Background track for the labels to sit on (optional visual aid) */}
           {["Short", "Balanced", "Long"].map((tier) => {
              const isActive = currentTier === tier;
              return (
             <motion.div
               key={tier}
               animate={{
-                color: isActive ? "#e4e4e7" : "#52525b", // zinc-200 vs zinc-600
-                y: isActive ? -2 : 0, // Slight lift when active
+                color: isActive ? "#e4e4e7" : "#52525b",
+                y: isActive ? -2 : 0,
                 scale: isActive ? 1.05 : 1,
               }}
               transition={{ duration: 0.2 }}
@@ -98,15 +88,14 @@ export default function ContextMemorySection({
             >
               <span>{tier}</span>
               
-              {/* Only show the active dot with AnimatePresence to fade it in/out nicely */}
-              <AnimatePresence>
+              <AnimatePresence mode="wait">
                 {isActive && (
                     <motion.div
-                    layoutId="active-dot"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0 }}
-                    className="w-1 h-1 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="w-1.5 h-1.5 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]"
                     />
                 )}
               </AnimatePresence>

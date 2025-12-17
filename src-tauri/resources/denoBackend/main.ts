@@ -147,35 +147,43 @@ async function agentLoop(
     const response: LLMResponse = await provider.call(messages);
 
     if (response.metaToolCalls && response.metaToolCalls.length > 0) {
-      const toolName = response.metaToolCalls[0].name === "tool_search" ? "Searching for tools..." : "Reading tool...";
+      const toolName = response.metaToolCalls[0].name === "tool_search" ? "Searching for tools..." : "Executing tool...";
       send({ type: "status", message: toolName });
 
-await sleep(800);
+        await sleep(800);
 
       const results = await executeMetaTools(response.metaToolCalls);
       
       addMessage({ role: "assistant", content: JSON.stringify({ metaToolCalls: response.metaToolCalls }), images: undefined }, contextLimit);
       addMessage({ role: "user", content: `[TOOL SEARCH RESULTS]:\n${JSON.stringify(results)}`, images: undefined }, contextLimit);
-      continue;
     }
     
     if (response.code) {
       send({ type: "status", message: "Writing and executing code..." });
 
-await sleep(1000); 
+    await sleep(1000); 
 
       const executionResult = await executeAICode(response.code);
+      const safeOutput = JSON.stringify(executionResult);
 
       addMessage({ role: "assistant", content: JSON.stringify({ content: response.content, code: response.code }), images: undefined }, contextLimit);
-      addMessage({ role: "user", content: `[CODE EXECUTION OUTPUT]:\n${executionResult}`, images: undefined }, contextLimit);
+      addMessage({ role: "user", content: `[CODE EXECUTION OUTPUT]:\n${safeOutput}`, images: undefined }, contextLimit);
       continue;
     }
     
-    if (response.content) {
-      await sleep(500); 
-      send({ type: "content", text: response.content });
-      return;
-    }
+if (response.done) {
+  if (!response.content) {
+    send({
+      type: "error",
+      error: "Agent signaled done without any message"
+    });
+    continue;
+  }
+
+  await sleep(500);
+  send({ type: "content", text: response.content });
+  return;
+}
   }
   
   send({ type: "error", error: "Max iterations reached" });
