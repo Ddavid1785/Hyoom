@@ -9,6 +9,7 @@
     "npm:@ai-sdk/groq@2.0.10": "2.0.10_zod@4.2.1",
     "npm:@ai-sdk/openai@2": "2.0.86_zod@4.1.13",
     "npm:ai@5": "5.0.113_zod@4.1.13",
+    "npm:ollama-ai-provider-v2@^1.5.5": "1.5.5_zod@4.2.1",
     "npm:onnxruntime-node@*": "1.23.2",
     "npm:onnxruntime-node@^1.23.2": "1.23.2",
     "npm:zod@^4.2.1": "4.2.1"
@@ -73,6 +74,15 @@
         "@standard-schema/spec",
         "eventsource-parser",
         "zod@4.1.13"
+      ]
+    },
+    "@ai-sdk/provider-utils@3.0.19_zod@4.2.1": {
+      "integrity": "sha512-W41Wc9/jbUVXVwCN/7bWa4IKe8MtxO3EyA0Hfhx6grnmiYlCvpI8neSYWFE0zScXJkgA/YK3BRybzgyiXuu6JA==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@standard-schema/spec",
+        "eventsource-parser",
+        "zod@4.2.1"
       ]
     },
     "@ai-sdk/provider-utils@3.0.3_zod@4.2.1": {
@@ -193,6 +203,14 @@
     "object-keys@1.1.1": {
       "integrity": "sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA=="
     },
+    "ollama-ai-provider-v2@1.5.5_zod@4.2.1": {
+      "integrity": "sha512-1YwTFdPjhPNHny/DrOHO+s8oVGGIE5Jib61/KnnjPRNWQhVVimrJJdaAX3e6nNRRDXrY5zbb9cfm2+yVvgsrqw==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@ai-sdk/provider-utils@3.0.19_zod@4.2.1",
+        "zod@4.2.1"
+      ]
+    },
     "onnxruntime-common@1.23.2": {
       "integrity": "sha512-5LFsC9Dukzp2WV6kNHYLNzp8sT6V02IubLCbzw2Xd6X5GOlr65gAX6xiJwyi2URJol/s71gaQLC5F2C25AAR2w=="
     },
@@ -298,6 +316,7 @@
       "npm:@ai-sdk/groq@2.0.10",
       "npm:@ai-sdk/openai@2",
       "npm:ai@5",
+      "npm:ollama-ai-provider-v2@^1.5.5",
       "npm:onnxruntime-node@^1.23.2",
       "npm:zod@^4.2.1"
     ]

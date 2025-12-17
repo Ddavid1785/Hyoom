@@ -6,6 +6,7 @@
   },
   "imports": {
     "@std/path": "jsr:@std/path@^1.1.3",
+    "ollama-ai-provider-v2": "npm:ollama-ai-provider-v2@^1.5.5",
     "onnxruntime-node": "npm:onnxruntime-node@^1.23.2",
     "transformers": "https://cdn.jsdelivr.net/npm/@xenova/transformers/dist/transformers.min.js",
     "std/": "https://deno.land/std@0.203.0/",

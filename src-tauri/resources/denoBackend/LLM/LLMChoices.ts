@@ -46,7 +46,7 @@ export const providerDefinitions: Record<InferenceProviderType, InferenceProvide
     name: "Ollama",
     iconPath: "/LLMProviderIcons/Ollama/ollama.png",
     requiresApiKey: false,
-    supportsCustomBaseUrl: true,
+    supportsCustomBaseUrl: false,
     defaultBaseUrl: "http://localhost:11434"
   },
     moonshot: {
@@ -198,6 +198,26 @@ export const models: Model[] = [
     anthropic: null,
     google: null,
     ollama: null,
+    moonshot: null
+  }
+},
+  {
+  id: "gemma3-4b",
+  displayName: "Gemma 3-4b",
+  creator: "Google",
+  iconPath: "/LLMProviderIcons/Google/gemini.png",
+  capabilities: {
+    vision: false,
+    imageGeneration: false,
+    functionCalling: true
+  },
+  providerModelIds: {
+    ollama: "gemma3-4b-it:latest",
+    openrouter: null,
+    openai: null,
+    anthropic: null,
+    google: null,
+    groq: null,
     moonshot: null
   }
 },

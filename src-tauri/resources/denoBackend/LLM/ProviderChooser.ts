@@ -3,6 +3,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
+import { ollama } from "ollama-ai-provider-v2";
 import type { LanguageModel } from "ai";
 import { AppSettings, InferenceProviderType, LLMMessage } from "../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "./LLMtypes.ts";
@@ -74,10 +75,7 @@ function createModel(
     }
       
     case "ollama": {
-      const provider = createOpenAI({
-        baseURL: config.customBaseUrl || definition.defaultBaseUrl
-      });
-      return provider(modelId);
+      return ollama(modelId)
     }
       
     default:
@@ -130,8 +128,8 @@ export function createProvider(settings: AppSettings): LLMProvider {
     throw new Error(`Provider ${activeProviderId} doesn't support model ${activeModelId}`);
   }
   
-  const providerConfig = settings.inferenceProviders[activeProviderId];
-  if (!providerConfig) {
+  const providerConfig = settings.inferenceProviders[activeProviderId] ?? {};
+  if (!providerConfig && activeProviderId!=="ollama") {
     throw new Error(`No configuration found for provider: ${activeProviderId}`);
   }
   
@@ -150,7 +148,7 @@ export function createProvider(settings: AppSettings): LLMProvider {
           content: msg.content
         }))
       });
-      
+
       return parseLLMResponse(result.text);
     }
   };
