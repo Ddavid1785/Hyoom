@@ -46,8 +46,8 @@ export const providerDefinitions: Record<InferenceProviderType, InferenceProvide
     name: "Ollama",
     iconPath: "/LLMProviderIcons/Ollama/ollama.png",
     requiresApiKey: false,
-    supportsCustomBaseUrl: false,
-    defaultBaseUrl: "http://localhost:11434"
+    supportsCustomBaseUrl: true,
+    defaultBaseUrl: "http://localhost:11434/api"
   },
     moonshot: {
     id: "moonshot",

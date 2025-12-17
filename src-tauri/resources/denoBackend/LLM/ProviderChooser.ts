@@ -3,7 +3,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
-import { ollama } from "ollama-ai-provider-v2";
+import { createOllama } from "ollama-ai-provider-v2";
 import type { LanguageModel } from "ai";
 import { AppSettings, InferenceProviderType, LLMMessage } from "../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "./LLMtypes.ts";
@@ -74,9 +74,14 @@ function createModel(
       return provider(modelId);
     }
       
-    case "ollama": {
-      return ollama(modelId)
-    }
+case "ollama": {
+  const provider = createOllama({
+    baseURL: config.customBaseUrl 
+      ?? providerDefinitions.ollama.defaultBaseUrl
+  });
+
+  return provider(modelId);
+}
       
     default:
       throw new Error(`Unsupported provider: ${providerId}`);
