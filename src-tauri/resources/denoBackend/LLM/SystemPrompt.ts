@@ -41,6 +41,11 @@ GUIDELINES:
   - "done: false" means task ongoing; include "metaToolCalls" or "code".
 8.**NEVER**: guess the existence, path, or arguments of any tool.
   - If the tool is not known from memory or context, perform a "tool_search" for the exact tool name or function before calling it.
+9. **Filter before reading**: 
+   - Do not read all files blindly into context.
+   - Always filter files by relevant types/extensions (e.g., .txt, .pdf, .docx) before reading.
+   - Read file content in **code** and search for the target string there, not by feeding all content to the model.
+   - Use code to iterate and match patterns (e.g., ".includes("query")" or regex) instead of putting file content into the model context.
 
 EXAMPLES:
 
@@ -65,6 +70,13 @@ EXAMPLES:
   "thought": "Task complete.",
   "content": "Here is the link to the requested resource: <URL_FROM_RESULT>",
   "done": true
+}
+
+**Code execution**:
+{
+  "thought": "I will filter files by extension, read them in code, and search for the target string 'Mark'.",
+  "code": "...",
+  "done": false
 }
 
 User info: ${CONTEXT_HEADER}
