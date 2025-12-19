@@ -2,7 +2,8 @@ import { getFilePath } from "../filePath.ts";
 import { executeAICode } from "../LLM/LLMCodeExecutor.ts";
 import { LLMProvider, LLMResponse } from "../LLM/LLMtypes.ts";
 import { executeMetaTools } from "../MetaTools/metaToolExecutor.ts";
-import { AppSettings, LLMMessage, StreamUpdate } from "../shared/sharedTypes.ts";
+import { AppSettings, LLMMessage } from "../shared/sharedTypes.ts";
+import { StreamUpdate } from "./utilTypes.ts";
 
 const SETTINGS_PATH = getFilePath();
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

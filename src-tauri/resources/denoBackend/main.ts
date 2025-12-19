@@ -1,4 +1,4 @@
-import { LLMMessage, StreamUpdate } from "./shared/sharedTypes.ts";
+import { LLMMessage } from "./shared/sharedTypes.ts";
 import { SYSTEM_PROMPT } from "./LLM/SystemPrompt.ts";
 import { loadTools, resetToolCache } from "./Semantic/loadTools.ts";
 import { createToolValues } from "./Semantic/createToolValues.ts";
@@ -6,6 +6,7 @@ import { getToolsInfo } from "./Semantic/getToolsInfo.ts";
 import { createProvider } from "./LLM/ProviderChooser.ts";
 import { clearMessages, getMessagesWithContext, manageContext } from "./mainUtils/contextUtils.ts";
 import { agentLoop, loadSettings } from "./mainUtils/generalUtils.ts";
+import { StreamUpdate } from "./mainUtils/utilTypes.ts";
 
 (async () => {
   console.log("🚀 Starting Hyoom...");
