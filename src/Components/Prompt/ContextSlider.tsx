@@ -12,9 +12,9 @@ export default function ContextStealthSlider({
   saveSettings,
 }: ContextStealthSliderProps) {
   const MIN = 10;
-  const MAX = 60;
+  const MAX = 100;
 
-  const [localValue, setLocalValue] = useState(settings.contextLimit || 20);
+  const [localValue, setLocalValue] = useState(settings.contextLimit || 40);
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
@@ -24,9 +24,9 @@ export default function ContextStealthSlider({
   }, [settings.contextLimit]);
 
   const getTier = (val: number) => {
-    if (val <= 15) return "Short Recall";
-    if (val <= 30) return "Balanced";
-    return "Deep Memory";
+    if (val <= 20) return "Short";
+    if (val <= 60) return "Balanced";
+    return "Long";
   };
 
   const handleCommit = () => {

@@ -1,21 +1,11 @@
-import { AppSettings, LLMMessage } from "./shared/sharedTypes.ts";
-import { LLMProvider, LLMResponse } from "./LLM/LLMtypes.ts";
+import { LLMMessage, StreamUpdate } from "./shared/sharedTypes.ts";
 import { SYSTEM_PROMPT } from "./LLM/SystemPrompt.ts";
-import { executeMetaTools } from "./MetaTools/metaToolExecutor.ts";
-import { getFilePath } from "./filePath.ts";
 import { loadTools, resetToolCache } from "./Semantic/loadTools.ts";
 import { createToolValues } from "./Semantic/createToolValues.ts";
-import { executeAICode } from "./LLM/LLMCodeExecutor.ts";
 import { getToolsInfo } from "./Semantic/getToolsInfo.ts";
 import { createProvider } from "./LLM/ProviderChooser.ts";
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-type StreamUpdate = 
-  | { type: "status"; message: string }
-  | { type: "content"; text: string }
-  | { type: "done" }
-  | { type: "error"; error: string };
+import { clearMessages, getMessagesWithContext, manageContext } from "./mainUtils/contextUtils.ts";
+import { agentLoop, loadSettings } from "./mainUtils/generalUtils.ts";
 
 (async () => {
   console.log("🚀 Starting Hyoom...");
@@ -40,30 +30,11 @@ type StreamUpdate =
   }
 })();
 
-const SETTINGS_PATH = getFilePath();
-
 const messages: LLMMessage[] = [
   { role: "system", content: SYSTEM_PROMPT, images: undefined }
 ];
 
-function addMessage(msg: LLMMessage, limit: number) {
-  const nonSystem = messages.filter(m => m.role !== "system");
-  nonSystem.push(msg);
-  
-  const recent = nonSystem.slice(-limit);
-
-  messages.length = 0;
-  messages.push({ role: "system", content: SYSTEM_PROMPT, images: undefined });
-  messages.push(...recent);
-}
-
-function clearMessages() {
-  if (messages.length > 0){
-  messages.length = 0;
-  messages.push({ role: "system", content: SYSTEM_PROMPT, images: undefined });
-  console.log("🧹 Context cleared by user");
-}
-}
+let runningSummary = "";
 
 Deno.serve({ port: 3000 }, async (req) => {
   const url = new URL(req.url);
@@ -81,8 +52,11 @@ Deno.serve({ port: 3000 }, async (req) => {
   }
 
  if (url.pathname === "/clear" && req.method === "POST") {
-    clearMessages();
-    return Response.json({ status: "cleared" }, { status: 200, headers });
+    runningSummary = clearMessages(messages, SYSTEM_PROMPT);
+    if (messages.length>0)
+    return Response.json({ status: "Cleared" }, { status: 200, headers });
+  else
+        return Response.json({ status: "Nothing to clear" }, { status: 200, headers });
   }
 
   if (url.pathname === "/chat" && req.method === "POST") {
@@ -90,13 +64,17 @@ Deno.serve({ port: 3000 }, async (req) => {
       const body = await req.json();
       const settings = await loadSettings();
 
-const contextLimit = Math.max(10, settings.contextLimit || 20);
+const contextLimit = Math.max(10, settings.contextLimit || 40);
 
-      addMessage(body.message,contextLimit );
+      messages.push(body.message);
 
       console.log("user message: ", body.message);
 
       const provider = createProvider(settings);
+
+      runningSummary =  await manageContext(provider, contextLimit, settings, messages, runningSummary);
+ 
+        const messagesToSend = getMessagesWithContext(messages, runningSummary);
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -107,7 +85,7 @@ const contextLimit = Math.max(10, settings.contextLimit || 20);
           };
 
           try {
-            await agentLoop(provider, messages, send, contextLimit);
+            await agentLoop(provider, messagesToSend, messages, send);
           // deno-lint-ignore no-explicit-any
           } catch (error: any) {
             send({ type: "error", error: error.message });
@@ -130,73 +108,3 @@ const contextLimit = Math.max(10, settings.contextLimit || 20);
   
   return new Response("Not Found", { status: 404, headers });
 });
-
-async function agentLoop(
-  provider: LLMProvider, 
-  messages: LLMMessage[], 
-  send: (update: StreamUpdate) => void,
-  contextLimit: number
-) {
-  let maxIterations = 10;
-  
-  while (maxIterations-- > 0) {
-    console.log(`🔄 Turn ${10 - maxIterations}`);
-    
-    send({ type: "status", message: "Thinking..." });
-
-    const response: LLMResponse = await provider.call(messages);
-
-    if (response.metaToolCalls && response.metaToolCalls.length > 0) {
-      const toolName = response.metaToolCalls[0].name === "tool_search" ? "Searching for tools..." : "Executing tool...";
-      send({ type: "status", message: toolName });
-
-        await sleep(800);
-
-      const results = await executeMetaTools(response.metaToolCalls);
-      
-      addMessage({ role: "assistant", content: JSON.stringify({ metaToolCalls: response.metaToolCalls }), images: undefined }, contextLimit);
-      addMessage({ role: "user", content: `[TOOL SEARCH RESULTS]:\n${JSON.stringify(results)}`, images: undefined }, contextLimit);
-    }
-    
-    if (response.code) {
-      send({ type: "status", message: "Writing and executing code..." });
-
-    await sleep(1000); 
-
-      const executionResult = await executeAICode(response.code);
-      const safeOutput = JSON.stringify(executionResult);
-
-      addMessage({ role: "assistant", content: JSON.stringify({ content: response.content, code: response.code }), images: undefined }, contextLimit);
-      addMessage({ role: "user", content: `[CODE EXECUTION OUTPUT]:\n${safeOutput}`, images: undefined }, contextLimit);
-      continue;
-    }
-    
-if (response.done) {
-  if (!response.content) {
-    send({
-      type: "error",
-      error: "Agent signaled done without any message"
-    });
-    continue;
-  }
-
-  await sleep(500);
-  send({ type: "content", text: response.content });
-  return;
-}
-  }
-  
-  send({ type: "error", error: "Max iterations reached" });
-}
-
-async function loadSettings() {
-  let settings: AppSettings;
-  try {
-    const raw = await Deno.readTextFile(`${SETTINGS_PATH}/settings.json`);
-    settings = JSON.parse(raw);
-  } catch (err) {
-    console.error("Failed to read settings:", err);
-    return {} as AppSettings;
-  }
-  return settings;
-}

@@ -36,6 +36,7 @@ export interface AppSettings {
   };
 
   contextLimit?: number;
+  enableCompression?: boolean;
 }
 
 export interface LLMCapabilities {
@@ -69,3 +70,13 @@ export interface StoredMemory {
   embedding: number[]; 
   timestamp: string;
 }
+
+export interface StoredContext {
+  summary: string;
+}
+
+export type StreamUpdate = 
+  | { type: "status"; message: string }
+  | { type: "content"; text: string }
+  | { type: "done" }
+  | { type: "error"; error: string };

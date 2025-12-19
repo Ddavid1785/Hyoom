@@ -52,7 +52,7 @@ export const providerDefinitions: Record<InferenceProviderType, InferenceProvide
   lmstudio: {
   id: "lmstudio",
   name: "LM Studio",
-  iconPath: "/LLMProviderIcons/LMStudio/lmstudio.png",
+  iconPath: "/LLMProviderIcons/LMStudio/lmstudio.webp",
   requiresApiKey: false,
   supportsCustomBaseUrl: true,
   defaultBaseUrl: "http://localhost:1234/v1"

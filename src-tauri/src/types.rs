@@ -31,6 +31,7 @@ pub struct AppSettings {
     pub active_search_provider: String,
 
     pub context_limit: Option<u32>,
+    pub enable_compression: Option<bool>,
 
     pub inference_providers: HashMap<String, InferenceProviderConfig>,
     pub search_keys: SearchKeys,

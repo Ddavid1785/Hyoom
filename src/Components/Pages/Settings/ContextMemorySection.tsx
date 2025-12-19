@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Cpu } from "lucide-react";
+import { Cpu, Zap } from "lucide-react";
 import { AppSettings } from "../../../shared/sharedTypes";
 
 interface ContextMemorySectionProps {
@@ -11,12 +11,12 @@ export default function ContextMemorySection({
   settings,
   onChange,
 }: ContextMemorySectionProps) {
-  const value = settings.contextLimit || 20;
+  const value = settings.contextLimit || 40;
+  const compression = settings.enableCompression || true;
 
-  // Determine current tier for visual feedback
   const getTier = (val: number) => {
-    if (val <= 15) return "Short";
-    if (val <= 30) return "Balanced";
+    if (val <= 20) return "Short";
+    if (val <= 60) return "Balanced";
     return "Long";
   };
 
@@ -34,15 +34,15 @@ export default function ContextMemorySection({
       <div className="bg-zinc-950/50 p-5 rounded-xl border border-zinc-800/50">
         <div className="flex justify-between items-start mb-6">
           <p className="text-sm text-zinc-400 font-Inter max-w-[70%] leading-relaxed">
-            Controls how many recent messages Hyoom retains. 
+            Controls how many recent messages Hyoom retains.
             <br />
             <span className="text-xs text-zinc-500">
               Higher values = better recall but higher token costs.
             </span>
           </p>
-          
+
           <div className="flex flex-col items-end">
-            <motion.span 
+            <motion.span
               key={value}
               initial={{ scale: 1.1 }}
               animate={{ scale: 1 }}
@@ -59,7 +59,7 @@ export default function ContextMemorySection({
           <input
             type="range"
             min="10"
-            max="60"
+            max="100"
             step="2"
             value={value}
             onChange={(e) =>
@@ -74,22 +74,22 @@ export default function ContextMemorySection({
 
         <div className="flex justify-between mt-2 font-Inter text-xs font-medium relative">
           {["Short", "Balanced", "Long"].map((tier) => {
-             const isActive = currentTier === tier;
-             return (
-            <motion.div
-              key={tier}
-              animate={{
-                color: isActive ? "#e4e4e7" : "#52525b",
-                y: isActive ? -2 : 0,
-                scale: isActive ? 1.05 : 1,
-              }}
-              transition={{ duration: 0.2 }}
-              className="flex flex-col items-center gap-1 min-w-[60px]"
-            >
-              <span>{tier}</span>
-              
-              <AnimatePresence mode="wait">
-                {isActive && (
+            const isActive = currentTier === tier;
+            return (
+              <motion.div
+                key={tier}
+                animate={{
+                  color: isActive ? "#e4e4e7" : "#52525b",
+                  y: isActive ? -2 : 0,
+                  scale: isActive ? 1.05 : 1,
+                }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col items-center gap-1 min-w-[60px]"
+              >
+                <span>{tier}</span>
+
+                <AnimatePresence mode="wait">
+                  {isActive && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -97,11 +97,48 @@ export default function ContextMemorySection({
                       transition={{ duration: 0.2 }}
                       className="w-1.5 h-1.5 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]"
                     />
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )})}
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
         </div>
+      </div>
+      <div className="flex items-center justify-between bg-zinc-900/50 p-4 rounded-lg border border-zinc-800/50 mt-4">
+        <div className="flex gap-3 items-center">
+          <div
+            className={`p-2 rounded-md ${
+              compression
+                ? "bg-purple-500/20 text-purple-400"
+                : "bg-zinc-800 text-zinc-500"
+            }`}
+          >
+            <Zap size={18} />
+          </div>
+          <div className="flex flex-col">
+            <h3 className="text-lg font-medium text-white">Context Depth</h3>
+
+            <p className="text-sm text-zinc-400 mt-1 max-w-full">
+              {settings.enableCompression
+                ? `Summarize conversation every ${value * 0.5} messages.`
+                : `Keep last ${value} messages, delete older ones.`}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() =>
+            onChange({ ...settings, enableCompression: !compression })
+          }
+          className={`w-12 h-6 rounded-full transition-colors relative ${
+            compression ? "bg-purple-600" : "bg-zinc-700"
+          }`}
+        >
+          <motion.div
+            animate={{ x: compression ? 26 : 2 }}
+            className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
+          />
+        </button>
       </div>
     </div>
   );
