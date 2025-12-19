@@ -15,7 +15,7 @@ export function useAppSettings() {
         const data = await invoke<AppSettings>("load_settings");
         setSettings(data);
       } catch (err) {
-        console.error("Failed to load settings:", err);
+       // console.error("Failed to load settings:", err);
         addToast(`Failed to load settings: ${err}`, "error");
       } finally {
         setLoading(false);
@@ -29,7 +29,7 @@ export function useAppSettings() {
       setSettings(newSettings);
       addToast("Settings saved successfully", "success");
     } catch (err) {
-      console.error("Failed to save settings:", err);
+      //console.error("Failed to save settings:", err);
       addToast(`Could not save settings: ${err}`, "error");
     }
   };

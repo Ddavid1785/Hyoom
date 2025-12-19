@@ -33,6 +33,8 @@ dasp = { version = "0.11.0", features = ["signal", "interpolate", "interpolate-l
 uuid = { version = "1.4", features = ["v4"] }
 whisper-rs =  "0.15.1"
 vosk = "0.3.1"
+log = "0.4.29"
+tauri-plugin-log = "2.7.1"
 
 [profile.release]
 lto = false           # Link Time Optimization: mashes C++ and Rust code together better

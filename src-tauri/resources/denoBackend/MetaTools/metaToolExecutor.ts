@@ -13,23 +13,23 @@ export async function executeMetaTools(tools: MetaToolCall[]): Promise<string[]>
     
     if (tool.name === "tool_search") {
       const query = tool.args.query;
-      console.log(`🔎 Searching Tools & Memory for: "${query}"`);
+      //console.log(`🔎 Searching Tools & Memory for: "${query}"`);
       
     const embedder = await getEmbedder();
     const queryEmbedding: TokenEmbedding = new Float32Array(await embedder.embed(query));
 
-console.log(`🔎 Searching Tools & Memory for: "${query}"`);
+//console.log(`🔎 Searching Tools & Memory for: "${query}"`);
       const [foundTools, foundMemories] = await Promise.all([
 
         toolSearch(queryEmbedding),
         searchMemories(queryEmbedding, 3) 
       ]);
 
- const toolsLog = foundTools
-        .map(t => `${t.name} (${t.score.toFixed(2)})`)
-        .join(", ");
+ //const toolsLog = foundTools
+        //.map(t => `${t.name} (${t.score.toFixed(2)})`)
+       // .join(", ");
         
-      console.log(`results for "${query}"\n tools: [${toolsLog}]\n memories: [${foundMemories}]`);
+      //console.log(`results for "${query}"\n tools: [${toolsLog}]\n memories: [${foundMemories}]`);
 
       // deno-lint-ignore no-explicit-any
       const outputObj: any = {
@@ -54,7 +54,7 @@ console.log(`🔎 Searching Tools & Memory for: "${query}"`);
           });
         // deno-lint-ignore no-explicit-any
         } catch (err: any) {
-          console.error(`Failed to read ${t.name}:`, err);
+         // console.error(`Failed to read ${t.name}:`, err);
         }
       }
 
@@ -75,7 +75,7 @@ console.log(`🔎 Searching Tools & Memory for: "${query}"`);
         }
     }else if (tool.name === "search_memory") {
       const query = tool.args.query;
-      console.log(`🧠 Explicit Memory Search for: "${query}"`);
+      //console.log(`🧠 Explicit Memory Search for: "${query}"`);
 
       try {
         const embedder = await getEmbedder();
@@ -86,7 +86,7 @@ console.log(`🔎 Searching Tools & Memory for: "${query}"`);
         results.push(JSON.stringify({ found_memories: foundMemories }, null, 2));
       // deno-lint-ignore no-explicit-any
       } catch (err: any) {
-        console.error("Memory search failed:", err);
+        //console.error("Memory search failed:", err);
         results.push(`Error searching memory: ${err.message}`);
       }
     }

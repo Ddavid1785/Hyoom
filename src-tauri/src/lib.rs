@@ -25,6 +25,7 @@ fn trigger_voice_listening(state: State<VoiceSender>) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -60,12 +61,12 @@ pub fn run() {
                         }
 
                         voice::VoiceEvent::Error(e) => {
-                            eprintln!("Voice Error: {}", e);
+                            log::error!("Voice Error: {}", e);
                             let _ = app_handle_clone.emit("voice-status", "error");
-                             let _ = app_handle_clone.emit("voice-error", e); 
+                            let _ = app_handle_clone.emit("voice-error", e);
                         }
                         voice::VoiceEvent::Transcribing => {
-                             let _ = app_handle_clone.emit("voice-status", "transcribing");
+                            let _ = app_handle_clone.emit("voice-status", "transcribing");
                         }
                     }
                 }
@@ -75,26 +76,15 @@ pub fn run() {
                 match spawn_deno_server(resource_dir).await {
                     Ok(process) => {
                         app_handle.manage(DenoProcess(Mutex::new(Some(process))));
-                        println!("✅ Deno server started");
+                        log::info!("✅ Deno server started");
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to start Deno: {}", e);
+                        log::error!("❌ Failed to start Deno: {}", e);
                     }
                 }
             });
 
             Ok(())
-        })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                if let Some(state) = window.try_state::<DenoProcess>() {
-                    if let Ok(mut process) = state.0.lock() {
-                        if let Some(mut child) = process.take() {
-                            let _ = child.kill();
-                        }
-                    }
-                }
-            }
         })
         .invoke_handler(tauri::generate_handler![
             settings::load_settings,
@@ -103,8 +93,22 @@ pub fn run() {
             memory_manager::load_memories,
             memory_manager::delete_memory
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::Exit = event {
+                let state = app_handle.state::<DenoProcess>();
+
+                if let Ok(mut process_guard) = state.0.lock() {
+                    if let Some(mut child) = process_guard.take() {
+                        match child.kill() {
+                            Ok(_) => log::debug!("✅ Deno process killed successfully"),
+                            Err(e) => log::error!("❌ Failed to kill Deno process: {}", e),
+                        }
+                    }
+                };
+            }
+        });
 }
 
 async fn spawn_deno_server(resource_dir: PathBuf) -> Result<Child, Box<dyn std::error::Error>> {
@@ -148,12 +152,12 @@ async fn spawn_deno_server(resource_dir: PathBuf) -> Result<Child, Box<dyn std::
 
         if let Ok(response) = client.get("http://localhost:3000/health").send().await {
             if response.status().is_success() {
-                println!("✅ Deno ready after {}ms", attempt * 100);
+                log::info!("✅ Deno ready after {}ms", attempt * 100);
                 return Ok(child);
             }
         }
     }
 
-    println!("❌ Deno health check timeout");
+    log::error!("❌ Deno health check timeout");
     Err("Deno server failed to start within 5 seconds".into())
 }

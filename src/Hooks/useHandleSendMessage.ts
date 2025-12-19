@@ -91,17 +91,17 @@ export function useHandleSendMessage() {
               setMessages((prev) => [...prev, aiMsg].slice(-MAX_MESSAGES));
             }
             else if (update.type === "error") {
-              console.error("Stream error:", update.error);
+              //console.error("Stream error:", update.error);
               addToast(update.error, "error"); 
             }
           } catch (e) {
-            console.error("Error parsing stream chunk", e);
+            //console.error("Error parsing stream chunk", e);
           }
         }
       }
 
     } catch (error: any) {
-      console.error("Error:", error);
+      //console.error("Error:", error);
       
       addToast(error.message || "An unexpected error occurred", "error"); 
 
@@ -125,7 +125,7 @@ export function useHandleSendMessage() {
       await fetch('http://localhost:3000/clear', { method: 'POST' });
       addToast("Context cleared", "success");
     } catch (e) {
-      console.error("Failed to clear backend context", e);
+     // console.error("Failed to clear backend context", e);
       addToast("Failed to clear backend memory", "error");
     }
   };

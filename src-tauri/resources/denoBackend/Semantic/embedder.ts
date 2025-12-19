@@ -113,7 +113,7 @@ class Embedder {
   tokenizer: HuggingFaceTokenizer;
 
   static async create(baseDir: string) {
-    console.log("Loading model from:", baseDir);
+    //console.log("Loading model from:", baseDir);
     
     const modelPath = join(baseDir, "onnx", "model.onnx");
     const tokenizerPath = join(baseDir, "tokenizer.json");
@@ -122,10 +122,10 @@ class Embedder {
       const session = await ort.InferenceSession.create(modelPath);
       const tokenizer = await HuggingFaceTokenizer.fromFile(tokenizerPath);
       
-      console.log("✓ Model loaded successfully");
+      //console.log("✓ Model loaded successfully");
       return new Embedder(session, tokenizer);
     } catch (error) {
-      console.error("Failed to load model:", error);
+      //console.error("Failed to load model:", error);
       throw error;
     }
   }

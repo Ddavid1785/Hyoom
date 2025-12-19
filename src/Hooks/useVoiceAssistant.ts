@@ -33,7 +33,7 @@ export function useVoiceAssistant() {
     });
 
     const unlistenError = listen<string>("voice-error", (event) => {
-      console.error("Rust Voice Error:", event.payload);
+      //console.error("Rust Voice Error:", event.payload);
       addToast(`Voice Error: ${event.payload}`, "error");
     });
 

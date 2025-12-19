@@ -29,23 +29,27 @@ impl WhisperTranscriber {
         } else if prod_path.exists() {
             prod_path
         } else {
-            return Err(format!(
+            let err_msg = format!(
                 "Whisper model not found! Checked: \n1. {:?}\n2. {:?}",
                 dev_path, prod_path
-            )
-            .into());
+            );
+            log::error!("{}", err_msg);
+            return Err(err_msg.into());
         };
 
-        println!("🧠 Loading Whisper Base model...");
+        log::info!("🧠 Loading Whisper Base model...");
 
         // Load Base
         let params = WhisperContextParameters::default();
         let ctx_base = WhisperContext::new_with_params(&base_model_path.to_string_lossy(), params)
-            .map_err(|e| format!("Failed to load Base model: {}", e))?;
+                 .map_err(|e| {
+                log::error!("Failed to load Base model: {}", e);
+                format!("Failed to load Base model: {}", e)
+            })?;
 
-        whisper_rs::print_system_info();
+        //whisper_rs::print_system_info();
 
-        println!("✅ Models loaded successfully!");
+        log::info!("✅ Models loaded successfully!");
 
         Ok(Self { ctx_base })
     }
@@ -59,6 +63,8 @@ impl WhisperTranscriber {
         ctx: &WhisperContext,
         audio: &[f32],
     ) -> Result<String, Box<dyn std::error::Error>> {
+    log::debug!("Starting Whisper inference on {} samples...", audio.len());
+
         let mut state = ctx
             .create_state()
             .map_err(|e| format!("Failed to create state: {}", e))?;
@@ -76,7 +82,10 @@ impl WhisperTranscriber {
 
         state
             .full(params, audio)
-            .map_err(|e| format!("Whisper inference failed: {}", e))?;
+                      .map_err(|e| {
+                log::error!("Whisper inference failed: {}", e);
+                format!("Whisper inference failed: {}", e)
+            })?;
 
         let num_segments = state.full_n_segments();
         let mut text = String::new();
@@ -90,6 +99,12 @@ impl WhisperTranscriber {
             }
         }
 
-        Ok(text.trim().to_string())
+           let result = text.trim().to_string();
+        
+        if !result.is_empty() {
+            log::debug!("Transcribed: '{}'", result);
+        }
+
+        Ok(result)
     }
 }

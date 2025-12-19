@@ -42,7 +42,7 @@ export async function manageContext(provider: LLMProvider, limit: number, settin
   if (historyCount <= limit) return runningSummary;
 
   if (settings.enableCompression) {
-    console.log("🗜️ Triggering Compression...");
+    //console.log("🗜️ Triggering Compression...");
     
     const targetRemaining = Math.floor(limit * 0.5); 
 
@@ -57,11 +57,11 @@ export async function manageContext(provider: LLMProvider, limit: number, settin
       
       messages.splice(1, countToCompress);
       
-      console.log("✅ Compressed. Messages reduced to:", messages.length);
-      console.log(newSummary)
+     // console.log("✅ Compressed. Messages reduced to:", messages.length);
+      //console.log(newSummary)
       return newSummary;
     } catch (e) {
-      console.error("Compression failed, skipping this turn:", e);
+      //console.error("Compression failed, skipping this turn:", e);
       return runningSummary;
     }
 
@@ -69,7 +69,7 @@ export async function manageContext(provider: LLMProvider, limit: number, settin
     const excess = historyCount - limit;
     if (excess > 0) {
       messages.splice(1, excess);
-      console.log(`✂️ Pruned ${excess} old messages.`);
+      //console.log(`✂️ Pruned ${excess} old messages.`);
     }
     return runningSummary;
   }
@@ -92,7 +92,7 @@ export function clearMessages(messages: LLMMessage[], SYSTEM_PROMPT: string) {
   if (messages.length > 0){
   messages.length = 0;
   messages.push({ role: "system", content: SYSTEM_PROMPT, images: undefined });
-  console.log("🧹 Context cleared by user");
+  //console.log("🧹 Context cleared by user");
 }
-return ""; // Return the reset summary
+return "";
 }

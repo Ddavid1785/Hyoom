@@ -14,7 +14,7 @@ export function useMemories() {
       const data = await invoke<Memory[]>("load_memories");
       setMemories(data);
     } catch (error) {
-      console.error("Failed to load memories", error);
+      //console.error("Failed to load memories", error);
     } finally {
       setLoading(false);
     }
@@ -25,7 +25,7 @@ export function useMemories() {
       setMemories((prev) => prev.filter((m) => m.id !== id));
       await invoke("delete_memory", { id });
     } catch (error) {
-      console.error("Failed to delete memory", error);
+      //console.error("Failed to delete memory", error);
       fetchMemories(); 
     }
   };

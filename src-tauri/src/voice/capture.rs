@@ -21,9 +21,13 @@ impl AudioCapture {
             .default_input_device()
             .ok_or("No input device available")?;
 
-        println!("🎤 Input Device: {}", device.name().unwrap_or("Unknown".to_string()));
+        log::info!(
+            "🎤 Input Device: {}",
+            device.name().unwrap_or("Unknown".to_string())
+        );
 
-        let mut supported_configs_range = device.supported_input_configs()
+        let mut supported_configs_range = device
+            .supported_input_configs()
             .map_err(|e| format!("Error querying configs: {}", e))?;
 
         let supported_config = supported_configs_range
@@ -31,11 +35,11 @@ impl AudioCapture {
             .ok_or("Device has no supported configs")?
             .with_max_sample_rate();
 
-        let err_fn = |err| eprintln!("❌ Stream error: {}", err);
+        let err_fn = |err| log::error!("❌ Stream error: {}", err);
         let sample_format = supported_config.sample_format();
         let config: cpal::StreamConfig = supported_config.into();
 
-        println!("🔧 Device Config: {:?}Hz, {:?} channels, {:?}", 
+           log::info!("🔧 Device Config: {:?}Hz, {:?} channels, {:?}", 
                  config.sample_rate.0, config.channels, sample_format);
 
         let (tx, rx) = mpsc::channel();
@@ -49,7 +53,14 @@ impl AudioCapture {
             cpal::SampleFormat::F32 => device.build_input_stream(
                 &config,
                 move |data: &[f32], _: &_| {
-                    process_audio(data, channels, source_rate, target_rate, &tx, &mut resampler_state)
+                    process_audio(
+                        data,
+                        channels,
+                        source_rate,
+                        target_rate,
+                        &tx,
+                        &mut resampler_state,
+                    )
                 },
                 err_fn,
                 None,
@@ -58,7 +69,14 @@ impl AudioCapture {
                 &config,
                 move |data: &[i16], _: &_| {
                     let float_data: Vec<f32> = data.iter().map(|&s| s as f32 / 32768.0).collect();
-                    process_audio(&float_data, channels, source_rate, target_rate, &tx, &mut resampler_state)
+                    process_audio(
+                        &float_data,
+                        channels,
+                        source_rate,
+                        target_rate,
+                        &tx,
+                        &mut resampler_state,
+                    )
                 },
                 err_fn,
                 None,
@@ -66,8 +84,18 @@ impl AudioCapture {
             cpal::SampleFormat::U16 => device.build_input_stream(
                 &config,
                 move |data: &[u16], _: &_| {
-                    let float_data: Vec<f32> = data.iter().map(|&s| (s as f32 - 32768.0) / 32768.0).collect();
-                    process_audio(&float_data, channels, source_rate, target_rate, &tx, &mut resampler_state)
+                    let float_data: Vec<f32> = data
+                        .iter()
+                        .map(|&s| (s as f32 - 32768.0) / 32768.0)
+                        .collect();
+                    process_audio(
+                        &float_data,
+                        channels,
+                        source_rate,
+                        target_rate,
+                        &tx,
+                        &mut resampler_state,
+                    )
                 },
                 err_fn,
                 None,
@@ -75,8 +103,16 @@ impl AudioCapture {
             cpal::SampleFormat::U8 => device.build_input_stream(
                 &config,
                 move |data: &[u8], _: &_| {
-                    let float_data: Vec<f32> = data.iter().map(|&s| (s as f32 - 128.0) / 128.0).collect();
-                    process_audio(&float_data, channels, source_rate, target_rate, &tx, &mut resampler_state)
+                    let float_data: Vec<f32> =
+                        data.iter().map(|&s| (s as f32 - 128.0) / 128.0).collect();
+                    process_audio(
+                        &float_data,
+                        channels,
+                        source_rate,
+                        target_rate,
+                        &tx,
+                        &mut resampler_state,
+                    )
                 },
                 err_fn,
                 None,
@@ -85,7 +121,7 @@ impl AudioCapture {
         };
 
         stream.play()?;
-        println!("✅ Audio capture started");
+        log::info!("✅ Audio capture started");
 
         Ok((stream, rx))
     }

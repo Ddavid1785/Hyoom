@@ -12,7 +12,7 @@ try {
   const text = await Deno.readTextFile(embeddingsFilePath);
   cachedTools = JSON.parse(text);
 } catch (err) {
-            console.error(`Failed to search for tools`, err);
+            //console.error(`Failed to search for tools`, err);
         return null
 }
   return cachedTools;

@@ -32,12 +32,13 @@ pub fn start_voice_thread(
     let (cmd_tx, cmd_rx) = mpsc::channel();
 
     std::thread::spawn(move || {
-        println!("🎙️ Voice thread started!");
+        log::info!("🎙️ Voice thread started!");
 
         // 1. Initialize Whisper
         let transcriber = match WhisperTranscriber::new(resource_dir.clone()) {
             Ok(t) => Arc::new(t),
             Err(e) => {
+                log::error!("Whisper init error: {}", e);
                 let _ = event_tx.send(VoiceEvent::Error(format!("Whisper init error: {}", e)));
                 return;
             }
@@ -47,6 +48,7 @@ pub fn start_voice_thread(
         let mut wakeword_detector = match WakeWordDetector::new(resource_dir) {
             Ok(w) => w,
             Err(e) => {
+                log::error!("Vosk init error: {}", e);
                 let _ = event_tx.send(VoiceEvent::Error(format!("Vosk init error: {}", e)));
                 return;
             }
@@ -56,6 +58,7 @@ pub fn start_voice_thread(
         let audio_capture = match AudioCapture::new() {
             Ok(ac) => ac,
             Err(e) => {
+                log::error!("Audio init error: {}", e);
                 let _ = event_tx.send(VoiceEvent::Error(format!("Audio init error: {}", e)));
                 return;
             }
@@ -65,6 +68,7 @@ pub fn start_voice_thread(
         let mut vad = match VoiceDetector::new() {
             Ok(v) => v,
             Err(e) => {
+                log::error!("VAD init error: {}", e);
                 let _ = event_tx.send(VoiceEvent::Error(format!("VAD init error: {}", e)));
                 return;
             }
@@ -74,6 +78,7 @@ pub fn start_voice_thread(
         let (_stream, audio_rx) = match audio_capture.start_recording() {
             Ok(s) => s,
             Err(e) => {
+                log::error!("Recording error: {}", e);
                 let _ = event_tx.send(VoiceEvent::Error(format!("Recording error: {}", e)));
                 return;
             }
@@ -88,11 +93,11 @@ pub fn start_voice_thread(
         let mut is_recording_command = false;
         let mut silence_counter = 0;
 
-        println!("👂 Listening for 'Hey Hyoom'...");
+        log::info!("👂 Listening for 'Hey Hyoom'...");
 
         loop {
             if let Ok(VoiceCommand::StartListening) = cmd_rx.try_recv() {
-                println!("🖱️ Manual Trigger!");
+                log::info!("🖱️ Manual Trigger!");
                 is_recording_command = true;
                 silence_counter = 0;
                 wakeword_detector.reset();
@@ -123,7 +128,7 @@ pub fn start_voice_thread(
 
                         // Silence detected -> Stop and Transcribe
                         if silence_counter >= SILENCE_THRESHOLD_FRAMES {
-                            println!("🛑 Command Complete. Transcribing...");
+                            log::debug!("🛑 Command Complete. Transcribing...");
 
                             let _ = event_tx.send(VoiceEvent::Transcribing);
 
@@ -135,17 +140,17 @@ pub fn start_voice_thread(
                                         || final_command.trim().is_empty()
                                         || final_command.to_lowercase().trim() == "you"
                                     {
-                                        println!("🗑️ Discarding empty/blank audio");
+                                        log::debug!("🗑️ Discarding empty/blank audio");
                                         let _ = event_tx.send(VoiceEvent::BackToListening);
                                     } else {
-                                        println!("📝 Result: '{}'", final_command);
+                                        log::info!("📝 Result: '{}'", final_command);
                                         let _ = event_tx
                                             .send(VoiceEvent::CommandTranscribed(final_command));
                                         let _ = event_tx.send(VoiceEvent::BackToListening);
                                     }
                                 }
                                 Err(e) => {
-                                    eprintln!("Transcribe Error: {}", e);
+                                    log::error!("Transcribe Error: {}", e);
                                     let _ = event_tx.send(VoiceEvent::BackToListening);
                                 }
                             }
@@ -159,7 +164,7 @@ pub fn start_voice_thread(
 
                         // We run Vosk on every chunk
                         if wakeword_detector.process_chunk(&frame_i16) {
-                            println!("🎯 Wake Word Detected!");
+                            log::info!("🎯 Wake Word Detected!");
                             let _ = event_tx.send(VoiceEvent::WakeWordDetected);
 
                             is_recording_command = true;

@@ -118,18 +118,18 @@ function parseLLMResponse(rawText: string): LLMResponse {
       );
       finalParsed = JSON.parse(fixed);
     } catch (_e2) {
-      console.log("ℹ️ Response was plain text (not JSON). Treating as conversation.");
+      //console.log("ℹ️ Response was plain text (not JSON). Treating as conversation.");
       return { content: rawText };
     }
   }
 
   try {
     const parsed = responseSchema.parse(finalParsed);
-    console.log("✅ STRUCTURED RESPONSE:", parsed);
+    //console.log("✅ STRUCTURED RESPONSE:", parsed);
     return parsed;
   } catch (err) {
-    console.warn("⚠️ LLM output failed Zod validation, returning plain content", err);
-    console.log(rawText)
+    //console.warn("⚠️ LLM output failed Zod validation, returning plain content", err);
+    //console.log(rawText)
     return { content: rawText };
   }
 }

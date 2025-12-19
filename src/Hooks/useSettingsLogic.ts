@@ -85,7 +85,7 @@ return false
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
     } catch (error) {
-      console.error("Failed to save settings:", error);
+      //console.error("Failed to save settings:", error);
       alert("Failed to save settings.");
     } finally {
       setIsSaving(false);

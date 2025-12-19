@@ -14,7 +14,7 @@ export async function loadSettings() {
     const raw = await Deno.readTextFile(`${SETTINGS_PATH}/settings.json`);
     settings = JSON.parse(raw);
   } catch (err) {
-    console.error("Failed to read settings:", err);
+    //console.error("Failed to read settings:", err);
     return {} as AppSettings;
   }
   return settings;
@@ -29,7 +29,7 @@ export async function agentLoop(
   let maxIterations = 10;
   
   while (maxIterations-- > 0) {
-    console.log(`🔄 Turn ${10 - maxIterations}`);
+   // console.log(`🔄 Turn ${10 - maxIterations}`);
     
     send({ type: "status", message: "Thinking..." });
 

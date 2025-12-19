@@ -19,7 +19,7 @@ export async function executeAICode(code: string): Promise<string> {
       }
     );
 
-    console.log("🚀 Executing code...");
+    //console.log("🚀 Executing code...");
     
     tempDir = await Deno.makeTempDir();
     const tempFile = join(tempDir, `code_${Date.now()}.ts`);
@@ -44,14 +44,14 @@ export async function executeAICode(code: string): Promise<string> {
     const errStr = new TextDecoder().decode(output.stderr);
 
     if (errStr) {
-      console.log("⚠️ Code had stderr output");
+      //console.log("⚠️ Code had stderr output");
       return `${outStr}\n[Error Log]: ${errStr}`;
     }
   if (!outStr.trim()) {
     return "⚠️ Tool returned data but nothing was printed.";
   }
     const finalResult = outStr.trim();
-    console.log("✅ Result:", finalResult);
+    //console.log("✅ Result:", finalResult);
     return finalResult;
 
   // deno-lint-ignore no-explicit-any
@@ -60,7 +60,7 @@ export async function executeAICode(code: string): Promise<string> {
         // deno-lint-ignore no-empty
         try { await Deno.remove(tempDir, { recursive: true }) } catch(_){}
     }
-    console.error("❌ Execution failed:", error);
+    //console.error("❌ Execution failed:", error);
     return `System Execution Error: ${error.message}`;
   }
 }

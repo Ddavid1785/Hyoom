@@ -16,11 +16,12 @@ impl WakeWordDetector {
         } else if prod_path.exists() {
             prod_path
         } else {
-            return Err(format!(
+            let err_msg = format!(
                 "Vosk model not found! Checked: \n1. {:?}\n2. {:?}",
                 dev_path, prod_path
-            )
-            .into());
+            );
+            log::error!("{}", err_msg);
+            return Err(err_msg.into());
         };
 
         let mut model_str = model_path.to_string_lossy().to_string();
@@ -33,7 +34,7 @@ impl WakeWordDetector {
             }
         }
 
-        println!("🧠 Loading Vosk Wake Word Model from: {}", model_str);
+        log::info!("🧠 Loading Vosk Wake Word Model from: {}", model_str);
 
         let model = Model::new(&*model_str).ok_or_else(|| {
             format!(
@@ -99,7 +100,12 @@ impl WakeWordDetector {
 
         if is_match {
             self.consecutive_matches += 1;
-            if self.consecutive_matches >= 4 {
+            log::debug!(
+                "Wake word partial match ({}/5): '{}'",
+                self.consecutive_matches,
+                clean
+            );
+            if self.consecutive_matches >= 5 {
                 self.consecutive_matches = 0;
                 self.recognizer.reset();
                 return true;

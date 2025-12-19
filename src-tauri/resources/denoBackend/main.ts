@@ -18,16 +18,16 @@ import { StreamUpdate } from "./mainUtils/utilTypes.ts";
   const cachedCount = cachedTools ? cachedTools.length : 0;
 
   if (!cachedTools || liveCount !== cachedCount) {
-    console.log(`⚠️ Change detected! Disk: ${liveCount} tools, Cache: ${cachedCount} tools.`);
-    console.log("♻️ Regenerating embeddings...");
+    //console.log(`⚠️ Change detected! Disk: ${liveCount} tools, Cache: ${cachedCount} tools.`);
+    //console.log("♻️ Regenerating embeddings...");
 
     await createToolValues(liveTools);
     
     resetToolCache();
     
-    console.log(`✅ Tool embeddings generated (${liveCount} tools).`);
+    //console.log(`✅ Tool embeddings generated (${liveCount} tools).`);
   } else {
-    console.log(`✅ Tool embeddings loaded and match disk (${cachedCount} tools).`);
+   // console.log(`✅ Tool embeddings loaded and match disk (${cachedCount} tools).`);
   }
 })();
 
@@ -69,7 +69,7 @@ const contextLimit = Math.max(10, settings.contextLimit || 40);
 
       messages.push(body.message);
 
-      console.log("user message: ", body.message);
+      //console.log("user message: ", body.message);
 
       const provider = createProvider(settings);
 
