@@ -8,6 +8,10 @@ import { AppSettings } from "../../../shared/sharedTypes";
 import { useImageUpload } from "../../../Hooks/useImageUpload";
 import MemoryModal from "../../Modals/MemoryModal";
 import InputHandler from "../../Prompt/InputHandler";
+import { useCustomModels } from "../../../Hooks/useCustomModels";
+import { Download } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { save } from "@tauri-apps/plugin-dialog";
 
 interface HomePageProps {
   messages: Message[];
@@ -66,7 +70,7 @@ export default function HomePage({
   clearTranscript,
   clearMessages,
   isAIProcessing,
-  handleTabChange
+  handleTabChange,
 }: HomePageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const quickModeEndRef = useRef<HTMLDivElement>(null);
@@ -89,6 +93,8 @@ export default function HomePage({
     getBase64Array,
   } = useImageUpload();
 
+  const { allModels } = useCustomModels();
+
   useEffect(() => {
     if (chatMode) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -96,6 +102,55 @@ export default function HomePage({
       quickModeEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMode, messages, thinkingText]);
+
+  const handleExportChat = async () => {
+    if (messages.length === 0) return;
+
+    // 1. Format the string
+    const exportContent = messages
+      .map((m) => {
+        const role = m.role === "user" ? "User" : "Assistant";
+        // Clean up content (remove JSON artifacts if any)
+        let content = m.content;
+        try {
+          if (content.trim().startsWith("{")) {
+            const parsed = JSON.parse(content);
+            if (parsed.content) content = parsed.content;
+            else if (parsed.metaToolCalls) content = `[Tool Call: ${JSON.stringify(parsed.metaToolCalls)}]`;
+          }
+        } catch (e) {}
+        
+        return `${role} said:\n${content}`;
+      })
+      .join("\n\n--------------------------------------------------\n\n");
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const fileName = `hyoom-chat-${timestamp}.txt`;
+
+    try {
+      // Try using Tauri Dialog
+      const filePath = await save({
+        defaultPath: fileName,
+        filters: [{ name: "Text Files", extensions: ["txt"] }],
+      });
+
+      if (filePath) {
+        await invoke("save_chat_file", { path: filePath, content: exportContent });
+        alert("Chat exported successfully!");
+      }
+    } catch (err) {
+      // Fallback: Browser Blob download
+      const blob = new Blob([exportContent], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
   const inputHandlerProps = {
     onSendMessage,
@@ -125,7 +180,8 @@ export default function HomePage({
     setMemoryModal: setIsMemoryOpen,
     onClearContext: clearMessages,
     isAIProcessing: isAIProcessing,
-    handleTabChange: handleTabChange
+    handleTabChange: handleTabChange,
+    allModels: allModels,
   };
 
   return (
@@ -145,7 +201,28 @@ export default function HomePage({
           onClose={() => setIsMemoryOpen(false)}
         />
 
-        <ModeToggle chatMode={chatMode} onToggle={onToggleChatMode} />
+          <div className="relative w-full max-w-3xl mx-auto flex items-center justify-center mb-6 z-10">
+          
+          {/* 1. Toggle Centered */}
+          <ModeToggle chatMode={chatMode} onToggle={onToggleChatMode} />
+          
+          {/* 2. Export Button Absolutely Positioned Right */}
+          <button
+            onClick={handleExportChat}
+            disabled={messages.length === 0}
+            className="
+              absolute right-0 top-1/2 -translate-y-1/2
+              p-2.5 rounded-xl bg-zinc-900/50 border border-zinc-800 
+              text-zinc-400 hover:text-white hover:bg-zinc-800 
+              hover:border-zinc-700 transition-all duration-200
+              disabled:opacity-30 disabled:cursor-not-allowed
+              cursor-pointer
+            "
+            title="Export chat to text file"
+          >
+            <Download size={20} />
+          </button>
+        </div>
 
         <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col min-h-0">
           <AnimatePresence mode="wait">

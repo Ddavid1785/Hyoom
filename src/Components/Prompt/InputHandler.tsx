@@ -2,7 +2,7 @@ import { useEffect, RefObject } from "react";
 import { AnimatePresence } from "framer-motion";
 import ImagePreview from "./ImagePreview";
 import { ImageData, Prompt, Tab, VoiceStatus } from "../../types";
-import { AppSettings } from "../../shared/sharedTypes";
+import { AppSettings, Model } from "../../shared/sharedTypes";
 import VoiceInputOverlay from "./VoiceOverlay";
 import InputToolbar from "./InputToolbar";
 import { useToast } from "../../Context/ToastContext";
@@ -36,6 +36,7 @@ interface InputHandlerProps {
   onClearContext: () => Promise<void>;
   isAIProcessing: boolean;
   handleTabChange: (newTab: Tab) => void;
+  allModels: Model[]
 }
 
 export default function InputHandler({
@@ -66,7 +67,8 @@ export default function InputHandler({
   setMemoryModal,
   onClearContext,
   isAIProcessing,
-  handleTabChange
+  handleTabChange,
+  allModels
 }: InputHandlerProps) {
 
   const { addToast } = useToast();
@@ -188,6 +190,7 @@ useEffect(() => {
           handleSubmit={handleSubmit}
           isAIProcessing={isAIProcessing}
           handleTabChange={handleTabChange}
+          allModels={allModels}
         />
       </div>
     </div>

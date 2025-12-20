@@ -71,7 +71,7 @@ const contextLimit = Math.max(10, settings.contextLimit || 40);
 
       //console.log("user message: ", body.message);
 
-      const provider = createProvider(settings);
+      const provider = await createProvider(settings);
 
       runningSummary =  await manageContext(provider, contextLimit, settings, messages, runningSummary);
  

@@ -1,3 +1,5 @@
+mod chat_exporter;
+mod custom_models_manager;
 mod memory_manager;
 mod settings;
 mod types;
@@ -25,6 +27,7 @@ fn trigger_voice_listening(state: State<VoiceSender>) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_http::init())
         .setup(|app| {
@@ -91,7 +94,10 @@ pub fn run() {
             settings::save_settings,
             trigger_voice_listening,
             memory_manager::load_memories,
-            memory_manager::delete_memory
+            memory_manager::delete_memory,
+            custom_models_manager::load_custom_models,
+            custom_models_manager::save_custom_models,
+            chat_exporter::save_chat_file
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

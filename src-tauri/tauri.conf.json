@@ -40,8 +40,9 @@
             "core:event:allow-listen",
             "core:event:default",
             "http:default",
-            "http:allow-fetch"
-          ]
+            "http:allow-fetch",
+            "dialog:default"         
+           ]
         },
         {
           "identifier": "http-capability",
@@ -55,7 +56,12 @@
                 { "url": "https://api.anthropic.com/*" },
                 { "url": "https://generativelanguage.googleapis.com/*" },
                 { "url": "https://api.search.brave.com/*" },
-                { "url": "https://www.googleapis.com/*" }
+                { "url": "https://www.googleapis.com/*" },
+                { "url": "http://localhost:11434/*" },
+                { "url": "http://localhost:1234/*" },
+                { "url": "https://openrouter.ai/*" },
+                { "url": "https://api.groq.com/*" },
+                { "url": "https://api.moonshot.ai/*" }
               ]
             }
           ]

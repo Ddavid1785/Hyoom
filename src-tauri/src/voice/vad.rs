@@ -6,10 +6,7 @@ pub struct VoiceDetector {
 
 impl VoiceDetector {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let vad = Vad::new_with_rate_and_mode(
-            webrtc_vad::SampleRate::Rate16kHz,
-            VadMode::Quality,
-        );
+        let vad = Vad::new_with_rate_and_mode(webrtc_vad::SampleRate::Rate16kHz, VadMode::Quality);
 
         Ok(Self { vad })
     }

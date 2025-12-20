@@ -13,6 +13,9 @@ interface Props {
   onSelect: (modelId: string) => void;
   creatorIcons?: Record<string, string>;
   maxQuickOptions?: number;
+  // Made optional (?)
+  customModels?: Model[];
+  onRemove?: (modelId: string) => void;
 }
 
 export default function LLMSelect({
@@ -21,12 +24,14 @@ export default function LLMSelect({
   onSelect,
   creatorIcons = {},
   maxQuickOptions = 4,
+  customModels,
+  onRemove,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
-  
-  const position = useAutoFlip(ref, open); 
+
+  const position = useAutoFlip(ref, open);
   const isFlipped = position === "top";
 
   useEffect(() => {
@@ -57,20 +62,20 @@ export default function LLMSelect({
 
   return (
     <div className="relative font-Inter" ref={ref}>
-      <LLMSelectTrigger 
-        selected={selected} 
-        isOpen={open} 
-        onClick={() => setOpen((v) => !v)} 
+      <LLMSelectTrigger
+        selected={selected}
+        isOpen={open}
+        onClick={() => setOpen((v) => !v)}
       />
 
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ 
-              opacity: 0, 
-              y: isFlipped ? 10 : -10, 
-              scale: 0.96, 
-              width: 320 
+            initial={{
+              opacity: 0,
+              y: isFlipped ? 10 : -10,
+              scale: 0.96,
+              width: 320,
             }}
             animate={{
               opacity: 1,
@@ -78,10 +83,10 @@ export default function LLMSelect({
               scale: 1,
               width: expanded ? 500 : 320,
             }}
-            exit={{ 
-              opacity: 0, 
-              y: isFlipped ? 10 : -10, 
-              scale: 0.96 
+            exit={{
+              opacity: 0,
+              y: isFlipped ? 10 : -10,
+              scale: 0.96,
             }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
             className={`
@@ -93,7 +98,7 @@ export default function LLMSelect({
               origin-${isFlipped ? "bottom-left" : "top-left"}
             `}
             style={{
-              minWidth: "320px" 
+              minWidth: "320px",
             }}
           >
             <div className="flex justify-between items-center px-4 py-3 border-b border-blue-500/10">
@@ -135,17 +140,19 @@ export default function LLMSelect({
             <div className="p-3 max-h-[400px] overflow-y-auto overflow-x-hidden custom-scrollbar">
               <AnimatePresence mode="wait">
                 {!expanded ? (
-                  <LLMCompactList 
-                    options={quickOptions} 
-                    selectedId={selected?.id} 
-                    onSelect={handleSelect} 
+                  <LLMCompactList
+                    options={quickOptions}
+                    selectedId={selected?.id}
+                    onSelect={handleSelect}
                   />
                 ) : (
-                  <LLMExpandedGrid 
+                  <LLMExpandedGrid
                     groupedChoices={groupedChoices}
                     creatorIcons={creatorIcons}
                     selectedId={selected?.id}
                     onSelect={handleSelect}
+                    customModels={customModels} // Passed down (can be undefined)
+                    onRemove={onRemove} // Passed down (can be undefined)
                   />
                 )}
               </AnimatePresence>

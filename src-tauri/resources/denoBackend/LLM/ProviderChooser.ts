@@ -9,8 +9,9 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import type { LanguageModel } from "ai";
 import { AppSettings, InferenceProviderType, LLMMessage } from "../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "./LLMtypes.ts";
-import { getModelIdForProvider, providerDefinitions } from "./LLMChoices.ts";
+import { getModelIdForProvider } from "./LLMUtils.ts";
 import { z } from "zod"
+import { providerDefinitions } from "./LLMStatic.ts";
 
 const metaToolCallsSchema = z.array(
   z.discriminatedUnion("name", [
@@ -134,10 +135,10 @@ function parseLLMResponse(rawText: string): LLMResponse {
   }
 }
 
-export function createProvider(settings: AppSettings): LLMProvider {
+export async function createProvider(settings: AppSettings): Promise<LLMProvider> {
   const { activeModelId, activeProviderId } = settings;
   
-  const providerModelId = getModelIdForProvider(activeModelId, activeProviderId as InferenceProviderType);
+  const providerModelId = await getModelIdForProvider(activeModelId, activeProviderId as InferenceProviderType);
   if (!providerModelId) {
     throw new Error(`Provider ${activeProviderId} doesn't support model ${activeModelId}`);
   }

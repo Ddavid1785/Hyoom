@@ -42,7 +42,7 @@ impl WhisperTranscriber {
         // Load Base
         let params = WhisperContextParameters::default();
         let ctx_base = WhisperContext::new_with_params(&base_model_path.to_string_lossy(), params)
-                 .map_err(|e| {
+            .map_err(|e| {
                 log::error!("Failed to load Base model: {}", e);
                 format!("Failed to load Base model: {}", e)
             })?;
@@ -63,7 +63,7 @@ impl WhisperTranscriber {
         ctx: &WhisperContext,
         audio: &[f32],
     ) -> Result<String, Box<dyn std::error::Error>> {
-    log::debug!("Starting Whisper inference on {} samples...", audio.len());
+        log::debug!("Starting Whisper inference on {} samples...", audio.len());
 
         let mut state = ctx
             .create_state()
@@ -80,12 +80,10 @@ impl WhisperTranscriber {
         params.set_print_realtime(false);
         params.set_print_timestamps(false);
 
-        state
-            .full(params, audio)
-                      .map_err(|e| {
-                log::error!("Whisper inference failed: {}", e);
-                format!("Whisper inference failed: {}", e)
-            })?;
+        state.full(params, audio).map_err(|e| {
+            log::error!("Whisper inference failed: {}", e);
+            format!("Whisper inference failed: {}", e)
+        })?;
 
         let num_segments = state.full_n_segments();
         let mut text = String::new();
@@ -99,8 +97,8 @@ impl WhisperTranscriber {
             }
         }
 
-           let result = text.trim().to_string();
-        
+        let result = text.trim().to_string();
+
         if !result.is_empty() {
             log::debug!("Transcribed: '{}'", result);
         }

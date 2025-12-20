@@ -21,7 +21,7 @@ pub fn load_settings() -> Result<AppSettings, String> {
             log::error!("Failed to read settings file: {}", e);
             format!("Failed to read settings: {}", e)
         })?;
-        
+
         let settings = serde_json::from_str(&content).map_err(|e| {
             log::error!("Failed to parse settings JSON: {}", e);
             format!("Failed to parse settings: {}", e)
@@ -40,12 +40,11 @@ pub fn load_settings() -> Result<AppSettings, String> {
 #[tauri::command]
 pub fn save_settings(settings: AppSettings) -> Result<(), String> {
     let path = get_settings_path();
-    let json = serde_json::to_string_pretty(&settings)
-        .map_err(|e| {
-            log::error!("Failed to serialize settings: {}", e);
-            format!("Failed to serialize settings: {}", e)
-        })?;
-    
+    let json = serde_json::to_string_pretty(&settings).map_err(|e| {
+        log::error!("Failed to serialize settings: {}", e);
+        format!("Failed to serialize settings: {}", e)
+    })?;
+
     fs::write(&path, json).map_err(|e| {
         log::error!("Failed to write settings file: {}", e);
         format!("Failed to write settings: {}", e)

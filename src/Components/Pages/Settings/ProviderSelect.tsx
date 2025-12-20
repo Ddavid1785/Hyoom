@@ -1,6 +1,6 @@
 import { Server } from "lucide-react";
 import { InferenceProviderType } from "../../../shared/sharedTypes";
-import { providerDefinitions } from "../../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
+import { providerDefinitions } from "../../../../src-tauri/resources/denoBackend/LLM/LLMStatic";
 
 interface ProviderSelectProps {
   providers: InferenceProviderType[];

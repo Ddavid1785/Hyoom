@@ -1,9 +1,21 @@
-import { ArrowUpCircle, BrainCircuit, Eraser, Image, Mic, Settings2, Sparkles } from "lucide-react";
-import { AppSettings, InferenceProviderType } from "../../shared/sharedTypes";
+import {
+  ArrowUpCircle,
+  BrainCircuit,
+  Eraser,
+  Image,
+  Mic,
+  Settings2,
+  Sparkles,
+} from "lucide-react";
+import {
+  AppSettings,
+  InferenceProviderType,
+  Model,
+} from "../../shared/sharedTypes";
 import ContextStealthSlider from "./ContextSlider";
-import { findModel, getModelsForProvider } from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
 import LLMSelect from "../Pages/Settings/LLMSelectDropdown";
 import { Tab } from "../../types";
+import { useMemo } from "react";
 
 interface InputToolbarProps {
   hasImages: boolean;
@@ -19,6 +31,7 @@ interface InputToolbarProps {
   handleSubmit: () => void;
   isAIProcessing: boolean;
   handleTabChange: (newTab: Tab) => void;
+  allModels: Model[];
 }
 
 export default function InputToolbar({
@@ -34,31 +47,41 @@ export default function InputToolbar({
   text,
   handleSubmit,
   isAIProcessing,
-  handleTabChange
+  handleTabChange,
+  allModels,
 }: InputToolbarProps) {
-
   const hasProvider = savedSettings?.activeProviderId;
-  
-  const availableModels = hasProvider
-    ? getModelsForProvider(savedSettings.activeProviderId as InferenceProviderType)
-    : [];
 
-  const selectedModel = savedSettings && hasProvider
-    ? findModel(savedSettings.activeModelId)
-    : null;
+  const availableModels = useMemo(() => {
+    if (!hasProvider || !savedSettings) return [];
+    return allModels.filter(
+      (m) =>
+        m.providerModelIds[
+          savedSettings.activeProviderId as InferenceProviderType
+        ] !== null
+    );
+  }, [allModels, hasProvider, savedSettings]);
 
-  const creatorIcons: Record<string, string> = {};
-  availableModels.forEach(model => {
-    if (!creatorIcons[model.creator]) {
-      creatorIcons[model.creator] = model.iconPath;
-    }
-  });
+const selectedModel = useMemo(() => {
+    if (!savedSettings || !hasProvider) return null;
+    return allModels.find(m => m.id === savedSettings.activeModelId) || null;
+  }, [allModels, savedSettings, hasProvider]);
+
+  const creatorIcons = useMemo(() => {
+    const icons: Record<string, string> = {};
+    availableModels.forEach(model => {
+      if (!icons[model.creator]) {
+        icons[model.creator] = model.iconPath;
+      }
+    });
+    return icons;
+  }, [availableModels]);
 
   const handleModelSelect = async (modelId: string) => {
     if (savedSettings) {
-      await saveSettings({ 
-        ...savedSettings, 
-        activeModelId: modelId 
+      await saveSettings({
+        ...savedSettings,
+        activeModelId: modelId,
       });
     }
   };
@@ -113,7 +136,7 @@ export default function InputToolbar({
           </button>
 
           {/* Divider */}
-           <div className="w-px h-6 bg-zinc-800 mx-1" />
+          <div className="w-px h-6 bg-zinc-800 mx-1" />
 
           {/* 5. Model Selection & Context Slider */}
           {loading || !savedSettings ? (
@@ -123,7 +146,7 @@ export default function InputToolbar({
             </div>
           ) : !hasProvider ? (
             <button
-              onClick={() => handleTabChange("settings")} 
+              onClick={() => handleTabChange("settings")}
               className="
                 flex items-center gap-2.5 px-4 py-3 rounded-xl
                 bg-amber-500/5 backdrop-blur-xl 
@@ -135,10 +158,13 @@ export default function InputToolbar({
               "
             >
               <div className="p-0.5 rounded-md bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
-                 <Settings2 size={16} className="text-amber-400" />
+                <Settings2 size={16} className="text-amber-400" />
               </div>
               <span className="text-sm font-medium">Configure Provider</span>
-              <Sparkles size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-300 ml-1" />
+              <Sparkles
+                size={14}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-300 ml-1"
+              />
             </button>
           ) : (
             <div className="flex items-center">

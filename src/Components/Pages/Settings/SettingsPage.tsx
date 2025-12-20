@@ -55,6 +55,7 @@ export default function SettingsPage({
     justSaved,
     handleSave,
     handleReset,
+    customModelLogic
   } = useSettingsLogic(savedSettings, saveSettings);
 
   return (
@@ -113,6 +114,12 @@ export default function SettingsPage({
                 <LLMSection
                   settings={localSettings}
                   onChange={setLocalSettings}
+                  allModels={customModelLogic.allModels}
+                  customModels={customModelLogic.customModels} 
+                  onAddModel={customModelLogic.addModel}
+                  onRemoveModel={customModelLogic.removeModel}
+                  fetchOllama={customModelLogic.fetchOllamaModels}
+                  fetchLMStudio={customModelLogic.fetchLMStudioModels}
                 />
                 <SearchSection
                   settings={localSettings}

@@ -46,4 +46,23 @@ pub struct StoredMemory {
     pub timestamp: String,
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomModel {
+    pub id: String,
+    pub display_name: String,
+    pub creator: String,
+    pub icon_path: String,
+    pub capabilities: LLMCapabilities,
+    pub provider_model_ids: std::collections::HashMap<String, Option<String>>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct LLMCapabilities {
+    pub vision: bool,
+    pub image_generation: bool,
+    pub function_calling: bool,
+}
+
 pub struct DenoProcess(pub Mutex<Option<Child>>);

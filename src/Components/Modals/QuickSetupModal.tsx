@@ -2,16 +2,12 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, X } from "lucide-react";
 import { AppSettings, InferenceProviderType } from "../../shared/sharedTypes";
-import {
-  models,
-  providerDefinitions,
-  getProvidersForModel,
-  findModel,
-} from "../../../src-tauri/resources/denoBackend/LLM/LLMChoices";
+import { providerDefinitions } from "../../../src-tauri/resources/denoBackend/LLM/LLMStatic";
 import { isValidApiKey } from "../../Utils/apiKeyValidation";
 import LLMSelect from "../Pages/Settings/LLMSelectDropdown";
 import ProviderSelect from "../Pages/Settings/ProviderSelect";
 import SettingsInputField from "../Pages/Settings/SettingsInputField";
+import { useCustomModels } from "../../Hooks/useCustomModels";
 
 interface QuickSetupModalProps {
   settings: AppSettings;
@@ -26,11 +22,20 @@ export default function QuickSetupModal({
 }: QuickSetupModalProps) {
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [isSaving, setIsSaving] = useState(false);
+  const { allModels } = useCustomModels();
 
-  const selectedModel = findModel(localSettings.activeModelId);
-  const availableProviders = selectedModel
-    ? getProvidersForModel(localSettings.activeModelId)
-    : [];
+  const selectedModel = useMemo(
+    () => allModels.find((m) => m.id === localSettings.activeModelId),
+    [allModels, localSettings.activeModelId]
+  );
+
+  const availableProviders = useMemo(() => {
+    if (!selectedModel) return [];
+    return Object.entries(selectedModel.providerModelIds)
+      .filter(([_, id]) => id !== null)
+      .map(([providerId]) => providerId as InferenceProviderType);
+  }, [selectedModel]);
+
   const currentProvider =
     localSettings.activeProviderId as InferenceProviderType;
   const providerConfig = localSettings.inferenceProviders[currentProvider];
@@ -59,10 +64,13 @@ export default function QuickSetupModal({
   };
 
   const handleModelChange = (modelId: string) => {
-    const newModel = findModel(modelId);
+    const newModel = allModels.find(m => m.id === modelId);
     if (!newModel) return;
 
-    const supportedProviders = getProvidersForModel(modelId);
+    const supportedProviders = Object.entries(newModel.providerModelIds)
+      .filter(([_, id]) => id !== null)
+      .map(([pid]) => pid as InferenceProviderType);
+
     const newProvider = supportedProviders.includes(
       currentProvider as InferenceProviderType
     )
@@ -98,7 +106,7 @@ export default function QuickSetupModal({
   };
 
   const creatorIcons: Record<string, string> = {};
-  models.forEach((model) => {
+  allModels.forEach((model) => {
     if (!creatorIcons[model.creator]) {
       creatorIcons[model.creator] = model.iconPath;
     }
@@ -148,7 +156,7 @@ export default function QuickSetupModal({
                 Choose Model
               </label>
               <LLMSelect
-                models={models}
+                models={allModels}
                 creatorIcons={creatorIcons}
                 selected={selectedModel || null}
                 onSelect={handleModelChange}

@@ -39,8 +39,12 @@ impl AudioCapture {
         let sample_format = supported_config.sample_format();
         let config: cpal::StreamConfig = supported_config.into();
 
-           log::info!("🔧 Device Config: {:?}Hz, {:?} channels, {:?}", 
-                 config.sample_rate.0, config.channels, sample_format);
+        log::info!(
+            "🔧 Device Config: {:?}Hz, {:?} channels, {:?}",
+            config.sample_rate.0,
+            config.channels,
+            sample_format
+        );
 
         let (tx, rx) = mpsc::channel();
         let target_rate = self.target_sample_rate as f32;
