@@ -4,29 +4,44 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
 import { createOllama } from "ollama-ai-provider-v2";
-import { createOpenAICompatible  } from "@ai-sdk/openai-compatible"
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import type { LanguageModel } from "ai";
-import { AppSettings, InferenceProviderType, LLMMessage } from "../shared/sharedTypes.ts";
+import {
+  AppSettings,
+  InferenceProviderType,
+  LLMMessage,
+} from "../shared/sharedTypes.ts";
 import { LLMProvider, LLMResponse } from "./LLMtypes.ts";
 import { getModelIdForProvider } from "./LLMUtils.ts";
-import { z } from "zod"
+import { z } from "zod";
 import { providerDefinitions } from "./LLMStatic.ts";
 
-const metaToolCallsSchema = z.array(
-  z.discriminatedUnion("name", [
-    z.object({ name: z.literal("tool_search"), args: z.object({ query: z.string() }) }),
-    z.object({ name: z.literal("add_memory"), args: z.object({ content: z.string() }) }),
-    z.object({ name: z.literal("search_memory"), args: z.object({ query: z.string() }) }),
-  ])
-).optional();
+const metaToolCallsSchema = z
+  .array(
+    z.discriminatedUnion("name", [
+      z.object({
+        name: z.literal("tool_search"),
+        args: z.object({ query: z.string() }),
+      }),
+      z.object({
+        name: z.literal("add_memory"),
+        args: z.object({ content: z.string() }),
+      }),
+      z.object({
+        name: z.literal("search_memory"),
+        args: z.object({ query: z.string() }),
+      }),
+    ])
+  )
+  .optional();
 
 const responseSchema = z.object({
   thought: z.string().optional(),
   content: z.string().optional(),
   code: z.string().optional(),
   metaToolCalls: metaToolCallsSchema,
-  done: z.boolean().optional()
+  done: z.boolean().optional(),
 });
 
 function createModel(
@@ -35,63 +50,66 @@ function createModel(
   config: { apiKey?: string; customBaseUrl?: string }
 ): LanguageModel {
   const definition = providerDefinitions[providerId];
-  
+
   switch (providerId) {
     case "openai": {
       const provider = createOpenAI({
         apiKey: config.apiKey,
-        baseURL: config.customBaseUrl
+        baseURL: config.customBaseUrl,
       });
       return provider(modelId);
     }
-      
+
     case "anthropic": {
       const provider = createAnthropic({
         apiKey: config.apiKey,
-        baseURL: config.customBaseUrl
+        baseURL: config.customBaseUrl,
       });
       return provider(modelId);
     }
-      
+
     case "google": {
       const provider = createGoogleGenerativeAI({
         apiKey: config.apiKey,
-        baseURL: config.customBaseUrl
+        baseURL: config.customBaseUrl,
       });
       return provider(modelId);
     }
-      
+
     case "groq": {
       const provider = createGroq({
         apiKey: config.apiKey,
-        baseURL: config.customBaseUrl || definition.defaultBaseUrl
+        baseURL: config.customBaseUrl || definition.defaultBaseUrl,
       });
       return provider(modelId);
     }
-      
+
     case "openrouter": {
       const provider = createOpenRouter({
         apiKey: config.apiKey,
       });
       return provider(modelId);
     }
-      
-case "ollama": {
-  const provider = createOllama({
-    baseURL: config.customBaseUrl 
-      ?? providerDefinitions.ollama.defaultBaseUrl
-  });
 
-  return provider(modelId);
-}
-      case "lmstudio": {
-  const provider = createOpenAICompatible({
-    name:"lmstudio",
-    baseURL: config.customBaseUrl || providerDefinitions.lmstudio.defaultBaseUrl || ""
-  });
+    case "ollama": {
+      const provider = createOllama({
+        baseURL:
+          config.customBaseUrl ?? providerDefinitions.ollama.defaultBaseUrl,
+      });
 
-  return provider(modelId);
-}
+      return provider(modelId);
+    }
+    case "lmstudio": {
+      const provider = createOpenAICompatible({
+        name: "lmstudio",
+        baseURL:
+          config.customBaseUrl ||
+          providerDefinitions.lmstudio.defaultBaseUrl ||
+          "",
+      });
+
+      return provider(modelId);
+    }
 
     default:
       throw new Error(`Unsupported provider: ${providerId}`);
@@ -114,8 +132,9 @@ function parseLLMResponse(rawText: string): LLMResponse {
   } catch (_e) {
     try {
       const fixed = cleaned.replace(
-        /("code":\s*")([\s\S]*?)("(?:\s*,\s*"|\s*}))/g, 
-        (_match, start, code, end) => `${start}${code.replace(/\n/g, "\\n").replace(/\r/g, "")}${end}`
+        /("code":\s*")([\s\S]*?)("(?:\s*,\s*"|\s*}))/g,
+        (_match, start, code, end) =>
+          `${start}${code.replace(/\n/g, "\\n").replace(/\r/g, "")}${end}`
       );
       finalParsed = JSON.parse(fixed);
     } catch (_e2) {
@@ -135,36 +154,47 @@ function parseLLMResponse(rawText: string): LLMResponse {
   }
 }
 
-export async function createProvider(settings: AppSettings): Promise<LLMProvider> {
+export async function createProvider(
+  settings: AppSettings
+): Promise<LLMProvider> {
   const { activeModelId, activeProviderId } = settings;
-  
-  const providerModelId = await getModelIdForProvider(activeModelId, activeProviderId as InferenceProviderType);
+
+  const providerModelId = await getModelIdForProvider(
+    activeModelId,
+    activeProviderId as InferenceProviderType
+  );
   if (!providerModelId) {
-    throw new Error(`Provider ${activeProviderId} doesn't support model ${activeModelId}`);
+    throw new Error(
+      `Provider ${activeProviderId} doesn't support model ${activeModelId}`
+    );
   }
-  
+
   const providerConfig = settings.inferenceProviders[activeProviderId] ?? {};
-  if (!providerConfig && (activeProviderId!=="ollama" && activeProviderId!=="lmstudio")) {
+  if (
+    !providerConfig &&
+    activeProviderId !== "ollama" &&
+    activeProviderId !== "lmstudio"
+  ) {
     throw new Error(`No configuration found for provider: ${activeProviderId}`);
   }
-  
+
   const model = createModel(
     activeProviderId as InferenceProviderType,
     providerModelId,
     providerConfig
   );
-  
+
   return {
     call: async (messages: LLMMessage[]): Promise<LLMResponse> => {
       const result = await generateText({
         model,
-        messages: messages.map(msg => ({
+        messages: messages.map((msg) => ({
           role: msg.role === "assistant" ? "assistant" : "user",
-          content: msg.content
-        }))
+          content: msg.content,
+        })),
       });
 
       return parseLLMResponse(result.text);
-    }
+    },
   };
 }

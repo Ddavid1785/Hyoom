@@ -12,11 +12,16 @@ import { useAppSettings } from "./Hooks/useAppSettings";
 import { useVoiceAssistant } from "./Hooks/useVoiceAssistant";
 import QuickSetupModal from "./Components/Modals/QuickSetupModal";
 import HomePage from "./Components/Pages/Home/HomePage";
-import { AppSettings } from "./shared/sharedTypes";
+import { useQuickSetup } from "./Hooks/useQuickSetup";
 
 export default function App() {
-  const { messages, handleSendMessage, thinkingText, clearMessages, isAIProcessing } =
-    useHandleSendMessage();
+  const {
+    messages,
+    handleSendMessage,
+    thinkingText,
+    clearMessages,
+    isAIProcessing,
+  } = useHandleSendMessage();
   const [chatMode, setChatMode] = useState(false);
   const {
     activeTab,
@@ -35,9 +40,8 @@ export default function App() {
     clearTranscript,
   } = useVoiceAssistant();
 
- const [hasSeenSetup, setHasSeenSetup] = useState(() => {
-    return localStorage.getItem("hyoom_setup_seen") === "true";
-  });
+  const { hasSeenSetup, skipSetup, completeSetup } =
+    useQuickSetup(saveSettings);
 
   useEffect(() => {
     if (
@@ -48,26 +52,15 @@ export default function App() {
     }
   }, [status, activeTab, handleTabChange]);
 
-const showSetup = !loadingSettings && settings && !hasSeenSetup;
-
-const handleSkipSetup = () => {
-    localStorage.setItem("hyoom_setup_seen", "true");
-    setHasSeenSetup(true);
-  };
-
-  const handleCompleteSetup = async (s: AppSettings) => {
-    await saveSettings(s);
-    localStorage.setItem("hyoom_setup_seen", "true");
-    setHasSeenSetup(true);
-  };
+  const showSetup = !loadingSettings && settings && !hasSeenSetup;
 
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center relative overflow-hidden">
-     {showSetup && (
-        <QuickSetupModal 
-          settings={settings} 
-          saveSettings={handleCompleteSetup}
-          onSkip={handleSkipSetup}
+      {showSetup && (
+        <QuickSetupModal
+          settings={settings}
+          saveSettings={completeSetup}
+          onSkip={skipSetup}
         />
       )}
       <AnimatedBackground />
@@ -78,7 +71,7 @@ const handleSkipSetup = () => {
         <AnimatePresence mode="wait" custom={direction}>
           {activeTab === "chat" && (
             <HomePage
-            key="homepage"
+              key="homepage"
               messages={messages}
               onSendMessage={handleSendMessage}
               chatMode={chatMode}
@@ -129,7 +122,7 @@ const handleSkipSetup = () => {
             </motion.div>
           )}
 
-             {activeTab === "settings" && (
+          {activeTab === "settings" && (
             <SettingsPage
               key="settings"
               savedSettings={settings}

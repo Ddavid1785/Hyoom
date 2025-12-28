@@ -65,7 +65,7 @@ Deno.serve({ port: 3000 }, async (req) => {
       const body = await req.json();
       const settings = await loadSettings();
 
-const contextLimit = Math.max(10, settings.contextLimit || 40);
+const contextLimit = Math.max(10, settings.contextLimit || 50);
 
       messages.push(body.message);
 

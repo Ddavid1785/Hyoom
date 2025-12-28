@@ -14,7 +14,7 @@ export default function ContextStealthSlider({
   const MIN = 10;
   const MAX = 100;
 
-  const [localValue, setLocalValue] = useState(settings.contextLimit || 40);
+  const [localValue, setLocalValue] = useState(settings.contextLimit || 50);
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {

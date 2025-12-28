@@ -1,4 +1,8 @@
-import { InferenceProviderType, InferenceProviderDefinition, Model } from "../shared/sharedTypes.ts";
+import {
+  InferenceProviderType,
+  InferenceProviderDefinition,
+  Model,
+} from "../shared/sharedTypes.ts";
 
 export const providerDefinitions: Record<
   InferenceProviderType,
@@ -68,21 +72,21 @@ export const providerDefinitions: Record<
     supportsCustomBaseUrl: false,
     defaultBaseUrl: "",
   },
-  "" : {
+  "": {
     id: "",
     name: "",
     iconPath: "",
     requiresApiKey: false,
     supportsCustomBaseUrl: false,
     defaultBaseUrl: "",
-  }
+  },
 };
 
 export const models: Model[] = [
   // OpenAI Models
   {
-    id: "gpt-5",
-    displayName: "GPT-5",
+    id: "gpt-5.2",
+    displayName: "GPT-5.2",
     creator: "OpenAI",
     iconPath: "/LLMProviderIcons/OpenAI/Openai.png",
     capabilities: {
@@ -91,8 +95,8 @@ export const models: Model[] = [
       functionCalling: true,
     },
     providerModelIds: {
-      openai: "gpt-5",
-      openrouter: "openai/gpt-5",
+      openai: "gpt-5.2",
+      openrouter: "openai/gpt-5.2",
       groq: null,
       anthropic: null,
       google: null,
@@ -102,8 +106,8 @@ export const models: Model[] = [
     },
   },
   {
-    id: "gpt-4.1",
-    displayName: "GPT-4.1",
+    id: "gpt-5 mini",
+    displayName: "GPT-5 mini",
     creator: "OpenAI",
     iconPath: "/LLMProviderIcons/OpenAI/Openai.png",
     capabilities: {
@@ -112,8 +116,8 @@ export const models: Model[] = [
       functionCalling: true,
     },
     providerModelIds: {
-      openai: "gpt-4.1",
-      openrouter: "openai/gpt-4.1",
+      openai: "gpt-5-mini",
+      openrouter: "openai/gpt-5 mini",
       groq: null,
       anthropic: null,
       google: null,
@@ -124,27 +128,6 @@ export const models: Model[] = [
   },
 
   // Anthropic Models
-  {
-    id: "claude-4.0-sonnet",
-    displayName: "Sonnet 4.0",
-    creator: "Anthropic",
-    iconPath: "/LLMProviderIcons/Anthropic/claude.png",
-    capabilities: {
-      vision: true,
-      imageGeneration: false,
-      functionCalling: true,
-    },
-    providerModelIds: {
-      anthropic: "claude-sonnet-4-0",
-      openrouter: "anthropic/claude-sonnet-4",
-      openai: null,
-      groq: null,
-      google: null,
-      ollama: null,
-      lmstudio: null,
-      moonshot: null,
-    },
-  },
   {
     id: "claude-4.5-sonnet",
     displayName: "Sonnet 4.5",
@@ -166,8 +149,71 @@ export const models: Model[] = [
       moonshot: null,
     },
   },
+  {
+    id: "claude-4.5-opus",
+    displayName: "Opus 4.5",
+    creator: "Anthropic",
+    iconPath: "/LLMProviderIcons/Anthropic/claude.png",
+    capabilities: {
+      vision: true,
+      imageGeneration: false,
+      functionCalling: true,
+    },
+    providerModelIds: {
+      anthropic: "claude-opus-4-5",
+      openrouter: "anthropic/claude-opus-4.5",
+      openai: null,
+      groq: null,
+      google: null,
+      ollama: null,
+      lmstudio: null,
+      moonshot: null,
+    },
+  },
 
   // Google Models
+    {
+    id: "gemini-3-pro",
+    displayName: "Gemini 3 Pro",
+    creator: "Google",
+    iconPath: "/LLMProviderIcons/Google/gemini.png",
+    capabilities: {
+      vision: true,
+      imageGeneration: false,
+      functionCalling: true,
+    },
+    providerModelIds: {
+      google: "gemini-3-pro-preview",
+      openrouter: "google/gemini-3-pro",
+      openai: null,
+      anthropic: null,
+      groq: null,
+      ollama: null,
+      lmstudio: null,
+      moonshot: null,
+    },
+  },
+  {
+    id: "gemini-3-flash",
+    displayName: "Gemini 3 Flash",
+    creator: "Google",
+    iconPath: "/LLMProviderIcons/Google/gemini.png",
+    capabilities: {
+      vision: true,
+      imageGeneration: false,
+      functionCalling: true,
+    },
+    providerModelIds: {
+      google: "gemini-3-flash-preview",
+      openrouter: "google/gemini-3-flash",
+      openai: null,
+      anthropic: null,
+      groq: null,
+      ollama: null,
+      lmstudio: null,
+      moonshot: null,
+    },
+  },
   {
     id: "gemini-2.5-pro",
     displayName: "Gemini 2.5 Pro",

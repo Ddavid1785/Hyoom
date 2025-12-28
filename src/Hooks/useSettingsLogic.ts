@@ -14,9 +14,9 @@ function areSettingsEqual(
   const obj2: any = { ...current };
 
   if (obj1.contextLimit === undefined || obj1.contextLimit === null)
-    obj1.contextLimit = 20;
+    obj1.contextLimit = 50;
   if (obj2.contextLimit === undefined || obj2.contextLimit === null)
-    obj2.contextLimit = 20;
+    obj2.contextLimit = 50;
 
   const sortKeys = (o: any) => {
     if (typeof o !== "object" || o === null) return o;

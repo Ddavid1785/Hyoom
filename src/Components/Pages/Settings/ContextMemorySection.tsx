@@ -11,7 +11,7 @@ export default function ContextMemorySection({
   settings,
   onChange,
 }: ContextMemorySectionProps) {
-  const value = settings.contextLimit || 40;
+  const value = settings.contextLimit || 50;
   const compression = settings.enableCompression || true;
 
   const getTier = (val: number) => {
