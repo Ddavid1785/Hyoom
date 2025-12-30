@@ -34,7 +34,7 @@ export async function agentLoop(
     send({ type: "status", message: "Thinking..." });
 
     const response: LLMResponse = await provider.call(contextMessages);
-
+    //console.log(response)
     if (response.metaToolCalls && response.metaToolCalls.length > 0) {
       const toolName = response.metaToolCalls[0].name === "tool_search" ? "Searching for tools..." : "Executing tool...";
       send({ type: "status", message: toolName });

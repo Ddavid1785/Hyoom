@@ -26,7 +26,7 @@ export async function executeMetaTools(tools: MetaToolCall[]): Promise<string[]>
       ]);
 
  //const toolsLog = foundTools
-        //.map(t => `${t.name} (${t.score.toFixed(2)})`)
+       // .map(t => `${t.name} (${t.score.toFixed(2)})`)
        // .join(", ");
         
       //console.log(`results for "${query}"\n tools: [${toolsLog}]\n memories: [${foundMemories}]`);

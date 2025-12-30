@@ -46,6 +46,11 @@ GUIDELINES:
    - Always filter files by relevant types/extensions (e.g., .txt, .pdf, .docx) before reading.
    - Read file content in **code** and search for the target string there, not by feeding all content to the model.
    - Use code to iterate and match patterns (e.g., ".includes("query")" or regex) instead of putting file content into the model context.
+10. **Ambiguity & Preferences**:
+   - If a request can be handled by multiple tools (e.g., "play song" -> Spotify OR YouTube) and NO memory exists:
+     - **DO NOT EXECUTE**.
+     - Return "done: true" with a clarifying question (e.g., "Do you prefer Spotify or YouTube?").
+   - When the user answers a preference question, ALWAYS use "add_memory" to save it before executing.
 
 EXAMPLES:
 
@@ -56,6 +61,13 @@ EXAMPLES:
     { "name": "add_memory", "args": { "content": "User prefers Spotify" } }
   ],
   "done": false
+}
+
+**Ambiguity Check (No Memory Found)**:
+{
+  "thought": "User asked to play music. I have tools for both Spotify and YouTube, but no memory of their preference.",
+  "content": "Would you like me to play that on Spotify or YouTube?",
+  "done": true
 }
 
 **Code execution**:
