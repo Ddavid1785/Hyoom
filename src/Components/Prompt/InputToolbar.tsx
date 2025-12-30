@@ -16,6 +16,7 @@ import ContextStealthSlider from "./ContextSlider";
 import LLMSelect from "../Pages/Settings/LLMSelectDropdown";
 import { Tab } from "../../types";
 import { useMemo } from "react";
+import TurnLimitStealthSlider from "./TurnLimitSlider";
 
 interface InputToolbarProps {
   hasImages: boolean;
@@ -62,14 +63,14 @@ export default function InputToolbar({
     );
   }, [allModels, hasProvider, savedSettings]);
 
-const selectedModel = useMemo(() => {
+  const selectedModel = useMemo(() => {
     if (!savedSettings || !hasProvider) return null;
-    return allModels.find(m => m.id === savedSettings.activeModelId) || null;
+    return allModels.find((m) => m.id === savedSettings.activeModelId) || null;
   }, [allModels, savedSettings, hasProvider]);
 
   const creatorIcons = useMemo(() => {
     const icons: Record<string, string> = {};
-    availableModels.forEach(model => {
+    availableModels.forEach((model) => {
       if (!icons[model.creator]) {
         icons[model.creator] = model.iconPath;
       }
@@ -90,7 +91,7 @@ const selectedModel = useMemo(() => {
     <div className="relative">
       <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/20 overflow-visible">
         {/* Left Side: Actions & Settings */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* 1. Image Upload */}
           <button
             onClick={openFilePicker}
@@ -175,10 +176,17 @@ const selectedModel = useMemo(() => {
                 onSelect={handleModelSelect}
               />
 
-              <ContextStealthSlider
-                settings={savedSettings}
-                saveSettings={saveSettings}
-              />
+              <div className="flex items-center pl-2 gap-4">
+                <ContextStealthSlider
+                  settings={savedSettings}
+                  saveSettings={saveSettings}
+                />
+
+                <TurnLimitStealthSlider
+                  settings={savedSettings}
+                  saveSettings={saveSettings}
+                />
+              </div>
             </div>
           )}
         </div>

@@ -11,7 +11,7 @@ export default function AgentExecutionSection({
   settings,
   onChange,
 }: AgentExecutionSectionProps) {
-  // Default to 10 if not set
+
   const value = settings.turnLimit || 10;
 
   const getTier = (val: number) => {

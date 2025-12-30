@@ -1,40 +1,40 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppSettings } from "../../shared/sharedTypes";
-import { Zap } from "lucide-react";
+import { Activity } from "lucide-react";
 
-interface ContextStealthSliderProps {
+interface TurnLimitStealthSliderProps {
   settings: AppSettings;
   saveSettings: (s: AppSettings) => Promise<void>;
 }
 
-export default function ContextStealthSlider({
+export default function TurnLimitStealthSlider({
   settings,
   saveSettings,
-}: ContextStealthSliderProps) {
-  const MIN = 10;
+}: TurnLimitStealthSliderProps) {
+  const MIN = 5;
   const MAX = 100;
 
-  const [localValue, setLocalValue] = useState(settings.contextLimit || 50);
+  const [localValue, setLocalValue] = useState(settings.turnLimit || 10);
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    if (settings.contextLimit) {
-      setLocalValue(settings.contextLimit);
+    if (settings.turnLimit) {
+      setLocalValue(settings.turnLimit);
     }
-  }, [settings.contextLimit]);
+  }, [settings.turnLimit]);
 
   const getTier = (val: number) => {
-    if (val <= 20) return "Short";
-    if (val <= 60) return "Balanced";
-    return "Long";
+    if (val <= 20) return "Direct";
+    if (val <= 60) return "Standard";
+    return "Complex";
   };
 
   const handleCommit = () => {
-    if (settings.contextLimit !== localValue) {
+    if (settings.turnLimit !== localValue) {
       saveSettings({
         ...settings,
-        contextLimit: localValue,
+        turnLimit: localValue,
       });
     }
   };
@@ -50,7 +50,7 @@ export default function ContextStealthSlider({
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            key="context-tooltip"
+            key="turn-tooltip"
             initial={{ opacity: 0, y: -20, scale: 0.9 }}
             animate={{ opacity: 1, y: -45, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
@@ -61,37 +61,36 @@ export default function ContextStealthSlider({
           >
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold font-Inter">
-                Context Window
+                Max Turns
               </span>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-white font-bold font-mono text-sm">
                   {localValue}
                 </span>
                 <span className="text-xs text-zinc-400 font-Inter">
-                  messages
+                  steps
                 </span>
               </div>
-              <span className="text-[10px] text-purple-400 font-medium">
-                {getTier(localValue)}
+              <span className="text-[10px] text-emerald-400 font-medium">
+                  {getTier(localValue)}
               </span>
             </div>
+            {/* Arrow pointing down */}
             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-700" />
           </motion.div>
         )}
       </AnimatePresence>
 
       <div className="flex items-center gap-2">
-        <Zap
-          size={14}
-          className={`transition-colors duration-200 ${
-            isHovered ? "text-purple-400" : "text-zinc-600"
-          }`}
+        <Activity 
+          size={14} 
+          className={`transition-colors duration-200 ${isHovered ? "text-emerald-400" : "text-zinc-600"}`} 
         />
 
         <div className="relative w-24 h-6 flex items-center">
           <div className="absolute w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-purple-500/50"
+              className="h-full bg-emerald-500/50"
               style={{ width: `${percentage}%` }}
               transition={{ duration: 0 }}
             />
@@ -101,7 +100,7 @@ export default function ContextStealthSlider({
             type="range"
             min={MIN}
             max={MAX}
-            step="2"
+            step="1"
             value={localValue}
             onChange={(e) => setLocalValue(parseInt(e.target.value))}
             onMouseUp={handleCommit}
@@ -114,7 +113,7 @@ export default function ContextStealthSlider({
             animate={{
               left: `calc(${percentage}% - 6px)`,
               scale: isHovered ? 1.2 : 0.8,
-              backgroundColor: isHovered ? "#a855f7" : "#71717a",
+              backgroundColor: isHovered ? "#10b981" : "#71717a",
             }}
             transition={{ duration: 0.1 }}
           />
