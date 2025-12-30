@@ -86,7 +86,7 @@ const contextLimit = Math.max(10, settings.contextLimit || 50);
           };
 
           try {
-            await agentLoop(provider, messagesToSend, messages, send);
+            await agentLoop(provider, messagesToSend, messages, send, settings.turnLimit);
           // deno-lint-ignore no-explicit-any
           } catch (error: any) {
             send({ type: "error", error: error.message });

@@ -36,6 +36,7 @@ export interface AppSettings {
   };
 
   contextLimit?: number;
+  turnLimit?: number;
   enableCompression?: boolean;
 }
 

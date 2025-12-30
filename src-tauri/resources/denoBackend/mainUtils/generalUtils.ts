@@ -25,9 +25,9 @@ export async function agentLoop(
   contextMessages: LLMMessage[],
   globalMessages: LLMMessage[],  
   send: (update: StreamUpdate) => void,
+  turnLimit?: number 
 ) {
-  let maxIterations = 10;
-  
+  let maxIterations = turnLimit ?? 10;
   while (maxIterations-- > 0) {
    // console.log(`🔄 Turn ${10 - maxIterations}`);
     

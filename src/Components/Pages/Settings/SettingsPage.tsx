@@ -10,6 +10,7 @@ import MemoryModal from "../../Modals/MemoryModal.tsx";
 
 import SettingsActionBar from "../Settings/SettingsActionBar.tsx";
 import { useSettingsLogic } from "../../../Hooks/useSettingsLogic.ts";
+import AgentExecutionSection from "./AgentExecutionSection.tsx";
 
 interface SettingsPageProps {
   savedSettings: AppSettings | null;
@@ -55,7 +56,7 @@ export default function SettingsPage({
     justSaved,
     handleSave,
     handleReset,
-    customModelLogic
+    customModelLogic,
   } = useSettingsLogic(savedSettings, saveSettings);
 
   return (
@@ -115,7 +116,7 @@ export default function SettingsPage({
                   settings={localSettings}
                   onChange={setLocalSettings}
                   allModels={customModelLogic.allModels}
-                  customModels={customModelLogic.customModels} 
+                  customModels={customModelLogic.customModels}
                   onAddModel={customModelLogic.addModel}
                   onRemoveModel={customModelLogic.removeModel}
                   fetchOllama={customModelLogic.fetchOllamaModels}
@@ -131,8 +132,14 @@ export default function SettingsPage({
             <div className="space-y-8 flex flex-col">
               <div className="bg-zinc-900/30 p-8 rounded-2xl border border-zinc-800/50 backdrop-blur-sm shadow-xl flex-1 h-full">
                 <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6 font-Inter">
-                  Internal Memory
+                  System & Memory
                 </h2>
+
+                <AgentExecutionSection
+                  settings={localSettings}
+                  onChange={setLocalSettings}
+                />
+
                 <ContextMemorySection
                   settings={localSettings}
                   onChange={setLocalSettings}
