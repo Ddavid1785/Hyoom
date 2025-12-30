@@ -147,21 +147,21 @@ export default function HomePage({
       transition={pageTransition}
       className="w-full h-full"
     >
+      <div className="absolute top-12 right-8 z-30">
+        <ExportChatButton
+          handleExportChat={() => exportChat(messages)}
+          disabled={messages.length === 0 || isExporting}
+        />
+      </div>
+
       <div className="w-full h-full flex flex-col px-8 py-8">
         <MemoryModal
           isOpen={isMemoryOpen}
           onClose={() => setIsMemoryOpen(false)}
         />
 
-        <div className="relative w-full max-w-3xl mx-auto flex items-center justify-center mb-6 z-10">
-          {/* 1. Toggle Centered */}
+        <div className="w-full max-w-3xl mx-auto flex items-center justify-center mb-6 z-10">
           <ModeToggle chatMode={chatMode} onToggle={onToggleChatMode} />
-
-          {/* 2. Export Button Absolutely Positioned Right */}
-          <ExportChatButton
-            handleExportChat={() => exportChat(messages)}
-            disabled={messages.length === 0 || isExporting}
-          />
         </div>
 
         <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col min-h-0">
