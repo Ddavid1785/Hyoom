@@ -150,4 +150,3 @@ Built in 2 months as a high school project. Inspired by Anthropic's research on 
 ---
 
 **Star ⭐ this repo if you find it useful!**
-```
