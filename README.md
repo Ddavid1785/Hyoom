@@ -30,7 +30,8 @@ Hyoom is an AI agent that controls your desktop through natural language. Instea
 ⚙️ **Maximum Customization**
 - Bring your own API key (OpenAI, Anthropic, Google, Groq)
 - Local LLM support (Ollama, LM Studio)
-- Adjustable context window (10-60 messages)
+- Adjustable context window (10-100 messages)
+- Adjustable agent turn amount (5-100 messages)
 - Optional context compression for long conversations
 
 🔧 **Extensible Architecture**
